@@ -4,7 +4,7 @@ const shortcuts = [
   ['Focus prompt', '⌘ K'],
   ['Create', '⌘ Enter'],
   ['Add source image', '⌘ ⇧ O'],
-  ['Open shortcuts', '⌘ /'],
+  ['Open settings', '⌘ /'],
   ['Close menu or dialog', 'Esc'],
 ];
 

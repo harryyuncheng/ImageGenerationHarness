@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { usePersistentState } from '../../shared/hooks/use-persistent-state.js';
 import { applyResolvedTheme, resolveTheme, themeOptions, type ThemePreference } from './theme.js';
@@ -7,8 +7,6 @@ export interface ThemeController {
   theme: ThemePreference;
   selectedThemeIndex: number;
   changeTheme: (value: ThemePreference) => void;
-  menuOpen: boolean;
-  setMenuOpen: (open: boolean) => void;
 }
 
 /**
@@ -17,7 +15,6 @@ export interface ThemeController {
  */
 export function useTheme(): ThemeController {
   const [theme, setTheme] = usePersistentState<ThemePreference>('harness-theme', 'system');
-  const [menuOpen, setMenuOpen] = useState(false);
   const selectedThemeIndex = Math.max(
     themeOptions.findIndex(({ value }) => value === theme),
     0,
@@ -58,5 +55,5 @@ export function useTheme(): ThemeController {
     document.startViewTransition(updateTheme);
   };
 
-  return { theme, selectedThemeIndex, changeTheme, menuOpen, setMenuOpen };
+  return { theme, selectedThemeIndex, changeTheme };
 }

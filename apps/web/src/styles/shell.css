@@ -136,8 +136,7 @@
 }
 
 .primary-nav button,
-.recent-block button,
-.rail-footer > button {
+.recent-block button {
   display: flex;
   width: 100%;
   min-width: 0;
@@ -155,8 +154,7 @@
 .primary-nav button.is-pointer-hover,
 .primary-nav button.active,
 .recent-block button.is-pointer-hover,
-.recent-block button.active,
-.rail-footer > button.is-pointer-hover {
+.recent-block button.active {
   background: var(--surface-hover);
   color: var(--text);
 }
@@ -215,16 +213,10 @@
   padding-block: 8px;
 }
 
-.rail-footer {
+.rail-footer-spacer {
   width: 100%;
+  min-height: 52px;
   margin-top: auto;
-  padding-top: 12px;
-}
-
-.left-rail--collapsed .rail-footer > button {
-  width: 44px;
-  justify-content: center;
-  padding-inline: 0;
 }
 
 .studio-main {

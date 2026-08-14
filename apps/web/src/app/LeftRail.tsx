@@ -1,4 +1,4 @@
-import { CircleHelp, Image as ImageIcon, Palette, Plus } from 'lucide-react';
+import { Image as ImageIcon, Palette, Plus } from 'lucide-react';
 import type { StudioRun } from '../features/history/run-presentation.js';
 import { navItems, type StudioView } from './navigation.js';
 
@@ -11,7 +11,6 @@ interface LeftRailProps {
   onSelectView: (view: StudioView) => void;
   onOpenRun: (run: StudioRun) => void;
   onReset: () => void;
-  onOpenShortcuts: () => void;
 }
 
 export function LeftRail(props: LeftRailProps) {
@@ -70,12 +69,7 @@ export function LeftRail(props: LeftRailProps) {
           </div>
         </div>
       )}
-      <div className="rail-footer">
-        <button onClick={props.onOpenShortcuts}>
-          <CircleHelp size={18} />
-          {sidebarOpen && <span>Help & shortcuts</span>}
-        </button>
-      </div>
+      <div className="rail-footer-spacer" aria-hidden="true" />
     </aside>
   );
 }

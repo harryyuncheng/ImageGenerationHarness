@@ -1,0 +1,192 @@
+.app-settings {
+  position: fixed;
+  z-index: 80;
+  bottom: 12px;
+  left: 12px;
+}
+
+.app-settings__trigger {
+  display: flex;
+  width: 224px;
+  height: 40px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 11px;
+  border-radius: 10px;
+  background: transparent;
+  padding: 0 11px;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 13px;
+  font-weight: 520;
+}
+
+.app-settings__trigger.is-pointer-hover,
+.app-settings__trigger[aria-expanded='true'] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.app-settings--collapsed .app-settings__trigger {
+  width: 44px;
+  justify-content: center;
+  padding-inline: 0;
+}
+
+.app-settings--collapsed .app-settings__trigger span {
+  display: none;
+}
+
+.settings-popover {
+  --surface-enter-offset-y: 6px;
+  --surface-enter-origin: bottom left;
+
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: min(336px, calc(100vw - 24px));
+  max-height: calc(100vh - 76px);
+  overflow: auto;
+}
+
+.settings-popover__header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  height: 52px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--surface-raised);
+  padding: 0 8px 0 16px;
+}
+
+.settings-popover__header > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.settings-popover__header h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.settings-popover__body {
+  padding: 16px;
+}
+
+.settings-popover__section + .settings-popover__section {
+  margin-top: 18px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 18px;
+}
+
+.settings-popover__section h3 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.settings-popover__label {
+  display: block;
+  margin: 0 2px 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.theme-selector {
+  position: relative;
+  padding: 4px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.theme-selector__indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  left: 4px;
+  height: 38px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  view-transition-name: theme-indicator;
+  will-change: transform;
+}
+
+.theme-selector button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  height: 38px;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--text-secondary);
+  text-align: left;
+  font-size: 12px;
+  transition: color 160ms ease;
+}
+
+.theme-selector button.is-pointer-hover:not(.selected) {
+  background: var(--surface-hover);
+}
+
+.theme-selector button.is-pointer-hover,
+.theme-selector button.selected {
+  color: var(--text);
+}
+
+.theme-selector__label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  text-align: left;
+}
+
+.theme-selector__check {
+  margin-left: auto;
+  color: var(--accent);
+}
+
+@media (max-width: 1000px) {
+  .app-settings__trigger {
+    width: 44px;
+    justify-content: center;
+    padding-inline: 0;
+  }
+
+  .app-settings__trigger span {
+    display: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .app-settings {
+    bottom: 10px;
+    left: 10px;
+  }
+
+  .app-settings__trigger {
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-md);
+  }
+
+  .settings-popover {
+    width: min(336px, calc(100vw - 20px));
+  }
+}

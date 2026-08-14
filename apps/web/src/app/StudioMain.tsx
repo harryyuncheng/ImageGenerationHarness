@@ -1,26 +1,18 @@
-import type { ThemeController } from '../features/theme/use-theme.js';
 import { CanvasEditor, type CanvasEditorProps } from './CanvasEditor.js';
 import { CanvasViews, type CanvasViewsProps } from './CanvasViews.js';
 import { MobileNav } from './MobileNav.js';
 import { TopBar } from './TopBar.js';
 
 type StudioMainProps = CanvasViewsProps &
-  Pick<CanvasEditorProps, 'describeDestination' | 'onViewMetadata'> & {
-    theme: ThemeController;
-  };
+  Pick<CanvasEditorProps, 'describeDestination' | 'onViewMetadata'>;
 
 /** The primary column: top bar, mobile navigation, and the canvas region. */
-export function StudioMain({
-  theme,
-  describeDestination,
-  onViewMetadata,
-  ...canvas
-}: StudioMainProps) {
+export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: StudioMainProps) {
   const { navigation, repository } = canvas;
 
   return (
     <div className="studio-main">
-      <TopBar navigation={navigation} repository={repository} theme={theme} />
+      <TopBar navigation={navigation} repository={repository} />
 
       {navigation.mobileNavOpen && (
         <MobileNav

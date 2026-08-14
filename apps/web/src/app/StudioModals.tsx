@@ -1,6 +1,5 @@
 import { CloudOff, Copy } from 'lucide-react';
 import { Modal } from '../shared/components/Modal.js';
-import { ShortcutList } from '../shared/components/ShortcutList.js';
 import type { ImageMetadataController } from '../features/editor/use-image-metadata.js';
 import { buildRunCodeExample } from '../features/generation/code-sample.js';
 import type { ModalName } from './use-studio-navigation.js';
@@ -9,7 +8,6 @@ const titles = {
   code: 'Get code',
   request: 'Request preview',
   metadata: 'Generated image metadata',
-  shortcuts: 'Keyboard shortcuts',
 } as const;
 
 interface StudioModalsProps {
@@ -27,9 +25,7 @@ export function StudioModals({ modal, requestBody, metadata, onClose, onCopy }: 
 
   return (
     <Modal title={titles[modal]} onClose={onClose}>
-      {modal === 'shortcuts' ? (
-        <ShortcutList />
-      ) : modal === 'metadata' ? (
+      {modal === 'metadata' ? (
         metadata.metadataError ? (
           <div className="metadata-error">
             <CloudOff size={22} />

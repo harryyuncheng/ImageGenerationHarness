@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { EditorSelectionController } from '../features/editor/use-editor-selection.js';
 import type { StudioView } from './navigation.js';
 
-export type ModalName = 'code' | 'request' | 'shortcuts' | 'metadata' | null;
+export type ModalName = 'code' | 'request' | 'metadata' | null;
 
 /**
  * Owns which studio surface is visible: the primary view, the canvas editor

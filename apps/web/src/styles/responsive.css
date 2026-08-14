@@ -31,13 +31,11 @@
   .left-rail .brand > span:last-child,
   .left-rail .new-button span,
   .left-rail .primary-nav button span,
-  .left-rail .recent-block,
-  .left-rail .rail-footer > button span {
+  .left-rail .recent-block {
     display: none;
   }
   .left-rail .new-button,
-  .left-rail .primary-nav button,
-  .left-rail .rail-footer > button {
+  .left-rail .primary-nav button {
     width: 44px;
     justify-content: center;
     padding-inline: 0;

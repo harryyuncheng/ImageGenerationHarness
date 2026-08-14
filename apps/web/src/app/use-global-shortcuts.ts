@@ -3,12 +3,12 @@ import type { RefObject } from 'react';
 
 interface GlobalShortcutOptions {
   closeOverlays: () => void;
-  openShortcuts: () => void;
+  openSettings: () => void;
   fileInput: RefObject<HTMLInputElement | null>;
   promptInput: RefObject<HTMLTextAreaElement | null>;
 }
 
-/** Global keyboard shortcuts, documented in the shortcuts dialog. */
+/** Global keyboard shortcuts, documented in Settings. */
 export function useGlobalShortcuts(options: GlobalShortcutOptions) {
   useEffect(() => {
     const handleGlobalKey = (event: globalThis.KeyboardEvent) => {
@@ -17,7 +17,7 @@ export function useGlobalShortcuts(options: GlobalShortcutOptions) {
       }
       if ((event.metaKey || event.ctrlKey) && event.key === '/') {
         event.preventDefault();
-        options.openShortcuts();
+        options.openSettings();
       }
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
         event.preventDefault();

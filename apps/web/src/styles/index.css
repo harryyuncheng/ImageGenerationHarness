@@ -9,7 +9,7 @@
 @import './base.css';
 @import './shell.css';
 @import './shared/controls.css';
-@import './features/theme-menu.css';
+@import './features/app-settings.css';
 @import './features/repository.css';
 @import './workspace.css';
 @import './features/model-picker.css';

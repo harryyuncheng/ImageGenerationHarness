@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useEditSource } from '../features/editor/use-edit-source.js';
 import { useEditTools } from '../features/editor/use-edit-tools.js';
 import { useEditorSelection } from '../features/editor/use-editor-selection.js';
@@ -22,6 +23,7 @@ import { useTheme } from '../features/theme/use-theme.js';
 import { useClipboard } from '../shared/hooks/use-clipboard.js';
 import { useToasts } from '../shared/hooks/use-toasts.js';
 import type { Destination } from '../shared/types/domain.js';
+import { AppSettings } from './AppSettings.js';
 import { LeftRail } from './LeftRail.js';
 import { StudioMain } from './StudioMain.js';
 import { StudioOverlays } from './StudioOverlays.js';
@@ -33,6 +35,7 @@ export function App() {
   const { toasts, notify, dismiss } = useToasts();
   const copyText = useClipboard(notify);
   const theme = useTheme();
+  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const repository = useRepository(notify);
   const activeRepositoryId = repository.activeRepositoryId;
   const { capabilities } = useCapabilities();
@@ -126,11 +129,12 @@ export function App() {
     closeOverlays: () => {
       navigation.setModal(null);
       draftActions.closeModelMenu();
-      theme.setMenuOpen(false);
+      setAppSettingsOpen(false);
       repository.setMenuOpen(false);
     },
-    openShortcuts: () => {
-      navigation.setModal('shortcuts');
+    openSettings: () => {
+      navigation.setModal(null);
+      setAppSettingsOpen(true);
     },
     fileInput: attachments.fileInput,
     promptInput: promptDraft.promptInput,
@@ -152,15 +156,18 @@ export function App() {
         onSelectView={navigation.selectStudioView}
         onOpenRun={editor.openRun}
         onReset={draftActions.resetWorkspace}
-        onOpenShortcuts={() => {
-          navigation.setModal('shortcuts');
-        }}
+      />
+
+      <AppSettings
+        open={appSettingsOpen}
+        sidebarOpen={navigation.sidebarOpen}
+        theme={theme}
+        onOpenChange={setAppSettingsOpen}
       />
 
       <StudioMain
         navigation={navigation}
         repository={repository}
-        theme={theme}
         capabilities={capabilities}
         promptDraft={promptDraft}
         settings={settings}
