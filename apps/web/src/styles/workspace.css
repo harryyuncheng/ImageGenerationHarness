@@ -1,0 +1,51 @@
+.mobile-menu,
+.mobile-nav {
+  display: none;
+}
+
+.workspace {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.canvas {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  background: transparent;
+}
+
+.canvas > .surface-enter {
+  --surface-enter-offset-y: 0;
+  --surface-enter-scale: 1;
+}
+
+.create-page,
+.library-page {
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 42px 0 80px;
+}
+
+.create-page {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+}
+
+.library-heading h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 570;
+  letter-spacing: -0.035em;
+}
+
+.library-heading p {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}

@@ -1,0 +1,40 @@
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preset-card {
+  display: flex;
+  min-height: 170px;
+  flex-direction: column;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.preset-card > span {
+  color: var(--accent-text);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.preset-card > p {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 13px 0;
+  font-size: 12px;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.preset-card > div {
+  display: flex;
+  justify-content: space-between;
+  margin-top: auto;
+}

@@ -1,0 +1,38 @@
+/*
+ * Ordered style manifest. Cascade order is explicit and load-bearing:
+ * Tailwind base, design tokens, global element base, application shell,
+ * shared surfaces, feature styles, then responsive and motion overrides.
+ */
+@import 'tailwindcss';
+
+@import './tokens.css';
+@import './base.css';
+@import './shell.css';
+@import './shared/controls.css';
+@import './features/theme-menu.css';
+@import './features/repository.css';
+@import './workspace.css';
+@import './features/model-picker.css';
+@import './features/composer.css';
+@import './features/composer-menus.css';
+@import './features/composer-submit.css';
+@import './features/greeting.css';
+@import './shared/section-heading.css';
+@import './features/settings-panel.css';
+@import './shared/library-chrome.css';
+@import './features/history.css';
+@import './shared/empty-state.css';
+@import './shared/gallery-card.css';
+@import './features/edit-canvas.css';
+@import './features/edit-tools.css';
+@import './features/image-editor.css';
+@import './features/presets.css';
+@import './features/projects.css';
+@import './features/metadata.css';
+@import './features/references.css';
+@import './shared/modal.css';
+@import './shared/shortcuts.css';
+@import './shared/toast.css';
+@import './shared/accessibility.css';
+@import './responsive.css';
+@import './motion.css';

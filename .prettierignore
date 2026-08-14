@@ -5,9 +5,3 @@ coverage/
 playwright-report/
 test-results/
 pnpm-lock.yaml
-
-# The studio is deliberately laid out as dense component markup; ESLint and TypeScript remain strict.
-apps/web/src/App.tsx
-apps/web/src/StudioViews.tsx
-apps/web/src/studio.ts
-apps/web/src/styles.css

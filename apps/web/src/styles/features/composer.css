@@ -1,0 +1,176 @@
+.composer {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 21px;
+  background: var(--surface);
+  box-shadow:
+    0 8px 30px rgb(0 0 0 / 10%),
+    0 2px 7px rgb(0 0 0 / 6%);
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.composer--drag {
+  border-color: color-mix(in srgb, var(--accent) 65%, var(--border));
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent-soft) 68%, transparent),
+    0 10px 32px rgb(0 0 0 / 12%);
+}
+
+.composer textarea {
+  width: 100%;
+  min-height: 128px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 19px 20px 10px;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.composer textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.drop-overlay {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 2px dashed var(--accent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--accent-soft) 93%, transparent);
+  color: var(--accent-text);
+  font-size: 14px;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+.attachment-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+  padding: 12px 12px 0;
+}
+
+.attachment {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+  background: var(--surface-soft);
+  padding: 5px;
+}
+
+.attachment img {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.attachment > span {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.attachment strong {
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.attachment small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment button {
+  display: inline-flex;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.attachment button.is-pointer-hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.composer-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 10px 10px 12px;
+}
+
+.composer-tools,
+.submit-area {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.round-tool,
+.tool-chip,
+.composer-setting {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.round-tool {
+  width: 34px;
+}
+
+.tool-chip,
+.composer-setting {
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.round-tool.is-pointer-hover,
+.tool-chip.is-pointer-hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.composer-setting {
+  position: relative;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-soft);
+}
+
+.composer-setting.is-pointer-hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--text);
+}
+
+.composer-setting-picker {
+  display: inline-flex;
+}

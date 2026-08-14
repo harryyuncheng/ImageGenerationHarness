@@ -1,0 +1,64 @@
+.text-button,
+.primary-small,
+.preset-card > div button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.text-button.is-pointer-hover,
+.preset-card > div button.is-pointer-hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.text-button.danger {
+  color: var(--danger);
+}
+
+.icon-button.danger {
+  color: var(--danger);
+}
+
+.primary-small {
+  background: var(--accent);
+  color: var(--surface);
+  padding: 9px 14px;
+}
+
+.primary-small.is-pointer-hover {
+  background: var(--accent-hover);
+}
+
+.popover-anchor,
+.model-picker-wrap {
+  position: relative;
+}
+
+.popover {
+  --surface-enter-offset-y: -6px;
+  --surface-enter-origin: top right;
+
+  position: absolute;
+  z-index: 60;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.popover[data-placement='above'] {
+  --surface-enter-offset-y: 6px;
+  --surface-enter-origin: bottom center;
+}
+
+.popover[data-placement='below'] {
+  --surface-enter-origin: top center;
+}

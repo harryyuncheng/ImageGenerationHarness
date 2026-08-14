@@ -1,0 +1,71 @@
+.surface-enter {
+  animation: surface-enter var(--motion-surface-duration) var(--motion-surface-easing) backwards;
+  transform-origin: var(--surface-enter-origin, center);
+}
+
+@keyframes surface-enter {
+  from {
+    opacity: var(--surface-enter-opacity, 0);
+    transform: translate3d(0, var(--surface-enter-offset-y, 8px), 0)
+      scale(var(--surface-enter-scale, 0.985));
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.lucide {
+  stroke-width: 1.5;
+}
+
+::selection {
+  background: var(--text);
+  color: var(--surface);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+  color: inherit;
+  font: inherit;
+}
+
+button {
+  border: 0;
+  cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}

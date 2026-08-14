@@ -1,0 +1,307 @@
+@media (max-width: 1180px) {
+  .history-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .preset-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gallery-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .reference-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .project-gallery {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .repository-button {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 1000px) {
+  .left-rail {
+    width: 72px;
+    min-width: 72px;
+    align-items: center;
+  }
+  .left-rail .brand > span:last-child,
+  .left-rail .new-button span,
+  .left-rail .primary-nav button span,
+  .left-rail .recent-block,
+  .left-rail .rail-footer > button span {
+    display: none;
+  }
+  .left-rail .new-button,
+  .left-rail .primary-nav button,
+  .left-rail .rail-footer > button {
+    width: 44px;
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .rail-collapse {
+    display: none;
+  }
+  .studio-shell--panel-capable.studio-shell--panel-open {
+    grid-template-columns: auto minmax(0, 1fr) 306px;
+  }
+  .settings-panel {
+    width: 306px;
+  }
+  .repository-button {
+    min-width: 0;
+    width: 46px;
+    justify-content: center;
+  }
+  .repository-button > span,
+  .repository-button > svg:last-child {
+    display: none;
+  }
+  .composer-footer {
+    gap: 8px;
+  }
+  .composer-tools {
+    gap: 5px;
+  }
+  .composer-tools .tool-chip {
+    width: 34px;
+    padding: 0;
+  }
+  .composer-tools .tool-chip span,
+  .key-hint {
+    display: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .studio-shell {
+    display: block;
+  }
+  .left-rail {
+    display: none;
+  }
+  .mobile-menu {
+    display: inline-flex;
+  }
+  .mobile-nav {
+    --surface-enter-offset-y: -6px;
+    --surface-enter-origin: top left;
+
+    position: fixed;
+    z-index: 70;
+    top: 58px;
+    left: 10px;
+    display: flex;
+    width: 210px;
+    flex-direction: column;
+    gap: 3px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--surface-raised);
+    padding: 7px;
+    box-shadow: var(--shadow-lg);
+  }
+  .mobile-nav button {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    border-radius: 8px;
+    background: transparent;
+    padding: 9px;
+    color: var(--text-secondary);
+    text-align: left;
+    font-size: 12px;
+  }
+  .mobile-nav button.active {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+  }
+  .workspace {
+    display: block;
+  }
+  .settings-panel {
+    z-index: 50;
+    top: 64px;
+    width: min(326px, 92vw);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+  .create-page,
+  .library-page {
+    width: min(100% - 28px, 900px);
+  }
+  .reference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .project-create {
+    grid-template-columns: 1fr;
+  }
+  .project-create > div:first-child {
+    grid-row: auto;
+  }
+  .project-create-actions {
+    grid-column: 1;
+  }
+  .project-editor {
+    grid-template-columns: 1fr;
+  }
+  .project-editor .section-heading,
+  .project-editor-actions {
+    grid-column: 1;
+  }
+  .inline-create-card {
+    grid-template-columns: 1fr;
+  }
+  .inline-create-card > div {
+    justify-content: flex-end;
+  }
+  .project-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .image-editor-page {
+    height: auto;
+    min-height: 100%;
+    padding: 0 14px 14px;
+  }
+  .image-editor {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .image-editor-preview {
+    min-height: 330px;
+    padding: 14px;
+  }
+  .image-editor-preview img {
+    max-height: 52vh;
+  }
+  .image-editor-sidebar {
+    border-top: 1px solid var(--border-soft);
+    border-left: 0;
+  }
+}
+@media (max-width: 560px) {
+  .studio-main {
+    --top-bar-height: 58px;
+  }
+  .top-bar {
+    padding-inline: 10px;
+  }
+  .saved-state {
+    display: none;
+  }
+  .settings-panel {
+    top: 58px;
+    width: 100%;
+  }
+  .model-picker strong {
+    max-width: 190px;
+  }
+  .composer {
+    border-radius: 17px;
+  }
+  .composer textarea {
+    min-height: 118px;
+    padding-inline: 15px;
+    font-size: 14px;
+  }
+  .edit-image-picker-backdrop {
+    padding: 10px;
+  }
+  .edit-canvas-empty {
+    padding: 18px;
+  }
+  .attachment-strip {
+    grid-template-columns: 1fr;
+  }
+  .composer-selectors {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .composer-selectors .model-picker {
+    width: 100%;
+    max-width: none;
+  }
+  .tool-chip,
+  .key-hint {
+    display: none;
+  }
+  .composer-footer {
+    padding-left: 9px;
+  }
+  .generate-button {
+    padding-inline: 13px;
+  }
+  .composer-setting {
+    padding-inline: 7px;
+    font-size: 9px;
+  }
+  .composer-setting-value {
+    min-width: 23px;
+    font-size: 10px;
+  }
+  .composer-setting--count .composer-setting-value {
+    min-width: 8px;
+  }
+  .composer-wrap {
+    padding-top: 32px;
+  }
+  .create-page,
+  .library-page {
+    padding-top: 28px;
+  }
+  .library-heading {
+    align-items: flex-start;
+  }
+  .library-heading h2 {
+    font-size: 23px;
+  }
+  .library-toolbar {
+    align-items: stretch;
+  }
+  .gallery-grid,
+  .preset-grid,
+  .reference-grid,
+  .projects-grid,
+  .asset-grid,
+  .project-gallery {
+    grid-template-columns: 1fr;
+  }
+  .history-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .project-dashboard-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .project-dashboard-header > div:last-child {
+    width: 100%;
+    justify-content: flex-end;
+  }
+  .project-editor-actions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+  .library-toolbar--wrap {
+    flex-direction: column;
+  }
+  .library-toolbar--wrap .search-field {
+    width: 100%;
+  }
+  .reference-folder > header {
+    align-items: flex-start;
+  }
+  .reference-folder-actions .text-button {
+    width: 34px;
+    height: 34px;
+    overflow: hidden;
+    padding: 0;
+    font-size: 0;
+  }
+  .modal-backdrop {
+    padding: 10px;
+  }
+}

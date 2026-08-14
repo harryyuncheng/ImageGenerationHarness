@@ -1,0 +1,56 @@
+.toast-stack {
+  position: fixed;
+  z-index: 120;
+  right: 18px;
+  bottom: 18px;
+  display: flex;
+  width: min(380px, calc(100vw - 36px));
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  padding: 11px 10px 11px 13px;
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  font-size: 11px;
+  animation: toast-in 180ms ease-out;
+}
+
+.toast > span {
+  flex: 1;
+}
+
+.toast > button {
+  display: inline-flex;
+  width: 25px;
+  height: 25px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.toast--success > svg {
+  color: var(--success);
+}
+.toast--error > svg {
+  color: var(--danger);
+}
+.toast--info > svg {
+  color: var(--highlight);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}

@@ -1,0 +1,270 @@
+.image-editor-page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-height: 560px;
+  flex-direction: column;
+  padding: 0 18px 18px;
+}
+
+.image-editor-header {
+  display: flex;
+  min-height: 64px;
+  flex: 0 0 64px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0 2px;
+}
+
+.image-editor-header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.image-editor-header > div > div {
+  min-width: 0;
+}
+
+.image-editor-header h2,
+.image-editor-header span {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-editor-header h2 {
+  max-width: min(700px, 60vw);
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.image-editor-header > div span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.image-editor {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns: minmax(0, 1.7fr) minmax(250px, 0.75fr);
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.image-editor--editing {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.image-editor-preview {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, color-mix(in srgb, var(--text) 4%, transparent) 25%, transparent 25%) 0
+      0 / 20px 20px,
+    linear-gradient(-45deg, color-mix(in srgb, var(--text) 4%, transparent) 25%, transparent 25%) 0
+      10px / 20px 20px,
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--text) 4%, transparent) 75%)
+      10px -10px / 20px 20px,
+    linear-gradient(
+        -45deg,
+        transparent 75%,
+        color-mix(in srgb, var(--text) 4%, transparent) 75%
+      ) -10px
+      0 / 20px 20px,
+    var(--surface-soft);
+  padding: 24px;
+}
+
+.image-editor-preview img {
+  display: block;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transition: opacity 260ms ease;
+}
+
+.image-editor-preview img.is-loaded {
+  opacity: 1;
+}
+
+.image-editor-preview--error {
+  color: var(--danger);
+}
+
+.image-editor-progress {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.image-editor-progress strong {
+  font-size: 12px;
+}
+
+.image-editor-progress small {
+  max-width: 360px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.image-editor-sidebar {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 22px;
+  overflow: auto;
+  border-left: 1px solid var(--border-soft);
+  padding: 24px 20px 20px;
+}
+
+.image-editor-sidebar h3,
+.image-editor-sidebar p,
+.image-editor-sidebar dl {
+  margin: 0;
+}
+
+.image-editor-location {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.image-editor-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  padding: 4px 7px;
+  color: var(--text-secondary);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.image-editor-status--completed {
+  color: var(--success);
+}
+
+.image-editor-status--failed {
+  color: var(--danger);
+}
+
+.image-editor-status--cancelled,
+.image-editor-status--interrupted {
+  color: var(--warning);
+}
+
+.image-editor-sidebar h3 {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.image-editor-sidebar > div:first-child > p {
+  margin-top: 7px;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+
+.image-editor-sidebar dl {
+  display: grid;
+  gap: 12px;
+}
+
+.image-editor-outputs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.image-editor-outputs button {
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  padding: 0;
+}
+
+.image-editor-outputs button.selected {
+  border-color: var(--accent);
+}
+
+.image-editor-outputs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-editor-sidebar dl > div {
+  display: grid;
+  gap: 3px;
+}
+
+.image-editor-sidebar dt {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.image-editor-sidebar dd {
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.image-editor-error {
+  border-radius: 9px;
+  background: var(--danger-soft);
+  padding: 9px 10px;
+  color: var(--danger);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.image-editor-actions {
+  display: grid;
+  gap: 6px;
+  margin-top: auto;
+}
+
+.image-editor-actions .text-button,
+.image-editor-actions .primary-small {
+  width: 100%;
+  text-decoration: none;
+}

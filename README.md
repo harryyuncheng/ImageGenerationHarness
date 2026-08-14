@@ -36,6 +36,39 @@ The API server listens on `127.0.0.1:4173` by default. `HARNESS_PORT` may select
 
 The native folder chooser is implemented with `/usr/bin/osascript` through `execFile`; no shell command string is used. Application preferences store only active and recent canonical repository paths in `~/Library/Application Support/ImageGenerationHarness/config.json`. Repository-domain records remain inside the selected repository.
 
+## Source layout
+
+The monorepo keeps deployable applications separate from reusable boundaries:
+
+```text
+apps/
+  web/src/
+    app/          # application composition and shell
+    features/     # generation, editing, gallery, projects, references, and history
+    shared/       # browser-only HTTP, hooks, image helpers, and reusable UI
+    styles/       # ordered global, shell, shared, and feature styles
+  server/src/
+    app/          # Fastify composition, errors, and loopback security
+    repository/   # selected-repository path and filesystem authority
+    projects/     # project and nested-asset behavior
+    references/   # local reference-library behavior
+    runs/         # durable run orchestration, queueing, workers, and recovery
+    images/       # generated-image lookup, integrity checks, and HTTP routes
+    providers/    # server-only Bedrock adapter
+packages/
+  capabilities/   # model catalog and strict provider schemas
+  contracts/      # browser/server API schemas grouped by resource
+  domain/         # durable repository record schemas grouped by entity
+  image/          # byte, format, hash, and sidecar utilities
+tests/
+  integration/    # cross-workspace local architecture checks
+  e2e/            # Playwright workflows and shared browser fixtures
+```
+
+Application code is feature-first. Feature modules may depend on their application-level shared code and workspace packages, while workspace packages must not depend on either application. Package root `index.ts` files are stable re-export surfaces rather than implementation modules.
+
+ESLint treats production files above 425 non-blank, non-comment lines as an architecture failure and warns when a production function exceeds 200 lines. Tests have a slightly wider allowance for scenario setup. These are review signals rather than targets: modules should still be split whenever they acquire more than one reason to change.
+
 ## Repository layout
 
 ```text
