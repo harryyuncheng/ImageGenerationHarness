@@ -1,0 +1,29 @@
+{
+  "name": "@harness/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "lint": "eslint src",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.850.0",
+    "@fastify/helmet": "^13.0.1",
+    "@harness/capabilities": "workspace:*",
+    "@harness/contracts": "workspace:*",
+    "@harness/domain": "workspace:*",
+    "@harness/image": "workspace:*",
+    "fastify": "^5.4.0",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
