@@ -15,7 +15,7 @@ export function ThemeSelector({
       <span
         className="theme-selector__indicator"
         aria-hidden="true"
-        style={{ transform: `translateY(${String(selectedThemeIndex * 100)}%)` }}
+        style={{ transform: `translateX(${String(selectedThemeIndex * 100)}%)` }}
       />
       {themeOptions.map(({ value, label, Icon }) => (
         <button

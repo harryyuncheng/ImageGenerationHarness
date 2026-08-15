@@ -12,7 +12,7 @@ test('reuses shared entry motion across tabs, menus, panels, and dialogs', async
   await page.keyboard.press('Escape');
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await expectSharedSurfaceMotion(page.locator('.settings-popover'));
+  await expectSharedSurfaceMotion(page.locator('.settings-dialog'));
   await page.keyboard.press('Escape');
 
   await page.locator('.model-picker').click();

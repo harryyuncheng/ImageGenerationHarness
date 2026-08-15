@@ -37,69 +37,164 @@
   display: none;
 }
 
-.settings-popover {
-  --surface-enter-offset-y: 6px;
-  --surface-enter-origin: bottom left;
+.settings-dialog-backdrop {
+  --surface-enter-offset-y: 0;
+  --surface-enter-scale: 1;
 
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: min(336px, calc(100vw - 24px));
-  max-height: calc(100vh - 76px);
-  overflow: auto;
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 44%);
+  padding: 24px;
+  backdrop-filter: blur(5px);
 }
 
-.settings-popover__header {
-  position: sticky;
-  z-index: 2;
-  top: 0;
+.settings-dialog {
+  --surface-enter-offset-y: 10px;
+  --surface-enter-opacity: 0.72;
+  --surface-enter-scale: 0.975;
+
+  display: grid;
+  width: min(760px, 100%);
+  height: min(560px, calc(100dvh - 48px));
+  grid-template-rows: 62px minmax(0, 1fr);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+}
+
+.settings-dialog__header {
   display: flex;
-  height: 52px;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-soft);
-  background: var(--surface-raised);
-  padding: 0 8px 0 16px;
+  padding: 0 14px 0 22px;
 }
 
-.settings-popover__header > div {
+.settings-dialog__header > div {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
 }
 
-.settings-popover__header h2 {
+.settings-dialog__header h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 650;
 }
 
-.settings-popover__body {
-  padding: 16px;
+.settings-dialog__body {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: 188px minmax(0, 1fr);
 }
 
-.settings-popover__section + .settings-popover__section {
-  margin-top: 18px;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 18px;
+.settings-dialog__tabs {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-soft) 52%, var(--surface-raised));
+  padding: 16px 12px;
 }
 
-.settings-popover__section h3 {
-  margin: 0 0 12px;
-  color: var(--text);
+.settings-dialog__tabs button {
+  display: flex;
+  width: 100%;
+  height: 38px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 9px;
+  background: transparent;
+  padding: 0 11px;
+  color: var(--text-secondary);
+  text-align: left;
   font-size: 12px;
+  font-weight: 560;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
 }
 
-.settings-popover__label {
-  display: block;
-  margin: 0 2px 7px;
+.settings-dialog__tabs button.is-pointer-hover {
+  background: color-mix(in srgb, var(--surface-hover) 75%, transparent);
+  color: var(--text);
+}
+
+.settings-dialog__tabs button[aria-selected='true'] {
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+}
+
+.settings-dialog__tabs > p {
+  margin: auto 8px 4px;
   color: var(--text-muted);
   font-size: 10px;
+  line-height: 1.45;
+}
+
+.settings-dialog__content {
+  min-width: 0;
+  overflow: auto;
+  padding: 32px 36px 38px;
+}
+
+.settings-tab-panel__header {
+  margin-bottom: 28px;
+}
+
+.settings-tab-panel__header h3 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: -0.02em;
+}
+
+.settings-tab-panel__header p {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-card {
+  border: 1px solid var(--border-soft);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-soft) 48%, var(--surface-raised));
+  padding: 18px;
+}
+
+.settings-card__heading {
+  margin-bottom: 16px;
+}
+
+.settings-card__heading h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.settings-card__heading p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.settings-card--shortcuts {
+  padding: 4px 18px;
 }
 
 .theme-selector {
   position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   padding: 4px;
   border: 1px solid var(--border-soft);
   border-radius: 12px;
@@ -109,8 +204,8 @@
 .theme-selector__indicator {
   position: absolute;
   top: 4px;
-  right: 4px;
   left: 4px;
+  width: calc((100% - 8px) / 3);
   height: 38px;
   border-radius: 8px;
   background: var(--surface-raised);
@@ -128,18 +223,18 @@
   width: 100%;
   height: 38px;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   border-radius: 8px;
   background: transparent;
-  padding: 0 10px;
+  padding: 0 8px;
   color: var(--text-secondary);
-  text-align: left;
+  text-align: center;
   font-size: 12px;
   transition: color 160ms ease;
 }
 
 .theme-selector button.is-pointer-hover:not(.selected) {
-  background: var(--surface-hover);
+  background: color-mix(in srgb, var(--surface-hover) 72%, transparent);
 }
 
 .theme-selector button.is-pointer-hover,
@@ -151,13 +246,13 @@
   display: flex;
   min-width: 0;
   align-items: center;
-  justify-content: flex-start;
-  gap: 9px;
-  text-align: left;
+  justify-content: center;
+  gap: 7px;
+  text-align: center;
 }
 
 .theme-selector__check {
-  margin-left: auto;
+  margin-left: 6px;
   color: var(--accent);
 }
 
@@ -186,7 +281,64 @@
     box-shadow: var(--shadow-md);
   }
 
-  .settings-popover {
-    width: min(336px, calc(100vw - 20px));
+  .settings-dialog-backdrop {
+    padding: 12px;
+  }
+
+  .settings-dialog {
+    height: min(620px, calc(100dvh - 24px));
+    grid-template-rows: 58px minmax(0, 1fr);
+    border-radius: 18px;
+  }
+
+  .settings-dialog__body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .settings-dialog__tabs {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-soft);
+    padding: 10px 12px;
+  }
+
+  .settings-dialog__tabs button {
+    justify-content: center;
+  }
+
+  .settings-dialog__tabs > p {
+    display: none;
+  }
+
+  .settings-dialog__content {
+    padding: 26px 24px 30px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-dialog__header {
+    padding-left: 18px;
+  }
+
+  .settings-dialog__tabs button {
+    gap: 7px;
+    padding-inline: 8px;
+  }
+
+  .settings-dialog__content {
+    padding: 24px 18px;
+  }
+
+  .settings-card {
+    padding: 15px;
+  }
+
+  .settings-card--shortcuts {
+    padding-block: 2px;
+  }
+
+  .theme-selector__check {
+    display: none;
   }
 }

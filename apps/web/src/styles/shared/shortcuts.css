@@ -8,24 +8,13 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-soft);
-  padding: 12px 3px;
+  padding: 14px 3px;
   color: var(--text-secondary);
   font-size: 12px;
 }
 
-.shortcut-hero {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 11px;
-  background: var(--accent-soft);
-  padding: 13px;
-  color: var(--accent-text);
-}
-
-.shortcut-hero p {
-  margin: 0;
-  font-size: 12px;
+.shortcut-list > div:last-child {
+  border-bottom: 0;
 }
 
 kbd {

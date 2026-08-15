@@ -10,44 +10,54 @@ test('supports explicit light and dark themes', async ({ page }) => {
   await settingsButton.click();
   const settings = page.getByRole('dialog', { name: 'Settings' });
   await expect(settings).toBeVisible();
+  await expect(settings.getByRole('tab', { name: 'Appearance' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
   await expect(settings.getByRole('heading', { name: 'Appearance' })).toBeVisible();
-  await expect(settings.getByRole('heading', { name: 'Help & shortcuts' })).toBeVisible();
+  await settings.getByRole('tab', { name: 'Keyboard' }).click();
+  await expect(settings.getByRole('heading', { name: 'Keyboard shortcuts' })).toBeVisible();
   await expect(settings.getByText('Open settings')).toBeVisible();
+  await settings.getByRole('tab', { name: 'Appearance' }).click();
   await expect
     .poll(() =>
       page.evaluate(() => {
-        const trigger = document.querySelector('.app-settings__trigger')?.getBoundingClientRect();
-        const popover = document.querySelector('.settings-popover')?.getBoundingClientRect();
-        if (!trigger || !popover) return null;
+        const dialog = document.querySelector('.settings-dialog')?.getBoundingClientRect();
+        if (!dialog) return null;
         return {
-          triggerLeft: Math.round(trigger.left),
-          triggerBottom: Math.round(window.innerHeight - trigger.bottom),
-          popoverLeft: Math.round(popover.left),
-          popoverGap: Math.round(trigger.top - popover.bottom),
+          horizontalOffset: Math.round(dialog.left + dialog.width / 2 - window.innerWidth / 2),
+          verticalOffset: Math.round(dialog.top + dialog.height / 2 - window.innerHeight / 2),
         };
       }),
     )
     .toEqual({
-      triggerLeft: 12,
-      triggerBottom: 12,
-      popoverLeft: 12,
-      popoverGap: 8,
+      horizontalOffset: 0,
+      verticalOffset: 0,
     });
 
   const transitionAnimations = await page
     .getByRole('button', { name: 'Dark' })
     .evaluate(async (element) => {
       if (!(element instanceof HTMLButtonElement)) throw new Error('Theme option is not a button');
-      element.click();
-      await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, 50);
-      });
-      return document.getAnimations().flatMap((animation) => {
-        if (!(animation.effect instanceof KeyframeEffect)) return [];
-        const { pseudoElement } = animation.effect;
-        if (!pseudoElement?.startsWith('::view-transition')) return [];
-        return [{ pseudoElement, duration: animation.effect.getTiming().duration }];
-      });
+      const originalStartViewTransition = document.startViewTransition.bind(document);
+      let startedTransition: ViewTransition | undefined;
+      document.startViewTransition = (options) => {
+        const transition = originalStartViewTransition(options);
+        startedTransition = transition;
+        return transition;
+      };
+      try {
+        element.click();
+        await startedTransition?.ready;
+        return document.getAnimations().flatMap((animation) => {
+          if (!(animation.effect instanceof KeyframeEffect)) return [];
+          const { pseudoElement } = animation.effect;
+          if (!pseudoElement?.startsWith('::view-transition')) return [];
+          return [{ pseudoElement, duration: animation.effect.getTiming().duration }];
+        });
+      } finally {
+        document.startViewTransition = originalStartViewTransition;
+      }
     });
   expect(transitionAnimations).toContainEqual({
     pseudoElement: '::view-transition-old(root)',
