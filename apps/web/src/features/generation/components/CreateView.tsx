@@ -1,7 +1,7 @@
-import { ChevronDown, Cloud, Command, RefreshCw, Send, Upload } from 'lucide-react';
+import { ChevronDown, RefreshCw, Upload, WandSparkles } from 'lucide-react';
 import { useState } from 'react';
 import type { Capability } from '../../../shared/types/domain.js';
-import { capabilityLabel, requiresPrompt, supportsPrompt } from '../capabilities.js';
+import { capabilityLabel } from '../capabilities.js';
 import { categoryMeta, shortModelName } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
 import type { DraftActionsController } from '../use-draft-actions.js';
@@ -10,8 +10,9 @@ import type { GenerationSettingsController } from '../use-generation-settings.js
 import type { PromptDraftController } from '../use-prompt-draft.js';
 import { AttachmentStrip } from './AttachmentStrip.js';
 import { ComposerTools, type ComposerSettingMenu } from './ComposerTools.js';
-import { CreateGreeting } from './CreateGreeting.js';
 import { ModelMenu } from './ModelMenu.js';
+import { MovableToolbar } from './MovableToolbar.js';
+import { PromptCanvas } from './PromptCanvas.js';
 
 interface CreateViewProps {
   promptDraft: PromptDraftController;
@@ -43,34 +44,84 @@ export function CreateView({
     setSettingMenu((current) => (open ? menu : current === menu ? null : current));
   }
 
+  function closeToolbarMenus() {
+    setSettingMenu(null);
+    if (draftActions.modelMenuOpen) draftActions.closeModelMenu();
+  }
+
   return (
     <div className="create-page surface-enter">
-      <CreateGreeting />
-
       <form
         onSubmit={(event) => {
           void generation.generate(event);
         }}
-        className="composer-wrap"
+        className="prompt-workspace"
+        onDragEnter={(event) => {
+          event.preventDefault();
+          attachments.setDragActive(true);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+        }}
+        onDragLeave={(event) => {
+          if (
+            event.relatedTarget instanceof Node &&
+            event.currentTarget.contains(event.relatedTarget)
+          ) {
+            return;
+          }
+          attachments.setDragActive(false);
+        }}
+        onDrop={attachments.handleDrop}
       >
-        <div className="composer-selectors">
+        <section
+          className={`prompt-stage ${attachments.dragActive ? 'prompt-stage--drag' : ''}`}
+          aria-label="Prompt canvas"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) promptDraft.focusPrompt();
+          }}
+        >
+          {attachments.dragActive && (
+            <div className="prompt-drop-overlay">
+              <Upload size={24} /> Drop images here
+            </div>
+          )}
+          <div className="prompt-editor">
+            <PromptCanvas
+              capability={selectedCapability}
+              inputRef={promptDraft.promptInput}
+              value={promptDraft.prompt}
+              onChange={promptDraft.setPrompt}
+              onKeyDown={generation.handlePromptKeyDown}
+            />
+            {attachments.attachments.length > 0 && (
+              <AttachmentStrip
+                attachments={attachments.attachments}
+                capability={selectedCapability}
+                onRemove={attachments.removeAttachment}
+              />
+            )}
+          </div>
+        </section>
+
+        <MovableToolbar onMoveStart={closeToolbarMenus}>
           <div className="model-picker-wrap">
             <button
               type="button"
               className="model-picker"
+              aria-label={`Tool: ${capabilityLabel(selectedCapability)}`}
               onClick={() => {
                 setSettingMenu(null);
                 draftActions.toggleModelMenu();
               }}
             >
               <span className={`model-glyph model-glyph--${selectedCapability.category}`}>
-                <ModelIcon size={16} />
+                <ModelIcon size={15} />
               </span>
-              <span>
-                <small>{categoryMeta[selectedCapability.category].label}</small>
+              <span className="model-picker-copy">
                 <strong>{shortModelName(capabilityLabel(selectedCapability))}</strong>
               </span>
-              <ChevronDown size={16} />
+              <ChevronDown className="model-picker-chevron" size={14} />
             </button>
             {draftActions.modelMenuOpen && (
               <ModelMenu
@@ -80,80 +131,32 @@ export function CreateView({
               />
             )}
           </div>
-        </div>
 
-        <div
-          className={`composer ${attachments.dragActive ? 'composer--drag' : ''}`}
-          onDragEnter={(event) => {
-            event.preventDefault();
-            attachments.setDragActive(true);
-          }}
-          onDragOver={(event) => {
-            event.preventDefault();
-          }}
-          onDragLeave={() => {
-            attachments.setDragActive(false);
-          }}
-          onDrop={attachments.handleDrop}
-        >
-          {attachments.dragActive && (
-            <div className="drop-overlay">
-              <Upload size={24} /> Drop images here
-            </div>
-          )}
-          {attachments.attachments.length > 0 && (
-            <AttachmentStrip
-              attachments={attachments.attachments}
-              capability={selectedCapability}
-              onRemove={attachments.removeAttachment}
-            />
-          )}
-          <textarea
-            ref={promptDraft.promptInput}
-            value={promptDraft.prompt}
-            onChange={(event) => {
-              promptDraft.setPrompt(event.target.value);
-            }}
-            onKeyDown={generation.handlePromptKeyDown}
-            rows={4}
-            maxLength={10_000}
-            placeholder={
-              supportsPrompt(selectedCapability)
-                ? requiresPrompt(selectedCapability)
-                  ? 'Describe the image you want to create…'
-                  : 'Describe the desired result (optional)…'
-                : 'This tool only needs a source image.'
-            }
-            aria-label="Image prompt"
+          <span className="toolbar-divider" aria-hidden="true" />
+          <ComposerTools
+            settings={settings}
+            fileInput={attachments.fileInput}
+            settingMenu={settingMenu}
+            onSettingMenuChange={updateSettingMenu}
+            onOpenLibrary={onOpenLibrary}
+            onSavePrompt={onSavePrompt}
           />
-          <div className="composer-footer">
-            <ComposerTools
-              settings={settings}
-              fileInput={attachments.fileInput}
-              settingMenu={settingMenu}
-              onSettingMenuChange={updateSettingMenu}
-              onOpenLibrary={onOpenLibrary}
-              onSavePrompt={onSavePrompt}
-            />
-            <div className="submit-area">
-              <span className="key-hint">
-                <Command size={12} /> Enter
-              </span>
-              <button className="generate-button" type="submit" disabled={generation.isSubmitting}>
-                {generation.isSubmitting ? (
-                  <RefreshCw className="spin" size={18} />
-                ) : (
-                  <Send size={18} />
-                )}
-                Generate
-              </button>
-            </div>
-          </div>
-        </div>
-        <p className="composer-note">
-          <Cloud size={13} /> Requests are queued privately through your local device. No
-          information is ever retained from your requests or generations.
-        </p>
+
+          <span className="toolbar-divider" aria-hidden="true" />
+          <button
+            className="generate-button"
+            type="submit"
+            disabled={generation.isSubmitting}
+            title="Generate (⌘ Enter)"
+          >
+            {generation.isSubmitting ? (
+              <RefreshCw className="spin" size={18} />
+            ) : (
+              <WandSparkles size={17} />
+            )}
+            <span>Generate</span>
+          </button>
+        </MovableToolbar>
       </form>
     </div>
   );

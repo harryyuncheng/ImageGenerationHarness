@@ -145,7 +145,7 @@ export function App() {
 
   return (
     <div
-      className={`studio-shell ${navigation.panelCapable ? 'studio-shell--panel-capable' : ''} ${navigation.panelOpen ? 'studio-shell--panel-open' : ''}`}
+      className={`studio-shell ${navigation.sidebarOpen ? '' : 'studio-shell--navigation-collapsed'} ${navigation.panelCapable ? 'studio-shell--panel-capable' : ''} ${navigation.panelOpen ? 'studio-shell--panel-open' : ''}`}
     >
       <LeftRail
         sidebarOpen={navigation.sidebarOpen}

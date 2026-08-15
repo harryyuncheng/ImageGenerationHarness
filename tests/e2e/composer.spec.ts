@@ -1,5 +1,50 @@
 import { expect, test } from './fixtures/test.js';
 
+test('aligns the prompt and toolbar to the viewport centerline', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  const centerline = () =>
+    page.evaluate(() => {
+      const shell = document.querySelector('.studio-shell');
+      const navigation = document.querySelector('.left-rail')?.getBoundingClientRect();
+      const prompt = document.querySelector('.prompt-canvas-field')?.getBoundingClientRect();
+      const toolbar = document.querySelector('.generation-toolbar')?.getBoundingClientRect();
+      const panel = document.querySelector('.settings-panel')?.getBoundingClientRect();
+      if (!shell || !navigation || !prompt || !toolbar || !panel) return null;
+      const panelWidth = shell.classList.contains('studio-shell--panel-open') ? panel.width : 0;
+      const navigationWidth = shell.classList.contains('studio-shell--navigation-collapsed')
+        ? 0
+        : navigation.width;
+      const expected = (window.innerWidth + navigationWidth - panelWidth) / 2;
+      const promptCenter = prompt.left + prompt.width / 2;
+      const toolbarCenter = toolbar.left + toolbar.width / 2;
+      return {
+        aligned: Math.abs(promptCenter - toolbarCenter) <= 1,
+        centered: Math.abs(promptCenter - expected) <= 1,
+        promptCenter,
+      };
+    });
+
+  await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
+  const expandedCenter = (await centerline())?.promptCenter;
+  expect(expandedCenter).toBeDefined();
+
+  await page.getByRole('button', { name: 'Collapse navigation' }).click();
+  await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
+  const collapsedCenter = (await centerline())?.promptCenter;
+  expect(collapsedCenter).toBeDefined();
+  expect((expandedCenter ?? 0) - (collapsedCenter ?? 0)).toBeCloseTo(124, 0);
+
+  await page.getByRole('button', { name: 'Close advanced settings' }).click();
+  await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
+  expect((await centerline())?.promptCenter).toBeCloseTo(640, 0);
+
+  await page.getByRole('button', { name: 'Open advanced settings' }).click();
+  await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
+  expect((await centerline())?.promptCenter).toBeCloseTo(collapsedCenter ?? 0, 0);
+});
+
 test('keeps the model selector anchored through panel and viewport changes', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
@@ -74,7 +119,7 @@ test('keeps the model selector anchored through panel and viewport changes', asy
 
 test('shows the complete controls for each selected Bedrock tool', async ({ page }) => {
   await page.goto('/');
-  const composer = page.locator('.composer-wrap');
+  const composer = page.getByRole('toolbar', { name: 'Generation toolbar' });
   const settings = page.getByRole('complementary', { name: 'Generation settings' });
   const dimensions = composer.getByRole('button', { name: 'Aspect ratio' });
   const imageCount = composer.getByRole('button', { name: 'Number of images' });
@@ -120,4 +165,116 @@ test('shows the complete controls for each selected Bedrock tool', async ({ page
   await expect(settings.getByText('Output format')).toBeVisible();
   await expect(settings.getByText('Negative prompt')).toHaveCount(0);
   await expect(settings.getByText('Seed strategy')).toHaveCount(0);
+});
+
+test('uses the greeting as a muted prompt and snaps the toolbar to four edges', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await page.goto('/');
+
+  const prompt = page.getByLabel('Image prompt');
+  const placeholder = await prompt.getAttribute('placeholder');
+  expect(placeholder?.length).toBeGreaterThan(0);
+  const promptColors = await prompt.evaluate((element) => ({
+    placeholder: getComputedStyle(element, '::placeholder').color,
+    text: getComputedStyle(element).color,
+  }));
+  expect(promptColors.placeholder).not.toBe(promptColors.text);
+  await prompt.focus();
+  expect(
+    await prompt.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        borderWidth: style.borderWidth,
+        outlineStyle: style.outlineStyle,
+        textAlign: style.textAlign,
+      };
+    }),
+  ).toEqual({ borderWidth: '0px', outlineStyle: 'none', textAlign: 'left' });
+  expect(
+    await prompt.evaluate((element) => {
+      const animation = element
+        .getAnimations()
+        .find(
+          (candidate) =>
+            candidate instanceof CSSAnimation && candidate.animationName === 'prompt-caret-blink',
+        );
+      return {
+        caretAnimation: getComputedStyle(element).getPropertyValue('caret-animation'),
+        duration: animation?.effect?.getTiming().duration,
+      };
+    }),
+  ).toEqual({ caretAnimation: 'manual', duration: 1400 });
+  await prompt.fill('A glass observatory above a quiet cloud sea');
+  await expect(prompt).toHaveValue('A glass observatory above a quiet cloud sea');
+  await expect(page.locator('.composer')).toHaveCount(0);
+
+  const toolbar = page.getByRole('toolbar', { name: 'Generation toolbar' });
+  await expect(toolbar.getByRole('group', { name: 'Prompt resources' })).toBeVisible();
+  await expect(toolbar.getByRole('group', { name: 'Output setup' })).toBeVisible();
+  await expect(toolbar.locator('.toolbar-privacy')).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const input = document.querySelector('.prompt-canvas-input')?.getBoundingClientRect();
+        const placeholder = document
+          .querySelector('.prompt-canvas-placeholder')
+          ?.getBoundingClientRect();
+        const placeholderElement = document.querySelector('.prompt-canvas-placeholder');
+        if (!input || !placeholder || !placeholderElement) return null;
+        return placeholder.left - input.left;
+      }),
+    )
+    .toBeGreaterThanOrEqual(2);
+  await expect(toolbar.locator('.model-glyph')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  const moveHandle = page.getByRole('button', { name: 'Move generation toolbar' });
+  const workspace = page.locator('.prompt-workspace');
+  const snapTargets = [
+    { position: 'top', x: 0.5, y: 0 },
+    { position: 'right', x: 1, y: 0.5 },
+    { position: 'bottom', x: 0.5, y: 1 },
+    { position: 'left', x: 0, y: 0.5 },
+  ] as const;
+
+  for (const target of snapTargets) {
+    const boundary = await workspace.boundingBox();
+    const handle = await moveHandle.boundingBox();
+    expect(boundary).not.toBeNull();
+    expect(handle).not.toBeNull();
+    if (!boundary || !handle) return;
+    const targetX =
+      boundary.x +
+      (target.x === 0 ? 12 : target.x === 1 ? boundary.width - 12 : boundary.width / 2);
+    const targetY =
+      boundary.y +
+      (target.y === 0 ? 12 : target.y === 1 ? boundary.height - 12 : boundary.height / 2);
+
+    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(targetX, targetY, { steps: 6 });
+    await page.mouse.up();
+    await expect(toolbar).toHaveAttribute('data-position', target.position);
+    await expect(toolbar).toHaveAttribute(
+      'data-orientation',
+      target.position === 'top' || target.position === 'bottom' ? 'horizontal' : 'vertical',
+    );
+  }
+
+  await expect(toolbar.locator('.model-picker-copy')).toBeHidden();
+  await expect(toolbar.locator('.composer-setting-value').first()).toBeHidden();
+  await expect(toolbar.locator('.generate-button > span')).toBeHidden();
+  await page.locator('.model-picker').click();
+  await expect(page.locator('.model-menu')).toContainText('Stable Diffusion 3.5 Large');
+  await page.keyboard.press('Escape');
+  await toolbar.getByRole('button', { name: 'Aspect ratio' }).click();
+  await expect(page.getByRole('listbox', { name: 'Image dimensions' })).toContainText('Landscape');
+  await page.keyboard.press('Escape');
+
+  await moveHandle.focus();
+  await page.keyboard.press('Home');
+  await expect(toolbar).toHaveAttribute('data-position', 'bottom');
+  await expect(toolbar).toHaveAttribute('data-orientation', 'horizontal');
+  await expect(toolbar.locator('.model-picker-copy')).toBeVisible();
+  await expect(toolbar.locator('.generate-button > span')).toBeVisible();
 });

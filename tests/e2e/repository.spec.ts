@@ -18,7 +18,7 @@ test('keeps the studio usable without a repository and prompts before repository
     await fulfillJson(route, { error: 'No repository' }, 503);
   });
   await page.goto('/');
-  await expect(page.locator('.create-greeting')).toBeVisible();
+  await expect(page.getByLabel('Image prompt')).toBeVisible();
   await expect(page.getByRole('complementary', { name: 'Generation settings' })).toBeVisible();
   await expect(
     page.getByRole('heading', { name: 'Choose where your image work lives' }),

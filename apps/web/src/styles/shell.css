@@ -1,10 +1,16 @@
 .studio-shell {
+  --navigation-center-offset: 0px;
+
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   height: 100vh;
   min-height: 620px;
   overflow: hidden;
   background: var(--bg);
+}
+
+.studio-shell--navigation-collapsed {
+  --navigation-center-offset: 72px;
 }
 
 .studio-shell--panel-capable {

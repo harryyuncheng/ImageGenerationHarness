@@ -1,36 +1,80 @@
-.greeting-section {
-  width: 100%;
-}
-
-.greeting-section {
+.prompt-canvas-field {
   display: grid;
-  min-height: 160px;
-  flex: 1;
-  place-items: center;
-  padding: 24px 20px 48px;
-  text-align: center;
-}
-
-.create-greeting {
-  max-width: 720px;
-  margin: 0;
-  animation: greeting-in 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: fit-content;
+  max-width: 100%;
   color: var(--text);
-  font-size: clamp(30px, 4.5vw, 48px);
+  font-size: clamp(31px, 4.4vw, 52px);
   font-weight: 400;
   letter-spacing: -0.04em;
-  line-height: 1.08;
+  line-height: 1.12;
   text-wrap: balance;
 }
 
-@keyframes greeting-in {
-  from {
-    opacity: 0;
-    transform: translateY(7px);
+.prompt-canvas-placeholder,
+.prompt-canvas-input {
+  grid-area: 1 / 1;
+}
+
+.prompt-canvas-placeholder {
+  min-width: 0;
+  color: color-mix(in srgb, var(--text-muted) 78%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translateX(2px);
+}
+
+.prompt-canvas-field.is-empty .prompt-canvas-placeholder {
+  opacity: 1;
+}
+
+.prompt-canvas-input {
+  field-sizing: content;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.3em;
+  max-height: min(46dvh, 420px);
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-align: left;
+  caret-color: var(--text);
+}
+
+.prompt-canvas-input::placeholder {
+  color: transparent;
+  opacity: 0;
+}
+
+.prompt-canvas-input:focus-visible {
+  outline: 0;
+}
+
+@supports (caret-animation: manual) {
+  .prompt-canvas-input {
+    caret-animation: manual;
   }
 
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .prompt-canvas-input:focus {
+    animation: prompt-caret-blink 1.4s step-end infinite;
+  }
+}
+
+@keyframes prompt-caret-blink {
+  0%,
+  54% {
+    caret-color: var(--text);
+  }
+
+  55%,
+  100% {
+    caret-color: transparent;
   }
 }

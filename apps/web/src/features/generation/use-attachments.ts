@@ -48,7 +48,7 @@ export function useAttachments(notify: Notify, activeRepositoryId: string | unde
     event.target.value = '';
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>) {
+  function handleDrop(event: DragEvent<HTMLElement>) {
     event.preventDefault();
     setDragActive(false);
     void addFiles(Array.from(event.dataTransfer.files));

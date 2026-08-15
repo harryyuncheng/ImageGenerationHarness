@@ -30,17 +30,30 @@ test('loads the loopback generation workspace', async ({ page }) => {
     boxShadow: 'none',
     backdropFilter: 'none',
   });
-  await expect(page.locator('.create-greeting')).toBeVisible();
+  const prompt = page.getByLabel('Image prompt');
+  await expect(prompt).toBeVisible();
+  await expect(prompt).not.toHaveAttribute('placeholder', '');
   await expect(page.getByRole('button', { name: 'New image', exact: true })).toBeVisible();
   await expect(
     page.getByLabel('Studio navigation').getByRole('button', { name: 'Create', exact: true }),
   ).toHaveCount(0);
-  const composerBottomGap = await page.evaluate(() => {
+  await expect(page.locator('.composer')).toHaveCount(0);
+  const floatingToolbar = await page.evaluate(() => {
     const canvas = document.querySelector('.canvas')?.getBoundingClientRect();
-    const composer = document.querySelector('.composer-wrap')?.getBoundingClientRect();
-    return canvas && composer ? Math.round(canvas.bottom - composer.bottom) : null;
+    const toolbarElement = document.querySelector('.generation-toolbar');
+    const toolbar = toolbarElement?.getBoundingClientRect();
+    return canvas && toolbarElement && toolbar
+      ? {
+          insideCanvas:
+            toolbar.left >= canvas.left &&
+            toolbar.right <= canvas.right &&
+            toolbar.top >= canvas.top &&
+            toolbar.bottom <= canvas.bottom,
+          position: getComputedStyle(toolbarElement).position,
+        }
+      : null;
   });
-  expect(composerBottomGap).toBe(80);
+  expect(floatingToolbar).toEqual({ insideCanvas: true, position: 'absolute' });
   await expect(page.getByText('Bring an idea to life')).toHaveCount(0);
   await expect(
     page.getByText('Generate, transform, upscale, and refine images with Stability on Bedrock.'),

@@ -16,7 +16,7 @@ interface ComposerToolsProps {
   onSavePrompt: () => void;
 }
 
-/** Composer chips: source images, references, saved prompts, and image shape. */
+/** Purpose-grouped source actions and output settings for the floating toolbar. */
 export function ComposerTools({
   settings,
   fileInput,
@@ -27,94 +27,100 @@ export function ComposerTools({
 }: ComposerToolsProps) {
   return (
     <div className="composer-tools">
-      <button
-        type="button"
-        className="round-tool"
-        onClick={() => {
-          fileInput.current?.click();
-        }}
-        title="Add images (⌘⇧O)"
-      >
-        <ImagePlus size={18} />
-      </button>
-      <button
-        type="button"
-        className="tool-chip"
-        onClick={onOpenLibrary}
-        title="Open reference library"
-        aria-label="References"
-      >
-        <FolderOpen size={16} />
-        <span>References</span>
-      </button>
-      <button
-        type="button"
-        className="tool-chip"
-        onClick={onSavePrompt}
-        title="Save prompt"
-        aria-label="Save"
-      >
-        <Bookmark size={16} />
-        <span>Save</span>
-      </button>
-      {hasParameter(settings.selectedCapability, 'aspect_ratio') && (
+      <div className="toolbar-control-group" role="group" aria-label="Prompt resources">
+        <button
+          type="button"
+          className="round-tool"
+          aria-label="Add images"
+          onClick={() => {
+            fileInput.current?.click();
+          }}
+          title="Add images (⌘⇧O)"
+        >
+          <ImagePlus size={17} />
+        </button>
+        <button
+          type="button"
+          className="tool-chip"
+          onClick={onOpenLibrary}
+          title="Open reference library"
+          aria-label="References"
+        >
+          <FolderOpen size={16} />
+          <span>References</span>
+        </button>
+        <button
+          type="button"
+          className="tool-chip"
+          onClick={onSavePrompt}
+          title="Save prompt"
+          aria-label="Save"
+        >
+          <Bookmark size={16} />
+          <span>Save</span>
+        </button>
+      </div>
+
+      <div className="toolbar-control-group" role="group" aria-label="Output setup">
+        {hasParameter(settings.selectedCapability, 'aspect_ratio') && (
+          <ComposerSettingPicker
+            menuId="image-dimensions-menu"
+            label="Aspect ratio"
+            menuLabel="Image dimensions"
+            menuDescription="Choose the shape of generated images"
+            value={settings.settings.aspectRatio}
+            options={aspectRatios.map((ratio) => ({
+              value: ratio.value,
+              label: ratio.value,
+              description: ratio.label,
+              preview: <span className={`ratio-shape ratio-${ratio.value.replace(':', '-')}`} />,
+            }))}
+            open={settingMenu === 'dimensions'}
+            variant="dimensions"
+            triggerContent={
+              <>
+                <span
+                  className={`ratio-shape ratio-${settings.settings.aspectRatio.replace(':', '-')}`}
+                />
+                <span className="composer-setting-value">{settings.settings.aspectRatio}</span>
+              </>
+            }
+            onOpenChange={(open) => {
+              onSettingMenuChange('dimensions', open);
+            }}
+            onSelect={(value) => {
+              settings.updateSettings('aspectRatio', value);
+            }}
+          />
+        )}
         <ComposerSettingPicker
-          menuId="image-dimensions-menu"
-          label="Aspect ratio"
-          menuLabel="Image dimensions"
-          menuDescription="Choose the shape of generated images"
-          value={settings.settings.aspectRatio}
-          options={aspectRatios.map((ratio) => ({
-            value: ratio.value,
-            label: ratio.value,
-            description: ratio.label,
-            preview: <span className={`ratio-shape ratio-${ratio.value.replace(':', '-')}`} />,
+          menuId="image-count-menu"
+          label="Number of images"
+          menuLabel="Image count"
+          menuDescription="Choose how many variations to generate"
+          value={String(settings.settings.outputCount)}
+          options={outputCounts.map((count) => ({
+            value: String(count),
+            label: String(count),
+            description: count === 1 ? 'image' : 'images',
+            preview: <span className="image-count-preview">{count}</span>,
           }))}
-          open={settingMenu === 'dimensions'}
-          variant="dimensions"
+          open={settingMenu === 'count'}
+          variant="count"
           triggerContent={
             <>
-              <span
-                className={`ratio-shape ratio-${settings.settings.aspectRatio.replace(':', '-')}`}
-              />
-              <span className="composer-setting-value">{settings.settings.aspectRatio}</span>
+              <ImageIcon size={14} />
+              <span className="composer-setting-value">{settings.settings.outputCount}</span>
             </>
           }
           onOpenChange={(open) => {
-            onSettingMenuChange('dimensions', open);
+            onSettingMenuChange('count', open);
           }}
           onSelect={(value) => {
-            settings.updateSettings('aspectRatio', value);
+            settings.updateSettings('outputCount', Number(value));
           }}
         />
-      )}
-      <ComposerSettingPicker
-        menuId="image-count-menu"
-        label="Number of images"
-        menuLabel="Image count"
-        menuDescription="Choose how many variations to generate"
-        value={String(settings.settings.outputCount)}
-        options={outputCounts.map((count) => ({
-          value: String(count),
-          label: String(count),
-          description: count === 1 ? 'image' : 'images',
-          preview: <span className="image-count-preview">{count}</span>,
-        }))}
-        open={settingMenu === 'count'}
-        variant="count"
-        triggerContent={
-          <>
-            <ImageIcon size={14} />
-            <span className="composer-setting-value">{settings.settings.outputCount}</span>
-          </>
-        }
-        onOpenChange={(open) => {
-          onSettingMenuChange('count', open);
-        }}
-        onSelect={(value) => {
-          settings.updateSettings('outputCount', Number(value));
-        }}
-      />
+      </div>
     </div>
   );
 }

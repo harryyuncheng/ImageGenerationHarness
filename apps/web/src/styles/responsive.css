@@ -23,6 +23,9 @@
 }
 
 @media (max-width: 1000px) {
+  .studio-shell {
+    --navigation-center-offset: 72px;
+  }
   .left-rail {
     width: 72px;
     min-width: 72px;
@@ -58,24 +61,19 @@
   .repository-button > svg:last-child {
     display: none;
   }
-  .composer-footer {
-    gap: 8px;
-  }
-  .composer-tools {
-    gap: 5px;
-  }
   .composer-tools .tool-chip {
     width: 34px;
     padding: 0;
   }
-  .composer-tools .tool-chip span,
-  .key-hint {
+  .composer-tools .tool-chip span {
     display: none;
   }
 }
 
 @media (max-width: 780px) {
   .studio-shell {
+    --navigation-center-offset: 0px;
+
     display: block;
   }
   .left-rail {
@@ -194,16 +192,12 @@
     top: 58px;
     width: 100%;
   }
-  .model-picker strong {
-    max-width: 190px;
+  .prompt-stage {
+    padding: 24px 14px 126px;
   }
-  .composer {
-    border-radius: 17px;
-  }
-  .composer textarea {
-    min-height: 118px;
-    padding-inline: 15px;
-    font-size: 14px;
+  .prompt-canvas-input {
+    min-height: 3em;
+    font-size: clamp(28px, 9vw, 40px);
   }
   .edit-image-picker-backdrop {
     padding: 10px;
@@ -214,23 +208,15 @@
   .attachment-strip {
     grid-template-columns: 1fr;
   }
-  .composer-selectors {
-    align-items: stretch;
-    flex-direction: column;
+  .generation-toolbar {
+    --toolbar-edge-gap: 4px;
+    --toolbar-inline-inset: 8px;
+
+    border-radius: 14px;
+    padding: 3px;
   }
-  .composer-selectors .model-picker {
-    width: 100%;
-    max-width: none;
-  }
-  .tool-chip,
-  .key-hint {
-    display: none;
-  }
-  .composer-footer {
-    padding-left: 9px;
-  }
-  .generate-button {
-    padding-inline: 13px;
+  .toolbar-divider {
+    margin-inline: 1px;
   }
   .composer-setting {
     padding-inline: 7px;
@@ -242,9 +228,6 @@
   }
   .composer-setting--count .composer-setting-value {
     min-width: 8px;
-  }
-  .composer-wrap {
-    padding-top: 32px;
   }
   .create-page,
   .library-page {

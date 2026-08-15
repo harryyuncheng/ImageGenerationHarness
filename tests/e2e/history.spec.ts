@@ -44,7 +44,7 @@ test('shows all generation history newest-first as image-only tiles with a top-r
   await stubImageContent(page);
 
   await page.goto('/');
-  await expect(page.locator('.create-greeting')).toBeVisible();
+  await expect(page.getByLabel('Image prompt')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Latest run' })).toHaveCount(0);
   await expect(page.getByText('Polling is authoritative for run updates.')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reuse', exact: true })).toHaveCount(0);

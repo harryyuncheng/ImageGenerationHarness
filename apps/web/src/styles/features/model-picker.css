@@ -1,56 +1,30 @@
-.composer-wrap {
-  width: min(760px, 100%);
-  margin: auto auto 0;
-  padding-top: 64px;
-}
-
-.composer-selectors {
-  position: relative;
-  z-index: 6;
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-  margin: 0 7px 8px;
-}
-
-.composer-selectors .model-picker-wrap {
-  margin: 0;
-}
-
 .model-picker-wrap {
   z-index: 5;
   width: fit-content;
-  margin: 0 0 8px 7px;
 }
 
 .model-picker {
   display: flex;
+  height: 38px;
   align-items: center;
-  gap: 9px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: var(--surface);
-  padding: 6px 9px 6px 6px;
-  box-shadow: var(--shadow-sm);
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: var(--surface-soft);
+  padding: 3px 8px 3px 3px;
   color: var(--text);
   text-align: left;
 }
 
 .model-picker.is-pointer-hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-color: transparent;
+  background: var(--surface-hover);
 }
 
-.model-picker > span:nth-child(2) {
+.model-picker-copy {
   display: flex;
   min-width: 0;
-  flex-direction: column;
-}
-
-.model-picker small {
-  color: var(--text-muted);
-  font-size: 9px;
-  font-weight: 500;
+  align-items: center;
 }
 
 .model-picker strong {
@@ -64,31 +38,26 @@
 
 .model-glyph {
   display: inline-flex;
-  width: 31px;
-  height: 31px;
+  width: 30px;
+  height: 30px;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
 }
 
 .model-glyph--generation {
-  background: var(--accent-soft);
   color: var(--accent-text);
 }
 
 .model-glyph--control {
-  background: var(--surface-soft);
   color: var(--text-secondary);
 }
 
 .model-glyph--upscale {
-  background: var(--surface-hover);
   color: var(--text);
 }
 
 .model-glyph--edit {
-  background: color-mix(in srgb, var(--surface-soft) 62%, var(--border));
   color: var(--text-secondary);
 }
 

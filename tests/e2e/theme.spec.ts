@@ -13,24 +13,26 @@ test('supports explicit light and dark themes', async ({ page }) => {
   await expect(settings.getByRole('heading', { name: 'Appearance' })).toBeVisible();
   await expect(settings.getByRole('heading', { name: 'Help & shortcuts' })).toBeVisible();
   await expect(settings.getByText('Open settings')).toBeVisible();
-  expect(
-    await page.evaluate(() => {
-      const trigger = document.querySelector('.app-settings__trigger')?.getBoundingClientRect();
-      const popover = document.querySelector('.settings-popover')?.getBoundingClientRect();
-      if (!trigger || !popover) return null;
-      return {
-        triggerLeft: Math.round(trigger.left),
-        triggerBottom: Math.round(window.innerHeight - trigger.bottom),
-        popoverLeft: Math.round(popover.left),
-        popoverGap: Math.round(trigger.top - popover.bottom),
-      };
-    }),
-  ).toEqual({
-    triggerLeft: 12,
-    triggerBottom: 12,
-    popoverLeft: 12,
-    popoverGap: 8,
-  });
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const trigger = document.querySelector('.app-settings__trigger')?.getBoundingClientRect();
+        const popover = document.querySelector('.settings-popover')?.getBoundingClientRect();
+        if (!trigger || !popover) return null;
+        return {
+          triggerLeft: Math.round(trigger.left),
+          triggerBottom: Math.round(window.innerHeight - trigger.bottom),
+          popoverLeft: Math.round(popover.left),
+          popoverGap: Math.round(trigger.top - popover.bottom),
+        };
+      }),
+    )
+    .toEqual({
+      triggerLeft: 12,
+      triggerBottom: 12,
+      popoverLeft: 12,
+      popoverGap: 8,
+    });
 
   const transitionAnimations = await page
     .getByRole('button', { name: 'Dark' })
