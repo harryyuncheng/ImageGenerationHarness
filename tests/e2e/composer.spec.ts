@@ -167,9 +167,8 @@ test('shows the complete controls for each selected Bedrock tool', async ({ page
   await expect(settings.getByText('Seed strategy')).toHaveCount(0);
 });
 
-test('uses the greeting as a muted prompt and snaps the toolbar to four edges', async ({
-  page,
-}) => {
+test('uses the greeting as a muted prompt and momentum-snaps the toolbar', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
 
@@ -211,6 +210,8 @@ test('uses the greeting as a muted prompt and snaps the toolbar to four edges', 
   await expect(page.locator('.composer')).toHaveCount(0);
 
   const toolbar = page.getByRole('toolbar', { name: 'Generation toolbar' });
+  await expect(toolbar).toHaveCSS('padding', '3px');
+  await expect(toolbar).toHaveAttribute('data-snap-duration', '300');
   await expect(toolbar.getByRole('group', { name: 'Prompt resources' })).toBeVisible();
   await expect(toolbar.getByRole('group', { name: 'Output setup' })).toBeVisible();
   await expect(toolbar.locator('.toolbar-privacy')).toHaveCount(0);
@@ -231,10 +232,10 @@ test('uses the greeting as a muted prompt and snaps the toolbar to four edges', 
   const moveHandle = page.getByRole('button', { name: 'Move generation toolbar' });
   const workspace = page.locator('.prompt-workspace');
   const snapTargets = [
-    { position: 'top', x: 0.5, y: 0 },
-    { position: 'right', x: 1, y: 0.5 },
-    { position: 'bottom', x: 0.5, y: 1 },
-    { position: 'left', x: 0, y: 0.5 },
+    { position: 'top', movementX: 0, movementY: -80 },
+    { position: 'right', movementX: 80, movementY: 0 },
+    { position: 'bottom', movementX: 0, movementY: 80 },
+    { position: 'left', movementX: -80, movementY: 0 },
   ] as const;
 
   for (const target of snapTargets) {
@@ -243,27 +244,113 @@ test('uses the greeting as a muted prompt and snaps the toolbar to four edges', 
     expect(boundary).not.toBeNull();
     expect(handle).not.toBeNull();
     if (!boundary || !handle) return;
-    const targetX =
-      boundary.x +
-      (target.x === 0 ? 12 : target.x === 1 ? boundary.width - 12 : boundary.width / 2);
-    const targetY =
-      boundary.y +
-      (target.y === 0 ? 12 : target.y === 1 ? boundary.height - 12 : boundary.height / 2);
-
-    await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
+    const handleX = handle.x + handle.width / 2;
+    const handleY = handle.y + handle.height / 2;
+    await page.mouse.move(handleX, handleY);
     await page.mouse.down();
-    await page.mouse.move(targetX, targetY, { steps: 6 });
+    await page.mouse.move(handleX + target.movementX, handleY + target.movementY, { steps: 4 });
     await page.mouse.up();
     await expect(toolbar).toHaveAttribute('data-position', target.position);
     await expect(toolbar).toHaveAttribute(
       'data-orientation',
       target.position === 'top' || target.position === 'bottom' ? 'horizontal' : 'vertical',
     );
+    await expect.poll(() => toolbar.evaluate((element) => element.getAnimations().length)).toBe(0);
+    const edgeGap = await page.evaluate((position) => {
+      const canvas = document.querySelector('.canvas')?.getBoundingClientRect();
+      const navigation = document.querySelector('.left-rail')?.getBoundingClientRect();
+      const panel = document.querySelector('.settings-panel')?.getBoundingClientRect();
+      const toolbarBounds = document.querySelector('.generation-toolbar')?.getBoundingClientRect();
+      if (!canvas || !navigation || !panel || !toolbarBounds) return null;
+      if (position === 'top') return toolbarBounds.top;
+      if (position === 'right') return panel.left - toolbarBounds.right;
+      if (position === 'bottom') return window.innerHeight - toolbarBounds.bottom;
+      return toolbarBounds.left - navigation.right;
+    }, target.position);
+    expect(edgeGap).not.toBeNull();
+    expect(edgeGap).toBeCloseTo(24, 0);
+    if (target.position === 'top') {
+      const stationaryHandle = await moveHandle.boundingBox();
+      const stationaryToolbar = await toolbar.boundingBox();
+      expect(stationaryHandle).not.toBeNull();
+      expect(stationaryToolbar).not.toBeNull();
+      if (!stationaryHandle || !stationaryToolbar) return;
+      await page.mouse.move(
+        stationaryHandle.x + stationaryHandle.width / 2,
+        stationaryHandle.y + stationaryHandle.height / 2,
+      );
+      await page.mouse.down();
+      const pressedToolbar = await toolbar.boundingBox();
+      expect(Math.abs((pressedToolbar?.y ?? 0) - stationaryToolbar.y)).toBeLessThanOrEqual(1);
+      await page.mouse.up();
+      await expect(toolbar).toHaveAttribute('data-position', 'top');
+    }
   }
+
+  const proximityBoundary = await workspace.boundingBox();
+  const proximityHandle = await moveHandle.boundingBox();
+  expect(proximityBoundary).not.toBeNull();
+  expect(proximityHandle).not.toBeNull();
+  if (!proximityBoundary || !proximityHandle) return;
+  const proximityY = proximityBoundary.y + proximityBoundary.height / 2;
+  await page.mouse.move(
+    proximityHandle.x + proximityHandle.width / 2,
+    proximityHandle.y + proximityHandle.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(proximityBoundary.x + proximityBoundary.width - 5, proximityY, {
+    steps: 6,
+  });
+  await page.waitForTimeout(170);
+  await page.mouse.move(proximityBoundary.x + proximityBoundary.width - 24, proximityY, {
+    steps: 4,
+  });
+  await page.mouse.up();
+  await expect(toolbar).toHaveAttribute('data-position', 'right');
+  await expect.poll(() => toolbar.evaluate((element) => element.getAnimations().length)).toBe(0);
 
   await expect(toolbar.locator('.model-picker-copy')).toBeHidden();
   await expect(toolbar.locator('.composer-setting-value').first()).toBeHidden();
   await expect(toolbar.locator('.generate-button > span')).toBeHidden();
+  await expect(toolbar).toHaveCSS('gap', '5px');
+  await expect(toolbar.locator('.generation-toolbar-controls')).toHaveCSS('gap', '5px');
+  await expect(toolbar).toHaveCSS('padding-left', '3px');
+  await expect(toolbar).toHaveCSS('padding-right', '3px');
+  expect(
+    await toolbar
+      .locator('button:not(.generate-button)')
+      .evaluateAll((buttons) =>
+        Array.from(new Set(buttons.map((button) => getComputedStyle(button).backgroundColor))),
+      ),
+  ).toEqual(['rgba(0, 0, 0, 0)']);
+  await expect(toolbar.locator('.toolbar-control-group').first()).toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  );
+  await expect(toolbar.locator('.generate-button')).not.toHaveCSS(
+    'background-color',
+    'rgba(0, 0, 0, 0)',
+  );
+  const verticalSize = await toolbar.boundingBox();
+  const workspaceSize = await workspace.boundingBox();
+  expect(verticalSize).not.toBeNull();
+  expect(workspaceSize).not.toBeNull();
+  expect((verticalSize?.height ?? 0) / (workspaceSize?.height ?? 1)).toBeLessThan(0.75);
+  expect(
+    await toolbar.evaluate((element) => {
+      const toolbarBounds = element.getBoundingClientRect();
+      const toolbarCenter = toolbarBounds.left + toolbarBounds.width / 2;
+      const controls = element.querySelectorAll(
+        '.toolbar-drag-handle, .model-picker, .toolbar-control-group, .generate-button',
+      );
+      return Math.max(
+        ...Array.from(controls, (control) => {
+          const bounds = control.getBoundingClientRect();
+          return Math.abs(bounds.left + bounds.width / 2 - toolbarCenter);
+        }),
+      );
+    }),
+  ).toBeLessThanOrEqual(1);
   await page.locator('.model-picker').click();
   await expect(page.locator('.model-menu')).toContainText('Stable Diffusion 3.5 Large');
   await page.keyboard.press('Escape');

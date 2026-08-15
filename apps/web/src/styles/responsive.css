@@ -125,9 +125,11 @@
     border-left: 1px solid var(--border);
     box-shadow: var(--shadow-lg);
   }
-  .create-page,
   .library-page {
     width: min(100% - 28px, 900px);
+  }
+  .create-page {
+    width: 100%;
   }
   .reference-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -160,7 +162,7 @@
   .image-editor-page {
     height: auto;
     min-height: 100%;
-    padding: 0 14px 14px;
+    padding: var(--top-bar-height) 14px 14px;
   }
   .image-editor {
     grid-template-columns: 1fr;
@@ -182,7 +184,7 @@
   .studio-main {
     --top-bar-height: 58px;
   }
-  .top-bar {
+  .top-controls {
     padding-inline: 10px;
   }
   .saved-state {
@@ -193,7 +195,7 @@
     width: 100%;
   }
   .prompt-stage {
-    padding: 24px 14px 126px;
+    padding: calc(24px + var(--top-bar-height)) 14px 126px;
   }
   .prompt-canvas-input {
     min-height: 3em;
@@ -209,8 +211,9 @@
     grid-template-columns: 1fr;
   }
   .generation-toolbar {
-    --toolbar-edge-gap: 4px;
-    --toolbar-inline-inset: 8px;
+    --toolbar-edge-gap: 14px;
+    --toolbar-inline-inset: 28px;
+    --toolbar-block-inset: 28px;
 
     border-radius: 14px;
     padding: 3px;
@@ -229,9 +232,11 @@
   .composer-setting--count .composer-setting-value {
     min-width: 8px;
   }
-  .create-page,
   .library-page {
-    padding-top: 28px;
+    padding-top: calc(var(--top-bar-height) + 28px);
+  }
+  .create-page {
+    padding: 0;
   }
   .library-heading {
     align-items: flex-start;

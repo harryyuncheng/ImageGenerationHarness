@@ -11,7 +11,7 @@ export function TopBar({
   repository: RepositoryController;
 }) {
   return (
-    <header className="top-bar">
+    <header className="top-controls">
       <div className="top-bar-left">
         <button
           className="icon-button mobile-menu"

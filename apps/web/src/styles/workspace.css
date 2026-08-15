@@ -23,17 +23,19 @@
   --surface-enter-scale: 1;
 }
 
-.create-page,
 .library-page {
   width: min(1120px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 42px 0 80px;
+  padding: calc(var(--top-bar-height) + 42px) 0 80px;
 }
 
 .create-page {
   display: flex;
+  width: 100%;
   min-height: 100%;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
 }
 
 .library-heading h2 {

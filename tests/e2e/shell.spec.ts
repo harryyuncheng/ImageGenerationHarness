@@ -2,9 +2,9 @@ import { expect, test } from './fixtures/test.js';
 
 test('loads the loopback generation workspace', async ({ page }) => {
   await page.goto('/');
-  await expect(page.locator('.top-bar h1')).toHaveCount(0);
+  await expect(page.locator('.top-bar')).toHaveCount(0);
   const topBarAppearance = await page.evaluate(() => {
-    const topBar = document.querySelector('.top-bar');
+    const topBar = document.querySelector('.top-controls');
     const studioMain = document.querySelector('.studio-main');
     const canvas = document.querySelector('.canvas');
     if (!topBar || !studioMain || !canvas) return null;
@@ -19,6 +19,8 @@ test('loads the loopback generation workspace', async ({ page }) => {
       borderBottomWidth: topBarStyle.borderBottomWidth,
       boxShadow: topBarStyle.boxShadow,
       backdropFilter: topBarStyle.backdropFilter,
+      position: topBarStyle.position,
+      pointerEvents: topBarStyle.pointerEvents,
     };
   });
   expect(topBarAppearance).toEqual({
@@ -29,6 +31,8 @@ test('loads the loopback generation workspace', async ({ page }) => {
     borderBottomWidth: '0px',
     boxShadow: 'none',
     backdropFilter: 'none',
+    position: 'absolute',
+    pointerEvents: 'none',
   });
   const prompt = page.getByLabel('Image prompt');
   await expect(prompt).toBeVisible();
@@ -81,7 +85,7 @@ test('loads the loopback generation workspace', async ({ page }) => {
   await expect
     .poll(async () =>
       page.evaluate(() => {
-        const topBar = document.querySelector('.top-bar')?.getBoundingClientRect();
+        const topBar = document.querySelector('.top-controls')?.getBoundingClientRect();
         const settingsPanel = document.querySelector('.settings-panel')?.getBoundingClientRect();
         if (!topBar || !settingsPanel) return null;
         return {
@@ -128,7 +132,7 @@ test('loads the loopback generation workspace', async ({ page }) => {
   await expect
     .poll(async () =>
       page.evaluate(() => {
-        const topBar = document.querySelector('.top-bar')?.getBoundingClientRect();
+        const topBar = document.querySelector('.top-controls')?.getBoundingClientRect();
         const settingsPanel = document.querySelector('.settings-panel')?.getBoundingClientRect();
         return topBar && settingsPanel ? Math.round(settingsPanel.top - topBar.bottom) : null;
       }),
