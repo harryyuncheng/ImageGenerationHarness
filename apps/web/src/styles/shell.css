@@ -9,10 +9,6 @@
   background: var(--bg);
 }
 
-.studio-shell--navigation-collapsed {
-  --navigation-center-offset: 72px;
-}
-
 .studio-shell--panel-capable {
   grid-template-columns: auto minmax(0, 1fr) 0;
   transition: grid-template-columns 180ms ease;

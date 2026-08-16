@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures/test.js';
 
-test('aligns the prompt and toolbar to the viewport centerline', async ({ page }) => {
+test('aligns the prompt and toolbar to the workspace centerline', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/');
 
@@ -13,15 +13,14 @@ test('aligns the prompt and toolbar to the viewport centerline', async ({ page }
       const panel = document.querySelector('.settings-panel')?.getBoundingClientRect();
       if (!shell || !navigation || !prompt || !toolbar || !panel) return null;
       const panelWidth = shell.classList.contains('studio-shell--panel-open') ? panel.width : 0;
-      const navigationWidth = shell.classList.contains('studio-shell--navigation-collapsed')
-        ? 0
-        : navigation.width;
+      const navigationWidth = navigation.width;
       const expected = (window.innerWidth + navigationWidth - panelWidth) / 2;
       const promptCenter = prompt.left + prompt.width / 2;
       const toolbarCenter = toolbar.left + toolbar.width / 2;
       return {
         aligned: Math.abs(promptCenter - toolbarCenter) <= 1,
         centered: Math.abs(promptCenter - expected) <= 1,
+        navigationWidth,
         promptCenter,
       };
     });
@@ -31,14 +30,16 @@ test('aligns the prompt and toolbar to the viewport centerline', async ({ page }
   expect(expandedCenter).toBeDefined();
 
   await page.getByRole('button', { name: 'Collapse navigation' }).click();
-  await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
+  await expect
+    .poll(centerline)
+    .toMatchObject({ aligned: true, centered: true, navigationWidth: 72 });
   const collapsedCenter = (await centerline())?.promptCenter;
   expect(collapsedCenter).toBeDefined();
-  expect((expandedCenter ?? 0) - (collapsedCenter ?? 0)).toBeCloseTo(124, 0);
+  expect((expandedCenter ?? 0) - (collapsedCenter ?? 0)).toBeCloseTo(88, 0);
 
   await page.getByRole('button', { name: 'Close advanced settings' }).click();
   await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
-  expect((await centerline())?.promptCenter).toBeCloseTo(640, 0);
+  expect((await centerline())?.promptCenter).toBeCloseTo(676, 0);
 
   await page.getByRole('button', { name: 'Open advanced settings' }).click();
   await expect.poll(centerline).toMatchObject({ aligned: true, centered: true });
@@ -175,6 +176,37 @@ test('uses the greeting as a muted prompt and momentum-snaps the toolbar', async
   const prompt = page.getByLabel('Image prompt');
   const placeholder = await prompt.getAttribute('placeholder');
   expect(placeholder?.length).toBeGreaterThan(0);
+  const oneLineGreetingAlignment = await page
+    .locator('.prompt-canvas-placeholder')
+    .evaluate((element) => {
+      const input = document.querySelector('.prompt-canvas-input');
+      const field = element.parentElement;
+      if (!(input instanceof HTMLTextAreaElement) || !(field instanceof HTMLDivElement)) {
+        return { centerDelta: Number.POSITIVE_INFINITY, inputStartDelta: Number.POSITIVE_INFINITY };
+      }
+      const originalText = element.textContent;
+      const originalPlaceholder = input.placeholder;
+      element.textContent = 'Late hours, vivid ideas';
+      input.placeholder = 'Late hours, vivid ideas';
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      const greetingBounds = range.getBoundingClientRect();
+      const fieldBounds = field.getBoundingClientRect();
+      const inputBounds = input.getBoundingClientRect();
+      const alignment = {
+        centerDelta: Math.abs(
+          greetingBounds.left +
+            greetingBounds.width / 2 -
+            (fieldBounds.left + fieldBounds.width / 2),
+        ),
+        inputStartDelta: Math.abs(greetingBounds.left - inputBounds.left),
+      };
+      element.textContent = originalText;
+      input.placeholder = originalPlaceholder;
+      return alignment;
+    });
+  expect(oneLineGreetingAlignment.centerDelta).toBeLessThanOrEqual(1);
+  expect(oneLineGreetingAlignment.inputStartDelta).toBeLessThanOrEqual(1);
   const promptColors = await prompt.evaluate((element) => ({
     placeholder: getComputedStyle(element, '::placeholder').color,
     text: getComputedStyle(element).color,
@@ -222,12 +254,11 @@ test('uses the greeting as a muted prompt and momentum-snaps the toolbar', async
         const placeholder = document
           .querySelector('.prompt-canvas-placeholder')
           ?.getBoundingClientRect();
-        const placeholderElement = document.querySelector('.prompt-canvas-placeholder');
-        if (!input || !placeholder || !placeholderElement) return null;
-        return placeholder.left - input.left;
+        if (!input || !placeholder) return null;
+        return Math.abs(placeholder.left - input.left);
       }),
     )
-    .toBeGreaterThanOrEqual(2);
+    .toBeLessThanOrEqual(1);
   await expect(toolbar.locator('.model-glyph')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   const moveHandle = page.getByRole('button', { name: 'Move generation toolbar' });
   const workspace = page.locator('.prompt-workspace');

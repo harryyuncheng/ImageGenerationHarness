@@ -23,9 +23,6 @@
 }
 
 @media (max-width: 1000px) {
-  .studio-shell {
-    --navigation-center-offset: 72px;
-  }
   .left-rail {
     width: 72px;
     min-width: 72px;
@@ -71,8 +68,6 @@
 
 @media (max-width: 780px) {
   .studio-shell {
-    --navigation-center-offset: 0px;
-
     display: block;
   }
   .left-rail {
