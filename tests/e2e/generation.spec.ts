@@ -32,9 +32,7 @@ test('opens the live image editor before generation and loads the completed outp
   const editor = page.getByRole('tabpanel', { name: 'Image editor' });
   await expect(editor).toBeVisible();
   await expect(page.locator('.modal-backdrop')).toHaveCount(0);
-  const recentTab = page.locator('.recent-block').getByRole('tab', { name: prompt });
-  await expect(recentTab).toHaveAttribute('aria-selected', 'true');
-  await expect(page.locator('.recent-tabs').getByRole('tab').first()).toHaveText(prompt);
+  await expect(page.getByRole('tablist', { name: 'Recent image editors' })).toHaveCount(0);
   await expect(editor.getByRole('status')).toContainText(
     /Submitting request|Waiting for the local worker/,
   );
@@ -49,13 +47,7 @@ test('opens the live image editor before generation and loads the completed outp
   await expect(editor.getByText('completed', { exact: true })).toBeVisible();
 
   await editor.getByRole('button', { name: 'Back from image editor' }).click();
-  await expect(recentTab).toHaveAttribute('aria-selected', 'false');
-  await recentTab.click();
-  await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toBeVisible();
-  await page
-    .getByRole('tabpanel', { name: 'Image editor' })
-    .getByRole('button', { name: 'Back from image editor' })
-    .click();
+  await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toHaveCount(0);
   await page.getByLabel('Studio navigation').getByRole('button', { name: 'History' }).click();
   await page.getByRole('button', { name: `Open editor for ${prompt}` }).click();
   await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toBeVisible();
@@ -91,7 +83,6 @@ test('pops generation errors, discards failed runs, and keeps the draft ready to
   await expect(page.getByLabel('Image prompt')).toHaveValue(prompt);
   await expect(aspectRatio).toContainText('16:9');
   await expect(page.getByRole('button', { name: 'Generate', exact: true })).toBeEnabled();
-  await expect(page.locator('.recent-tabs').getByRole('tab', { name: prompt })).toHaveCount(0);
 
   await page.getByLabel('Studio navigation').getByRole('button', { name: 'History' }).click();
   await expect(page.locator('.history-card')).toHaveCount(0);

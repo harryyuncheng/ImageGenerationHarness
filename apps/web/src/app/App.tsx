@@ -150,11 +150,8 @@ export function App() {
       <LeftRail
         sidebarOpen={navigation.sidebarOpen}
         runCount={runs.allRuns.length}
-        recentRuns={runs.recentRuns}
         isActiveView={navigation.showsView}
-        isActiveRun={editor.matchesRun}
         onSelectView={navigation.selectStudioView}
-        onOpenRun={editor.openRun}
         onReset={draftActions.resetWorkspace}
       />
 

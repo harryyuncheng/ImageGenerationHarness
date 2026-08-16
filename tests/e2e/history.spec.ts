@@ -2,7 +2,6 @@ import { fulfillJson, stubImageContent } from './fixtures/api.js';
 import {
   IMAGE_ID,
   JOB_ID,
-  NOW,
   PROJECT_ID,
   RUN_ID,
   SECOND_ATTEMPT_ID,
@@ -93,42 +92,4 @@ test('shows all generation history newest-first as image-only tiles with a top-r
 
   await card.getByRole('button', { name: `Open editor for ${projectPrompt}` }).click();
   await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toBeVisible();
-});
-
-test('orders recent images by latest activity without promoting them when opened', async ({
-  page,
-}) => {
-  const olderPrompt = 'Older image';
-  const newerPrompt = 'Newer image';
-  let olderUpdatedAt = '2026-08-05T12:00:00.000Z';
-  await page.route('**/api/runs**', async (route) => {
-    await fulfillJson(route, {
-      runs: [
-        runSnapshot({
-          runId: RUN_ID,
-          jobId: JOB_ID,
-          prompt: olderPrompt,
-          createdAt: '2026-08-05T12:00:00.000Z',
-          updatedAt: olderUpdatedAt,
-        }),
-        runSnapshot({
-          runId: SECOND_RUN_ID,
-          jobId: SECOND_JOB_ID,
-          prompt: newerPrompt,
-          createdAt: '2026-08-06T12:00:00.000Z',
-          updatedAt: '2026-08-06T12:00:00.000Z',
-        }),
-      ],
-    });
-  });
-
-  await page.goto('/');
-  const recentTabs = page.locator('.recent-tabs').getByRole('tab');
-  await expect(recentTabs).toHaveText([newerPrompt, olderPrompt]);
-
-  await page.getByRole('tab', { name: olderPrompt, exact: true }).click();
-  await expect(recentTabs).toHaveText([newerPrompt, olderPrompt]);
-
-  olderUpdatedAt = NOW;
-  await expect(recentTabs).toHaveText([olderPrompt, newerPrompt], { timeout: 7_000 });
 });

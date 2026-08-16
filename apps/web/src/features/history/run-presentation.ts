@@ -93,14 +93,6 @@ export function mergeRuns(
   );
 }
 
-export function sortByRecentActivity(runs: readonly StudioRun[]): StudioRun[] {
-  return [...runs].sort(
-    (left, right) =>
-      right.updatedAt.localeCompare(left.updatedAt) ||
-      right.createdAt.localeCompare(left.createdAt),
-  );
-}
-
 export function runDestinationLabel(
   value: Destination,
   projects: readonly Project[],

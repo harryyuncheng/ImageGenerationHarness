@@ -100,18 +100,6 @@ export function useEditorSelection(activeRepositoryId: string | undefined) {
     );
   }
 
-  function matchesRun(run: StudioRun): boolean {
-    if (selection?.kind === 'image') {
-      return run.id === selection.image.runId || run.remoteId === selection.image.runId;
-    }
-    if (selection?.kind !== 'run') return false;
-    return (
-      run.id === selection.localId ||
-      (selection.remoteId !== undefined &&
-        (run.remoteId === selection.remoteId || run.id === selection.remoteId))
-    );
-  }
-
   /** Falls back to the optimistic snapshot until the durable run arrives. */
   function resolveRun(runs: readonly StudioRun[]): StudioRun | undefined {
     if (selection?.kind !== 'run') return undefined;
@@ -135,7 +123,6 @@ export function useEditorSelection(activeRepositoryId: string | undefined) {
     attachRemoteId,
     closeRun,
     showsFailedRun,
-    matchesRun,
     resolveRun,
   };
 }

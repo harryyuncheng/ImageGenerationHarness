@@ -33,8 +33,7 @@
   }
   .left-rail .brand > span:last-child,
   .left-rail .new-button span,
-  .left-rail .primary-nav button span,
-  .left-rail .recent-block {
+  .left-rail .primary-nav button span {
     display: none;
   }
   .left-rail .new-button,

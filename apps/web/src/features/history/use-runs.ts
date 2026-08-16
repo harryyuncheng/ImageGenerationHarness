@@ -6,13 +6,7 @@ import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability } from '../../shared/types/domain.js';
 import type { EditorSelectionController } from '../editor/use-editor-selection.js';
 import { cancelRun, getRuns, retryRun } from './api.js';
-import {
-  collectRunFailures,
-  mergeRuns,
-  sortByRecentActivity,
-  toStudioRuns,
-  type StudioRun,
-} from './run-presentation.js';
+import { collectRunFailures, mergeRuns, toStudioRuns, type StudioRun } from './run-presentation.js';
 import type { FavoritesController } from './use-favorites.js';
 
 const pollingIntervalMs = 3000;
@@ -57,7 +51,6 @@ export function useRuns(options: RunsOptions) {
     [capabilities, favorites.favoriteRuns, runsQuery.data],
   );
   const allRuns = mergeRuns(optimisticRuns, durableRuns);
-  const recentRuns = sortByRecentActivity(allRuns);
 
   useEffect(() => {
     const unhandled = runFailures.filter(
@@ -131,7 +124,6 @@ export function useRuns(options: RunsOptions) {
   return {
     runsQuery,
     allRuns,
-    recentRuns,
     addOptimisticRun,
     markRunQueued,
     discardOptimisticRun,
