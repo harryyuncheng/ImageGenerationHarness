@@ -1,12 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { LocalInputReference, ReferenceImage } from '@harness/domain';
-import {
-  decodeCanonicalBase64,
-  inspectImage,
-  mediaTypeFromImageFormat,
-  outputFileForMediaType,
-  sha256Hex,
-} from '@harness/image';
+import { characterizeImageData, imageBytesMatch, outputFileForMediaType } from '@harness/image';
 import type { ReferenceLibraryService } from '../references/reference-library-service.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { StagedRequest } from './run-types.js';
@@ -22,7 +16,7 @@ export async function hydrateInputs(
   const hydrated = { ...request };
   for (const input of inputs) {
     const bytes = await repository.readBytes(input.repositoryRelativePath);
-    if (sha256Hex(bytes) !== input.sha256) {
+    if (!imageBytesMatch(bytes, input.sha256)) {
       throw new Error('Input image integrity verification failed');
     }
     hydrated[input.field] = Buffer.from(bytes).toString('base64');
@@ -49,7 +43,7 @@ export class InputStager {
         if (reference && !image) throw new Error('Reference image not found');
         if (image) {
           const bytes = await repository.readBytes(image.repositoryRelativePath);
-          if (bytes.byteLength !== image.byteLength || sha256Hex(bytes) !== image.sha256) {
+          if (!imageBytesMatch(bytes, image.sha256, image.byteLength)) {
             throw new Error('Reference image integrity verification failed');
           }
           const extension = outputFileForMediaType(image.mediaType).extension;
@@ -57,7 +51,7 @@ export class InputStager {
           await repository.withMutation(async () => {
             if (await repository.exists(snapshotPath)) {
               const existing = await repository.readBytes(snapshotPath);
-              if (sha256Hex(existing) !== image.sha256) {
+              if (!imageBytesMatch(existing, image.sha256)) {
                 throw new Error('Staged reference image integrity verification failed');
               }
             } else {
@@ -79,15 +73,10 @@ export class InputStager {
         if (value.startsWith('repo-image://')) {
           throw new Error('Invalid reference image identifier');
         }
-        const bytes = decodeCanonicalBase64(value, { label: 'Input image data' });
-        const inspected = await inspectImage(bytes);
-        const mediaType = mediaTypeFromImageFormat(inspected.format);
-        if (!mediaType) throw new Error('Only PNG, JPEG, and WebP inputs are supported');
+        const imageData = await characterizeImageData(value, { label: 'Input image data' });
         const imageId = randomUUID();
-        const digest = sha256Hex(bytes);
-        const extension = outputFileForMediaType(mediaType).extension;
-        const path = `.image-harness/inputs/${digest}--${imageId}.${extension}`;
-        await repository.writeImmutable(path, bytes);
+        const path = `.image-harness/inputs/${imageData.sha256}--${imageId}.${imageData.extension}`;
+        await repository.writeImmutable(path, imageData.bytes);
         createdPaths.push(path);
         staged[field] = `repo-image://${imageId}`;
         inputs.push({
@@ -95,8 +84,8 @@ export class InputStager {
           role: field,
           imageId,
           repositoryRelativePath: path,
-          sha256: digest,
-          mediaType,
+          sha256: imageData.sha256,
+          mediaType: imageData.mediaType,
         });
       }
       return { request: staged, inputs, createdInputPaths: createdPaths };

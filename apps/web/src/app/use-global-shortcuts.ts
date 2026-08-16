@@ -8,7 +8,6 @@ interface GlobalShortcutOptions {
   promptInput: RefObject<HTMLTextAreaElement | null>;
 }
 
-/** Global keyboard shortcuts, documented in Settings. */
 export function useGlobalShortcuts(options: GlobalShortcutOptions) {
   useEffect(() => {
     const handleGlobalKey = (event: globalThis.KeyboardEvent) => {

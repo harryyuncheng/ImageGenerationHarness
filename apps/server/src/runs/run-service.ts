@@ -168,15 +168,12 @@ export class LocalRunService implements RunService {
 
   async listRuns(destination?: Destination): Promise<RunSnapshot[]> {
     const repository = this.#manager.getActiveRepository();
-    const files = (await repository.listFiles('.image-harness/runs')).filter((file) =>
-      file.endsWith('.json'),
-    );
     const snapshots: RunSnapshot[] = [];
-    for (const file of files) {
-      const run = await repository.readJson(`.image-harness/runs/${file}`, localRunSchema);
-      if (destination && JSON.stringify(run.destination) !== JSON.stringify(destination)) continue;
-      const snapshot = await this.#runs.getSnapshot(repository, run.runId);
-      if (!snapshot) continue;
+    const durable = await this.#runs.listSnapshots(
+      repository,
+      (run) => !destination || sameDestination(run.destination, destination),
+    );
+    for (const snapshot of durable) {
       if (snapshot.run.status === 'failed') {
         for (const job of snapshot.jobs.filter((candidate) => candidate.status === 'failed')) {
           await this.#runs.discardFailedJob(repository, job);
@@ -261,13 +258,9 @@ export class LocalRunService implements RunService {
 
   async recover(): Promise<void> {
     const repository = this.#manager.getActiveRepository();
-    const files = (await repository.listFiles('.image-harness/jobs')).filter((file) =>
-      file.endsWith('.json'),
-    );
     const affectedRuns = new Set<string>();
-    for (const file of files) {
-      const path = `.image-harness/jobs/${file}`;
-      const job = await repository.readJson(path, localJobSchema);
+    for (const job of await this.#runs.listJobs(repository)) {
+      const path = jobRecordPath(job.jobId);
       if (job.status === 'failed') {
         await this.#runs.discardFailedJob(repository, job);
       } else if (job.status === 'queued') {

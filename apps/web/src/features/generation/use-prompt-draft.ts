@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 
-/** The prompt text area and the focus behaviour shared by every surface that jumps back to it. */
 export function usePromptDraft() {
   const [prompt, setPrompt] = useState('');
   const promptInput = useRef<HTMLTextAreaElement>(null);

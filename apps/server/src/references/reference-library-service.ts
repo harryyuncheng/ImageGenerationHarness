@@ -13,13 +13,7 @@ import {
   type ReferenceFolder,
   type ReferenceImage,
 } from '@harness/domain';
-import {
-  decodeCanonicalBase64,
-  inspectImage,
-  mediaTypeFromImageFormat,
-  outputFileForMediaType,
-  sha256Hex,
-} from '@harness/image';
+import { characterizeImageData, imageBytesMatch, type CharacterizedImage } from '@harness/image';
 import {
   findDirectoryManifest,
   hasActiveNameConflict,
@@ -36,8 +30,6 @@ import {
   ReferenceLibraryError,
   referenceSidecarPath,
 } from './reference-records.js';
-
-export { ReferenceLibraryError } from './reference-records.js';
 
 interface ReferenceFolderWithImages {
   folder: ReferenceFolder;
@@ -158,23 +150,16 @@ export class LocalReferenceLibraryService implements ReferenceLibraryService {
     } catch {
       throw new ReferenceLibraryError('Invalid reference image.', 400);
     }
-    let bytes: Uint8Array;
+    let imageData: CharacterizedImage;
     try {
-      bytes = decodeCanonicalBase64(validated.data, { label: 'Reference image data' });
-    } catch {
-      throw new ReferenceLibraryError('Reference image data is not valid base64.', 400);
-    }
-    let inspected: Awaited<ReturnType<typeof inspectImage>>;
-    try {
-      inspected = await inspectImage(bytes);
+      imageData = await characterizeImageData(validated.data, { label: 'Reference image data' });
     } catch {
       throw new ReferenceLibraryError(
         'The uploaded file is not a valid PNG, JPEG, or WebP image.',
         400,
       );
     }
-    const detectedMediaType = mediaTypeFromImageFormat(inspected.format);
-    if (!detectedMediaType || detectedMediaType !== validated.mediaType) {
+    if (imageData.mediaType !== validated.mediaType) {
       throw new ReferenceLibraryError(
         'The image content does not match its declared media type.',
         400,
@@ -186,25 +171,24 @@ export class LocalReferenceLibraryService implements ReferenceLibraryService {
         const folder = await this.#requireFolder(repository, folderId);
         const imageId = randomUUID();
         const now = new Date().toISOString();
-        const extension = outputFileForMediaType(detectedMediaType).extension;
-        const repositoryRelativePath = `${folder.directory}/${imageSlug(validated.name)}--${imageId}.${extension}`;
+        const repositoryRelativePath = `${folder.directory}/${imageSlug(validated.name)}--${imageId}.${imageData.extension}`;
         const image = referenceImageSchema.parse({
           schemaVersion: SCHEMA_VERSION,
           folderId,
           imageId,
           name: validated.name,
           repositoryRelativePath,
-          sha256: sha256Hex(bytes),
-          mediaType: detectedMediaType,
-          byteLength: bytes.byteLength,
-          width: inspected.width,
-          height: inspected.height,
+          sha256: imageData.sha256,
+          mediaType: imageData.mediaType,
+          byteLength: imageData.byteLength,
+          width: imageData.width,
+          height: imageData.height,
           createdAt: now,
           updatedAt: now,
         });
         await repository.publishImmutableWithSidecar(
           repositoryRelativePath,
-          bytes,
+          imageData.bytes,
           referenceSidecarPath(repositoryRelativePath),
           image,
           referenceImageSchema,
@@ -248,7 +232,7 @@ export class LocalReferenceLibraryService implements ReferenceLibraryService {
     }
     return this.manager.withRepository(async (repository) => {
       const bytes = await repository.readBytes(image.repositoryRelativePath);
-      if (bytes.byteLength !== image.byteLength || sha256Hex(bytes) !== image.sha256) {
+      if (!imageBytesMatch(bytes, image.sha256, image.byteLength)) {
         throw new ReferenceLibraryError('Reference image integrity verification failed.', 409);
       }
       return bytes;

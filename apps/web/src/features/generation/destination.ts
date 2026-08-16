@@ -1,6 +1,5 @@
 import type { Destination, GalleryImage } from '../../shared/types/domain.js';
 
-/** Maps a saved image back to the destination that produced it. */
 export function imageDestination(image: GalleryImage): Destination {
   if (!image.projectId) return { kind: 'main' };
   if (!image.projectAssetId) return { kind: 'project', projectId: image.projectId };

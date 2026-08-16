@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 import { MAX_IMAGE_BYTES, type MediaType, type OutputFormat } from '@harness/contracts';
 import sharp from 'sharp';
 
-export function sha256Hex(bytes: Uint8Array): string {
+function sha256Hex(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-export async function inspectImage(bytes: Uint8Array) {
+async function inspectImage(bytes: Uint8Array) {
   const metadata = await sharp(bytes, { failOn: 'error' }).metadata();
   if (!metadata.width || !metadata.height)
     throw new Error('Image dimensions and format are required');
@@ -18,7 +18,7 @@ export async function inspectImage(bytes: Uint8Array) {
   };
 }
 
-export function decodeCanonicalBase64(
+function decodeCanonicalBase64(
   value: string,
   options: { maxBytes?: number; label?: string } = {},
 ): Uint8Array {
@@ -38,7 +38,7 @@ export function decodeCanonicalBase64(
   return Uint8Array.from(decoded);
 }
 
-export function mediaTypeFromImageFormat(format: string | undefined): MediaType | undefined {
+function mediaTypeFromImageFormat(format: string | undefined): MediaType | undefined {
   if (format === 'jpeg') return 'image/jpeg';
   if (format === 'png') return 'image/png';
   if (format === 'webp') return 'image/webp';
@@ -58,6 +58,49 @@ export function outputFileForMediaType(mediaType: MediaType): {
   if (mediaType === 'image/jpeg') return { format: 'jpeg', extension: 'jpg' };
   if (mediaType === 'image/webp') return { format: 'webp', extension: 'webp' };
   return { format: 'png', extension: 'png' };
+}
+
+export interface CharacterizedImage {
+  bytes: Uint8Array;
+  width: number;
+  height: number;
+  mediaType: MediaType;
+  format: OutputFormat;
+  extension: 'jpg' | 'png' | 'webp';
+  byteLength: number;
+  sha256: string;
+}
+
+export async function characterizeImageData(
+  value: string,
+  options: { maxBytes?: number; label?: string } = {},
+): Promise<CharacterizedImage> {
+  const label = options.label ?? 'Image data';
+  const bytes = decodeCanonicalBase64(value, options);
+  const inspected = await inspectImage(bytes);
+  const mediaType = mediaTypeFromImageFormat(inspected.format);
+  if (!mediaType) throw new Error(`${label} is not a supported PNG, JPEG, or WebP image`);
+  const output = outputFileForMediaType(mediaType);
+  return {
+    bytes,
+    width: inspected.width,
+    height: inspected.height,
+    mediaType,
+    ...output,
+    byteLength: bytes.byteLength,
+    sha256: sha256Hex(bytes),
+  };
+}
+
+export function imageBytesMatch(
+  bytes: Uint8Array,
+  expectedSha256: string,
+  expectedByteLength?: number,
+): boolean {
+  return (
+    (expectedByteLength === undefined || bytes.byteLength === expectedByteLength) &&
+    sha256Hex(bytes) === expectedSha256
+  );
 }
 
 export function imageSidecarPath(imagePath: string): string {

@@ -24,7 +24,6 @@ interface GenerationOptions {
   onSubmissionFailed: () => void;
 }
 
-/** Validates a draft and hands it to the local control plane. */
 export function useGeneration(options: GenerationOptions) {
   const { promptDraft, settings, attachments, destination, runs, editor, notify } = options;
   const [isSubmitting, setIsSubmitting] = useState(false);

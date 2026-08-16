@@ -16,7 +16,6 @@ export interface CanvasEditorProps {
   onViewMetadata: (imageId: string) => void;
 }
 
-/** Renders the canvas editor for whichever image the studio has selected. */
 export function CanvasEditor({
   editor,
   capabilities,

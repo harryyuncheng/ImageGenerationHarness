@@ -1,7 +1,7 @@
 import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react';
 
 export type ThemePreference = 'light' | 'dark' | 'system';
-export type ResolvedTheme = Exclude<ThemePreference, 'system'>;
+type ResolvedTheme = Exclude<ThemePreference, 'system'>;
 
 export const themeOptions: readonly {
   value: ThemePreference;

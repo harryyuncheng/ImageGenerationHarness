@@ -1,6 +1,6 @@
 import type { Destination, GeneratedImageSidecar } from '@harness/domain';
 import { generatedImageSidecarSchema } from '@harness/domain';
-import { sha256Hex } from '@harness/image';
+import { imageBytesMatch } from '@harness/image';
 import { z } from 'zod';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { LocalRepositoryManager } from '../repository/repository-manager.js';
@@ -39,10 +39,7 @@ export class GeneratedImageStore {
     const bytes = await this.manager
       .getActiveRepository()
       .readBytes(current.repositoryRelativePath);
-    if (
-      bytes.byteLength !== current.output.byteLength ||
-      sha256Hex(bytes) !== current.output.sha256
-    ) {
+    if (!imageBytesMatch(bytes, current.output.sha256, current.output.byteLength)) {
       throw new Error('Generated image integrity verification failed');
     }
     return bytes;

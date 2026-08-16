@@ -1,5 +1,6 @@
 import { CloudOff, Image as ImageIcon, Star } from 'lucide-react';
-import type { StudioRun } from '../run-presentation.js';
+import { generatedImageContentUrl } from '../../../shared/images/files.js';
+import { isTerminalWithoutOutputStatus, type StudioRun } from '../run-presentation.js';
 
 export function HistoryCard({
   run,
@@ -11,9 +12,9 @@ export function HistoryCard({
   onFavorite: (runId: string) => void;
 }) {
   const firstImageId = run.outputImageIds?.at(0);
-  const outputUrl = firstImageId ? `/api/images/${firstImageId}/content` : undefined;
+  const outputUrl = firstImageId ? generatedImageContentUrl(firstImageId) : undefined;
   const imageName = run.prompt || run.targetName;
-  const terminalWithoutOutput = ['failed', 'cancelled', 'interrupted'].includes(run.status);
+  const terminalWithoutOutput = isTerminalWithoutOutputStatus(run.status);
 
   return (
     <article className={`history-card history-card--${run.status}`}>

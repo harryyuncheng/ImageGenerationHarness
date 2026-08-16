@@ -2,7 +2,6 @@ import { useState } from 'react';
 import type { GeneratedImageSidecar } from '@harness/contracts';
 import { getImageMetadata } from '../gallery/api.js';
 
-/** Loads the authoritative sidecar for a saved image into the metadata dialog. */
 export function useImageMetadata(openDialog: () => void) {
   const [metadata, setMetadata] = useState<GeneratedImageSidecar>();
   const [metadataError, setMetadataError] = useState<string>();

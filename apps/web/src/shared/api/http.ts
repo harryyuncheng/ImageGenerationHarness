@@ -15,14 +15,23 @@ async function responseError(response: Response, fallback: string): Promise<Erro
   }
 }
 
+export async function requestResponse(
+  url: string,
+  init: RequestInit = {},
+  fallback = defaultFallback,
+): Promise<Response> {
+  const response = await fetch(url, init);
+  if (!response.ok) throw await responseError(response, fallback);
+  return response;
+}
+
 export async function requestJson<T>(
   url: string,
   schema: ResponseSchema<T>,
   init: RequestInit = {},
   fallback = defaultFallback,
 ): Promise<T> {
-  const response = await fetch(url, init);
-  if (!response.ok) throw await responseError(response, fallback);
+  const response = await requestResponse(url, init, fallback);
   return schema.parse(await response.json());
 }
 
@@ -31,8 +40,7 @@ export async function requestVoid(
   init: RequestInit,
   fallback = defaultFallback,
 ): Promise<void> {
-  const response = await fetch(url, init);
-  if (!response.ok) throw await responseError(response, fallback);
+  await requestResponse(url, init, fallback);
 }
 
 export function jsonBody(value: unknown): RequestInit {

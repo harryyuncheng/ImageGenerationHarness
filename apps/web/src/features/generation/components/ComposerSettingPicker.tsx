@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-export interface ComposerSettingOption {
+interface ComposerSettingOption {
   value: string;
   label: string;
   description: string;

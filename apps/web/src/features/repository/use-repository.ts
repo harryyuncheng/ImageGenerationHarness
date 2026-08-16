@@ -12,7 +12,6 @@ export function useRepository(notify: Notify) {
     queryKey: queryKeys.repository(),
     queryFn: getRepository,
     retry: false,
-    refetchInterval: false,
   });
   const activeRepositoryId = repositoryQuery.data?.active?.repositoryId;
 

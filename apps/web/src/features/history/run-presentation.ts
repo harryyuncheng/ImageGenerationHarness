@@ -9,6 +9,14 @@ import { capabilityLabel, resolveCapability } from '../generation/capabilities.j
 
 export type RunStatus = DurableRunStatus | 'submitting';
 
+export function isActiveRunStatus(status: RunStatus): boolean {
+  return status === 'submitting' || status === 'queued' || status === 'running';
+}
+
+export function isTerminalWithoutOutputStatus(status: RunStatus): boolean {
+  return status === 'failed' || status === 'cancelled' || status === 'interrupted';
+}
+
 export interface StudioRun {
   id: string;
   remoteId?: string;
@@ -27,7 +35,7 @@ export interface StudioRun {
   favorite: boolean;
 }
 
-export interface RunFailure {
+interface RunFailure {
   runId: string;
   error: string;
   discarded: boolean;

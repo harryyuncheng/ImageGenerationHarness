@@ -32,8 +32,6 @@ import {
   updateOrganizationalRecord,
 } from './project-records.js';
 
-export { ProjectServiceError } from './project-records.js';
-
 export interface ProjectService {
   listProjects(options?: { includeArchived?: boolean }): Promise<Project[]>;
   getProject(projectId: string): Promise<Project | undefined>;

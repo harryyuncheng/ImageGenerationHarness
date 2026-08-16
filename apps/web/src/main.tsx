@@ -12,9 +12,7 @@ installPointerHoverTracking();
 
 createRoot(root).render(
   <StrictMode>
-    <QueryClientProvider
-      client={new QueryClient({ defaultOptions: { queries: { refetchInterval: 3_000 } } })}
-    >
+    <QueryClientProvider client={new QueryClient()}>
       <App />
     </QueryClientProvider>
   </StrictMode>,

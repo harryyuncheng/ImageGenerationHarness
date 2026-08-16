@@ -15,7 +15,6 @@ import type {
 import type { ReferenceImage } from '../../shared/types/domain.js';
 import { referenceImageContentUrl } from '../references/api.js';
 
-/** Prompt attachments, their previews, and the file inputs that produce them. */
 export function useAttachments(notify: Notify, activeRepositoryId: string | undefined) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragActive, setDragActive] = useState(false);

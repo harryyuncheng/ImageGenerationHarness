@@ -60,14 +60,11 @@ packages/
   contracts/      # browser/server API schemas grouped by resource
   domain/         # durable repository record schemas grouped by entity
   image/          # byte, format, hash, and sidecar utilities
-tests/
-  integration/    # cross-workspace local architecture checks
-  e2e/            # Playwright workflows and shared browser fixtures
 ```
 
 Application code is feature-first. Feature modules may depend on their application-level shared code and workspace packages, while workspace packages must not depend on either application. Package root `index.ts` files are stable re-export surfaces rather than implementation modules.
 
-ESLint treats production files above 425 non-blank, non-comment lines as an architecture failure and warns when a production function exceeds 200 lines. Tests have a slightly wider allowance for scenario setup. These are review signals rather than targets: modules should still be split whenever they acquire more than one reason to change.
+ESLint treats production files above 425 non-blank, non-comment lines as an architecture failure and warns when a production function exceeds 200 lines. These are review signals rather than targets: modules should still be split whenever they acquire more than one reason to change.
 
 ## Repository layout
 
@@ -119,7 +116,6 @@ Prompt caching remains unsupported by the registered Stability image targets. Th
 
 ## Verification
 
-- `pnpm verify` runs formatting, linting, strict type checks, unit/golden tests, and production builds.
-- `pnpm test:e2e` runs the Playwright browser suite.
+- `pnpm verify` runs formatting, linting, strict type checks, and production builds.
 
-Tests use temporary repositories and a mocked Bedrock invoker. They do not make paid provider calls. See [docs/architecture.md](docs/architecture.md) for boundaries and recovery semantics, and [docs/model-capabilities.md](docs/model-capabilities.md) for the audited model matrix.
+See [docs/architecture.md](docs/architecture.md) for boundaries and recovery semantics, and [docs/model-capabilities.md](docs/model-capabilities.md) for the audited model matrix.

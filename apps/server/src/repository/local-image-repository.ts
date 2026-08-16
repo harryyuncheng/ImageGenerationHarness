@@ -1,19 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import {
-  access,
-  link,
-  lstat,
-  mkdir,
-  open,
-  readFile,
-  readdir,
-  realpath,
-  rm,
-  stat,
-  unlink,
-} from 'node:fs/promises';
+import { access, lstat, mkdir, readFile, readdir, realpath, rm, stat } from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   assertSafeRepositoryRelativePath,
@@ -24,10 +12,11 @@ import {
 import type { ZodType } from 'zod';
 import {
   atomicWriteAbsolute,
-  cleanupTargetTemps,
   cleanupTempsRecursively,
   isMissing,
+  isTemporaryName,
   syncDirectory,
+  writeImmutableAbsolute,
 } from './atomic-files.js';
 import { RepositoryUnavailableError } from './errors.js';
 
@@ -43,10 +32,6 @@ const REPOSITORY_DESCRIPTOR_PATH = '.image-harness/repository.json';
 
 export function isContained(root: string, candidate: string): boolean {
   return candidate === root || candidate.startsWith(`${root}${sep}`);
-}
-
-function isTemporaryName(name: string): boolean {
-  return name.includes('.tmp-');
 }
 
 function safeRelativePath(value: string): string {
@@ -252,25 +237,7 @@ export class LocalImageRepository {
   async writeImmutable(relativePath: string, bytes: Uint8Array): Promise<void> {
     await this.withMutation(async () => {
       const absolutePath = await this.#resolveForWrite(relativePath);
-      const parent = dirname(absolutePath);
-      const targetName = basename(absolutePath);
-      await cleanupTargetTemps(parent, targetName);
-      const temporaryPath = join(parent, `.${targetName}.tmp-${randomUUID()}`);
-      let handle;
-      try {
-        handle = await open(temporaryPath, 'wx', 0o600);
-        await handle.writeFile(bytes);
-        await handle.sync();
-        await handle.close();
-        handle = undefined;
-        await link(temporaryPath, absolutePath);
-        await syncDirectory(parent);
-      } finally {
-        if (handle) await handle.close().catch(() => undefined);
-        await unlink(temporaryPath).catch((error: unknown) => {
-          if (!isMissing(error)) throw error;
-        });
-      }
+      await writeImmutableAbsolute(absolutePath, bytes, 0o600);
     });
   }
 

@@ -1,4 +1,5 @@
 import { Maximize2 } from 'lucide-react';
+import { generatedImageContentUrl } from '../images/files.js';
 import type { GalleryImage } from '../types/domain.js';
 
 export function GeneratedImageCard({
@@ -10,7 +11,7 @@ export function GeneratedImageCard({
   subtitle: string;
   onOpen: (image: GalleryImage) => void;
 }) {
-  const outputUrl = `/api/images/${image.imageId}/content`;
+  const outputUrl = generatedImageContentUrl(image.imageId);
   const imageName = image.prompt?.length ? image.prompt : 'Generated image';
   return (
     <article className="gallery-card">

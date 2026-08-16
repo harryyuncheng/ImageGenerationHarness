@@ -1,9 +1,14 @@
 import { ArrowLeft, CloudOff, Download, Maximize2, MoreHorizontal, RefreshCw } from 'lucide-react';
 import { useState } from 'react';
-import type { RunStatus } from '../../history/run-presentation.js';
+import { generatedImageContentUrl } from '../../../shared/images/files.js';
+import {
+  isActiveRunStatus,
+  isTerminalWithoutOutputStatus,
+  type RunStatus,
+} from '../../history/run-presentation.js';
 import { editorProgressMessage } from '../edit-tools-presentation.js';
 
-export interface ImageEditorProps {
+interface ImageEditorProps {
   id: string;
   prompt: string;
   targetName: string;
@@ -27,7 +32,6 @@ export interface ImageEditorProps {
   onRetry?: () => void;
 }
 
-/** The canvas surface for a run, a saved image, or a local upload. */
 export function ImageEditor(props: ImageEditorProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [loadedImageKey, setLoadedImageKey] = useState<string>();
@@ -47,15 +51,15 @@ export function ImageEditor(props: ImageEditorProps) {
       ]
     : props.imageIds.map((imageId) => ({
         key: imageId,
-        url: `/api/images/${imageId}/content`,
+        url: generatedImageContentUrl(imageId),
         imageId,
       }));
   const selectedImage = images[selectedIndex] ?? images[0];
   const selectedImageId = selectedImage?.imageId;
   const imageLoaded = selectedImage !== undefined && loadedImageKey === selectedImage.key;
   const imageFailed = selectedImage !== undefined && failedImageKey === selectedImage.key;
-  const active = ['submitting', 'queued', 'running'].includes(props.status);
-  const terminal = ['failed', 'cancelled', 'interrupted'].includes(props.status);
+  const active = isActiveRunStatus(props.status);
+  const terminal = isTerminalWithoutOutputStatus(props.status);
   const terminalWithoutImage = selectedImage === undefined && terminal;
 
   return (

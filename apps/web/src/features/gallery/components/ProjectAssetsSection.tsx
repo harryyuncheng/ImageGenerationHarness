@@ -1,7 +1,7 @@
 import { FolderPlus, Image as ImageIcon, Pencil, Plus, Trash2, WandSparkles } from 'lucide-react';
 import type { Destination, ProjectAsset } from '../../../shared/types/domain.js';
 
-export interface AssetDraft {
+interface AssetDraft {
   creating: boolean;
   setCreating: (value: boolean) => void;
   name: string;
@@ -20,7 +20,6 @@ interface ProjectAssetsSectionProps {
   onGenerate: (destination: Destination) => void;
 }
 
-/** Nested assets: focused spaces inside one project. */
 export function ProjectAssetsSection({
   projectId,
   assets,

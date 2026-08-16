@@ -9,7 +9,6 @@ interface ProjectImagesSectionProps {
   onOpenImage: (image: GalleryImage, location: string) => void;
 }
 
-/** Every image saved in this project, including nested-asset outputs. */
 export function ProjectImagesSection({
   project,
   assets,

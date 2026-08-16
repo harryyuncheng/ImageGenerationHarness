@@ -4,7 +4,7 @@ import { EmptyState } from '../../../shared/components/EmptyState.js';
 import type { Project } from '../../../shared/types/domain.js';
 import type { ProjectInput } from '../api.js';
 
-export interface ProjectCreationDraft {
+interface ProjectCreationDraft {
   search: string;
   setSearch: (value: string) => void;
   creatingProject: boolean;
@@ -26,7 +26,6 @@ interface ProjectsBrowserProps {
   onToggleCreation: () => void;
 }
 
-/** The searchable project list and its embedded creation form. */
 export function ProjectsBrowser({
   projects,
   headerActions,

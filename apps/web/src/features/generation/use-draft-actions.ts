@@ -20,7 +20,6 @@ interface DraftActionsOptions {
   goToCreate: () => void;
 }
 
-/** Everything that reshapes the current composer draft without submitting it. */
 export function useDraftActions({
   promptDraft,
   settings,

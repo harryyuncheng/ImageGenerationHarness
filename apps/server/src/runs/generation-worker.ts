@@ -2,15 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilities';
 import { outputFormatSchema } from '@harness/contracts';
 import { generatedImageSidecarSchema, localJobSchema } from '@harness/domain';
-import {
-  decodeCanonicalBase64,
-  imageSidecarPath,
-  inspectImage,
-  mediaTypeForOutputFormat,
-  mediaTypeFromImageFormat,
-  outputFileForMediaType,
-  sha256Hex,
-} from '@harness/image';
+import { characterizeImageData, imageSidecarPath, mediaTypeForOutputFormat } from '@harness/image';
 import type { BedrockInvoker } from '../providers/bedrock/adapter.js';
 import { hydrateInputs } from './input-stager.js';
 import { jobRecordPath, promptSlug } from './run-helpers.js';
@@ -87,19 +79,15 @@ export class GenerationWorker {
       const snapshot = await this.#runs.getSnapshot(repository, job.runId);
       if (!snapshot) throw new Error('Run disappeared while processing');
       for (const [index, encoded] of images.entries()) {
-        const bytes = decodeCanonicalBase64(encoded, { label: 'Provider image data' });
-        const inspected = await inspectImage(bytes);
-        const mediaType = mediaTypeFromImageFormat(inspected.format);
-        if (!mediaType) throw new Error('Provider returned an unsupported image format');
+        const imageData = await characterizeImageData(encoded, { label: 'Provider image data' });
         const requestedMediaType = mediaTypeForOutputFormat(
           outputFormatSchema.parse(job.request['output_format']),
         );
-        if (mediaType !== requestedMediaType) {
+        if (imageData.mediaType !== requestedMediaType) {
           throw new Error('Provider output format did not match the request');
         }
         const imageId = randomUUID();
-        const { format, extension } = outputFileForMediaType(mediaType);
-        const imagePath = `${item.destinationDirectory}/${new Date().toISOString().slice(0, 10)}--${promptSlug(job.request)}--${imageId}.${extension}`;
+        const imagePath = `${item.destinationDirectory}/${new Date().toISOString().slice(0, 10)}--${promptSlug(job.request)}--${imageId}.${imageData.extension}`;
         const providerSeed = response.seeds?.[index] ?? response.seeds?.[0] ?? null;
         const sidecar = generatedImageSidecarSchema.parse({
           schemaVersion: 1,
@@ -127,12 +115,12 @@ export class GenerationWorker {
             provider: providerSeed,
           },
           output: {
-            format,
-            mediaType,
-            width: inspected.width,
-            height: inspected.height,
-            byteLength: bytes.byteLength,
-            sha256: sha256Hex(bytes),
+            format: imageData.format,
+            mediaType: imageData.mediaType,
+            width: imageData.width,
+            height: imageData.height,
+            byteLength: imageData.byteLength,
+            sha256: imageData.sha256,
           },
           inputs: job.inputs.map((input) => ({
             role: input.role,
@@ -150,7 +138,7 @@ export class GenerationWorker {
         const sidecarPath = imageSidecarPath(imagePath);
         await repository.publishImmutableWithSidecar(
           imagePath,
-          bytes,
+          imageData.bytes,
           sidecarPath,
           sidecar,
           generatedImageSidecarSchema,

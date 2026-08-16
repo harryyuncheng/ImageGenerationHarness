@@ -35,7 +35,6 @@ export function useReferenceLibrary({
     queryFn: api.getReferenceLibrary,
     enabled: Boolean(activeRepositoryId),
     retry: false,
-    refetchInterval: false,
   });
 
   async function refresh() {

@@ -4,7 +4,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/coverage/**', '**/cdk.out/**', '**/playwright-report/**'] },
+  { ignores: ['**/dist/**', '**/cdk.out/**'] },
   eslint.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,
@@ -22,21 +22,6 @@ export default tseslint.config(
       'max-lines-per-function': [
         'warn',
         { max: 200, skipBlankLines: true, skipComments: true, IIFEs: true },
-      ],
-    },
-  },
-  {
-    files: [
-      '**/*.{test,spec}.{ts,tsx}',
-      '**/test/**/*.{ts,tsx}',
-      '**/tests/**/*.{ts,tsx}',
-      '**/test-support/**/*.{ts,tsx}',
-    ],
-    rules: {
-      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': [
-        'warn',
-        { max: 300, skipBlankLines: true, skipComments: true, IIFEs: true },
       ],
     },
   },

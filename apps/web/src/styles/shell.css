@@ -229,15 +229,6 @@
   gap: 10px;
 }
 
-.saved-state {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  margin-top: 1px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
 .top-actions {
   gap: 5px;
 }

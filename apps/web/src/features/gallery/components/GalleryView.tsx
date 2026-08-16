@@ -57,7 +57,6 @@ function GallerySortControl({
   );
 }
 
-/** One gallery, organized either chronologically or by project. */
 export function GalleryView({
   projects,
   images,

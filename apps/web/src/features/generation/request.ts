@@ -11,7 +11,7 @@ function assertNeverCapability(value: never): never {
   throw new Error(`Unhandled capability: ${String(value)}`);
 }
 
-export function buildGenerationRequest(
+function buildGenerationRequest(
   capability: Capability,
   prompt: string,
   settings: GenerationSettings,
@@ -134,7 +134,7 @@ export function buildGenerationRequest(
   }
 }
 
-export function makeSeedPlan(settings: GenerationSettings, capability: Capability) {
+function makeSeedPlan(settings: GenerationSettings, capability: Capability) {
   if (!hasParameter(capability, 'seed')) return { strategy: 'provider-random' as const };
   const seed = effectiveSeed(capability, settings.seed);
   if (settings.seedMode === 'fixed') return { strategy: 'fixed-repeat' as const, seed };

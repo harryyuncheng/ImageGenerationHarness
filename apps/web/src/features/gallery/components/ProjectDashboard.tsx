@@ -26,7 +26,6 @@ interface ProjectDashboardProps {
   onOpenImage: (image: GalleryImage, location: string) => void;
 }
 
-/** Project details, nested assets, and the images generated inside them. */
 export function ProjectDashboard(props: ProjectDashboardProps) {
   const { project, assets } = props.detail;
   const [editName, setEditName] = useState('');

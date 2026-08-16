@@ -16,7 +16,6 @@ interface ComposerToolsProps {
   onSavePrompt: () => void;
 }
 
-/** Purpose-grouped source actions and output settings for the floating toolbar. */
 export function ComposerTools({
   settings,
   fileInput,

@@ -18,10 +18,43 @@ interface StudioModalsProps {
   onCopy: (value: string, message?: string) => Promise<void>;
 }
 
+function CodePreview({
+  label,
+  value,
+  metadata = false,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  metadata?: boolean;
+  onCopy: (value: string) => Promise<void>;
+}) {
+  return (
+    <>
+      <div className="code-toolbar">
+        <span>{label}</span>
+        <button
+          className="text-button"
+          onClick={() => {
+            void onCopy(value);
+          }}
+        >
+          <Copy size={15} /> Copy
+        </button>
+      </div>
+      <pre className={`code-block${metadata ? ' metadata-code' : ''}`}>
+        <code>{value}</code>
+      </pre>
+    </>
+  );
+}
+
 /** Request previews stay local: only the exact submitted payload is shown. */
 export function StudioModals({ modal, requestBody, metadata, onClose, onCopy }: StudioModalsProps) {
   const requestJson = JSON.stringify(requestBody, null, 2);
   const codeExample = buildRunCodeExample(requestBody);
+  const metadataJson =
+    metadata.metadata === undefined ? undefined : JSON.stringify(metadata.metadata, null, 2);
 
   return (
     <Modal title={titles[modal]} onClose={onClose}>
@@ -31,45 +64,26 @@ export function StudioModals({ modal, requestBody, metadata, onClose, onCopy }: 
             <CloudOff size={22} />
             <p>{metadata.metadataError}</p>
           </div>
-        ) : metadata.metadata === undefined ? (
+        ) : metadataJson === undefined ? (
           <div className="metadata-loading">
             <span className="loader-ring" />
             <p>Loading authoritative sidecar metadata…</p>
           </div>
         ) : (
-          <>
-            <div className="code-toolbar">
-              <span>Versioned image sidecar</span>
-              <button
-                className="text-button"
-                onClick={() => {
-                  void onCopy(JSON.stringify(metadata.metadata, null, 2));
-                }}
-              >
-                <Copy size={15} /> Copy
-              </button>
-            </div>
-            <pre className="code-block metadata-code">
-              <code>{JSON.stringify(metadata.metadata, null, 2)}</code>
-            </pre>
-          </>
+          <CodePreview
+            label="Versioned image sidecar"
+            value={metadataJson}
+            metadata
+            onCopy={onCopy}
+          />
         )
       ) : (
         <>
-          <div className="code-toolbar">
-            <span>{modal === 'code' ? 'JavaScript' : 'JSON'}</span>
-            <button
-              className="text-button"
-              onClick={() => {
-                void onCopy(modal === 'code' ? codeExample : requestJson);
-              }}
-            >
-              <Copy size={15} /> Copy
-            </button>
-          </div>
-          <pre className="code-block">
-            <code>{modal === 'code' ? codeExample : requestJson}</code>
-          </pre>
+          <CodePreview
+            label={modal === 'code' ? 'JavaScript' : 'JSON'}
+            value={modal === 'code' ? codeExample : requestJson}
+            onCopy={onCopy}
+          />
           <p className="modal-note">
             Credentials remain in the loopback server. The browser only submits the exact prompt,
             explicit model settings, and chosen destination.

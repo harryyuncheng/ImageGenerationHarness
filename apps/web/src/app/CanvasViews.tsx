@@ -46,7 +46,6 @@ export interface CanvasViewsProps {
   onAttachReferenceImage: (image: ReferenceImage) => void;
 }
 
-/** The primary studio surface for the selected navigation item. */
 export function CanvasViews(props: CanvasViewsProps) {
   const { navigation, repository, projects, references, runs, imagesQuery, editor } = props;
   const repositoryReady = Boolean(repository.activeRepositoryId);

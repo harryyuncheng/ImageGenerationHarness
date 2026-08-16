@@ -1,4 +1,4 @@
-import { buildApp } from './app.js';
+import { buildApp } from './app/build-app.js';
 
 const port = Number.parseInt(process.env['HARNESS_PORT'] ?? '4173', 10);
 const app = await buildApp();

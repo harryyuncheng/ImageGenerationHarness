@@ -1,12 +1,13 @@
 node_modules/
 .turbo/
 dist/
-coverage/
-playwright-report/
-test-results/
 .env
 .env.*
 !.env.example
 .DS_Store
 *.log
 *.tsbuildinfo
+
+# Local AI assistant instructions
+AGENTS.md
+CLAUDE.md

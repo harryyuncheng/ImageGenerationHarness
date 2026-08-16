@@ -31,7 +31,7 @@ The browser owns presentation state and non-authoritative preferences. It receiv
 
 Fastify binds to loopback and validates Host and Origin headers. It owns repository selection, manifest validation, project/reference APIs, durable run creation, local queueing, input hydration, Bedrock invocation, output persistence, and ID-resolved content delivery.
 
-The macOS directory selector is an injectable adapter. Production uses `/usr/bin/osascript` through `execFile`; tests inject a fixed selector and never open native UI.
+The macOS directory selector is an injectable adapter. Production uses `/usr/bin/osascript` through `execFile`.
 
 ### Local repository
 

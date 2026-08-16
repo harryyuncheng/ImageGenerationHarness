@@ -12,7 +12,6 @@ interface StudioPanelsProps {
   editSource: EditSourceController;
 }
 
-/** The docked right-hand panel, which follows the active workspace. */
 export function StudioPanels({ navigation, settings, editTools, editSource }: StudioPanelsProps) {
   return (
     <>

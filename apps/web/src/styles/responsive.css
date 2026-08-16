@@ -185,9 +185,6 @@
     right: 10px;
     bottom: 11px;
   }
-  .saved-state {
-    display: none;
-  }
   .settings-panel {
     top: 58px;
     width: 100%;
@@ -283,12 +280,6 @@
   .project-editor-actions {
     align-items: flex-end;
     flex-direction: column;
-  }
-  .library-toolbar--wrap {
-    flex-direction: column;
-  }
-  .library-toolbar--wrap .search-field {
-    width: 100%;
   }
   .reference-folder > header {
     align-items: flex-start;

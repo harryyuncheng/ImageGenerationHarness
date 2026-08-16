@@ -21,7 +21,6 @@ interface StudioOverlaysProps {
   onCopy: (value: string, message?: string) => Promise<void>;
 }
 
-/** File pickers, dialogs, and notifications that sit above the studio. */
 export function StudioOverlays({
   navigation,
   attachments,

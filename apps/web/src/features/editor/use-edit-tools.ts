@@ -7,7 +7,6 @@ export interface EditingToolSelection {
   onSelectTool: (toolId: string) => void;
 }
 
-/** The editing capability the tools panel will apply to the selected image. */
 export function useEditTools(capabilities: readonly Capability[]) {
   const [selectedEditToolId, setSelectedEditToolId] = useState('service/inpaint');
   const tools = useMemo(

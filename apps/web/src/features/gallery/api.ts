@@ -11,15 +11,13 @@ import { jsonBody, requestJson, requestVoid } from '../../shared/api/http.js';
 import type {
   Destination,
   GalleryResponse,
+  Project,
   ProjectDetailResponse,
   ProjectsResponse,
 } from '../../shared/types/domain.js';
 import { destinationQuery } from '../generation/destination.js';
 
-export interface ProjectInput {
-  name: string;
-  description: string;
-}
+export type ProjectInput = Pick<Project, 'name' | 'description'>;
 
 export function getProjects(): Promise<ProjectsResponse> {
   return requestJson('/api/projects', projectsResponseSchema, {}, 'Projects unavailable');

@@ -33,7 +33,6 @@ export function useProjects({
     queryFn: api.getProjects,
     enabled: Boolean(activeRepositoryId),
     retry: false,
-    refetchInterval: false,
   });
   const projects = projectsQuery.data?.projects ?? [];
   const selectedProjectQuery = useQuery({
@@ -41,7 +40,6 @@ export function useProjects({
     queryFn: () => api.getProjectDetail(selectedProjectId ?? ''),
     enabled: Boolean(activeRepositoryId && selectedProjectId),
     retry: false,
-    refetchInterval: false,
   });
 
   const reportError = (message: string) => {

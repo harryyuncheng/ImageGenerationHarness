@@ -12,7 +12,7 @@ export type Notify = (message: string, tone?: ToastTone) => void;
 
 const toastDurationMs = 3800;
 
-export interface ToastController {
+interface ToastController {
   toasts: Toast[];
   notify: Notify;
   dismiss: (id: string) => void;

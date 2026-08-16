@@ -1,8 +1,8 @@
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
 
-export const STABILITY_BEDROCK_REGION = 'us-west-2' as const;
+const STABILITY_BEDROCK_REGION = 'us-west-2' as const;
 
-export function createStabilityBedrockRuntimeClient(): BedrockRuntimeClient {
+function createStabilityBedrockRuntimeClient(): BedrockRuntimeClient {
   return new BedrockRuntimeClient({
     region: STABILITY_BEDROCK_REGION,
     maxAttempts: 1,

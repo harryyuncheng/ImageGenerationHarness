@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
 
-/** Closes a popover when a pointer press lands outside of its anchor. */
 export function useOutsidePointerDown(
   anchor: RefObject<HTMLElement | null>,
   active: boolean,

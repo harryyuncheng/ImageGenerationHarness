@@ -6,7 +6,6 @@ import { TopBar } from './TopBar.js';
 type StudioMainProps = CanvasViewsProps &
   Pick<CanvasEditorProps, 'describeDestination' | 'onViewMetadata'>;
 
-/** The primary column: top bar, mobile navigation, and the canvas region. */
 export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: StudioMainProps) {
   const { navigation, repository } = canvas;
 

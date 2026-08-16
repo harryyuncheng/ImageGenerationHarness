@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, readdir, rename, rm, unlink } from 'node:fs/promises';
+import { link, mkdir, open, readdir, rename, rm, unlink } from 'node:fs/promises';
 import { basename, dirname, join } from 'node:path';
 
-export function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
   return error instanceof Error;
 }
 
@@ -10,7 +10,7 @@ export function isMissing(error: unknown): boolean {
   return isNodeError(error) && error.code === 'ENOENT';
 }
 
-function isTemporaryName(name: string): boolean {
+export function isTemporaryName(name: string): boolean {
   return name.includes('.tmp-');
 }
 
@@ -81,6 +81,32 @@ export async function atomicWriteAbsolute(
     await handle.close();
     handle = undefined;
     await rename(temporaryPath, targetPath);
+    await syncDirectory(parent);
+  } finally {
+    if (handle) await handle.close().catch(() => undefined);
+    await unlink(temporaryPath).catch((error: unknown) => {
+      if (!isMissing(error)) throw error;
+    });
+  }
+}
+
+export async function writeImmutableAbsolute(
+  targetPath: string,
+  bytes: Uint8Array,
+  mode: number,
+): Promise<void> {
+  const parent = dirname(targetPath);
+  const targetName = basename(targetPath);
+  await cleanupTargetTemps(parent, targetName);
+  const temporaryPath = join(parent, `.${targetName}.tmp-${randomUUID()}`);
+  let handle;
+  try {
+    handle = await open(temporaryPath, 'wx', mode);
+    await handle.writeFile(bytes);
+    await handle.sync();
+    await handle.close();
+    handle = undefined;
+    await link(temporaryPath, targetPath);
     await syncDirectory(parent);
   } finally {
     if (handle) await handle.close().catch(() => undefined);

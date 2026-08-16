@@ -1,4 +1,4 @@
-import { localJobSchema, localRunSchema, type LocalJob } from '@harness/domain';
+import { localJobSchema, localRunSchema, type LocalJob, type LocalRun } from '@harness/domain';
 import { imageSidecarPath } from '@harness/image';
 import type { GeneratedImageStore } from '../images/generated-image-store.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
@@ -7,6 +7,52 @@ import type { PublishedOutput, RunSnapshot } from './run-types.js';
 
 export class RunStore {
   constructor(private readonly images: GeneratedImageStore) {}
+
+  /** Streams job records so callers can stop before reading the whole directory. */
+  async forEachJob(
+    repository: LocalImageRepository,
+    visit: (job: LocalJob) => Promise<boolean> | boolean,
+  ): Promise<void> {
+    for (const file of await repository.listFiles('.image-harness/jobs')) {
+      if (!file.endsWith('.json')) continue;
+      const job = await repository.readJson(`.image-harness/jobs/${file}`, localJobSchema);
+      if (!(await visit(job))) return;
+    }
+  }
+
+  async listJobs(repository: LocalImageRepository): Promise<LocalJob[]> {
+    const jobs: LocalJob[] = [];
+    await this.forEachJob(repository, (job) => {
+      jobs.push(job);
+      return true;
+    });
+    return jobs;
+  }
+
+  /** Reads job records only for the runs a caller actually wants. */
+  async listSnapshots(
+    repository: LocalImageRepository,
+    matches: (run: LocalRun) => boolean = () => true,
+  ): Promise<RunSnapshot[]> {
+    const snapshots: RunSnapshot[] = [];
+    for (const file of await repository.listFiles('.image-harness/runs')) {
+      if (!file.endsWith('.json')) continue;
+      const run = await repository.readJson(`.image-harness/runs/${file}`, localRunSchema);
+      if (!matches(run)) continue;
+      const jobs: LocalJob[] = [];
+      let complete = true;
+      for (const jobId of run.jobIds) {
+        const path = jobRecordPath(jobId);
+        if (!(await repository.exists(path))) {
+          complete = false;
+          break;
+        }
+        jobs.push(await repository.readJson(path, localJobSchema));
+      }
+      if (complete) snapshots.push({ run, jobs });
+    }
+    return snapshots;
+  }
 
   async getSnapshot(
     repository: LocalImageRepository,
@@ -93,12 +139,11 @@ export class RunStore {
     candidates: Set<string>,
   ): Promise<void> {
     if (candidates.size === 0) return;
-    for (const file of await repository.listFiles('.image-harness/jobs')) {
-      if (!file.endsWith('.json')) continue;
-      const job = await repository.readJson(`.image-harness/jobs/${file}`, localJobSchema);
+    await this.forEachJob(repository, (job) => {
       for (const input of job.inputs) candidates.delete(input.repositoryRelativePath);
-      if (candidates.size === 0) return;
-    }
+      return candidates.size > 0;
+    });
+    if (candidates.size === 0) return;
     await this.images.walk(repository, (sidecar) => {
       for (const input of sidecar.inputs) candidates.delete(input.repositoryRelativePath);
     });

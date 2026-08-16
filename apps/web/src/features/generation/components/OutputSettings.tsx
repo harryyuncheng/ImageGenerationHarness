@@ -11,7 +11,6 @@ interface OutputSettingsProps {
   onRandomSeed: () => void;
 }
 
-/** What the provider returns: negative prompt, encoding, and seed planning. */
 export function OutputSettings({
   capability,
   settings,
