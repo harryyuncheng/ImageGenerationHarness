@@ -1,5 +1,5 @@
 import { ArrowLeft, FolderTree, Trash2, WandSparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type {
   Destination,
   GalleryImage,
@@ -15,6 +15,7 @@ import { ProjectImagesSection } from './ProjectImagesSection.js';
 interface ProjectDashboardProps {
   detail: ProjectDetailResponse;
   images: GalleryImage[];
+  headerActions: ReactNode;
   onSelect: (projectId: string | undefined) => void;
   onUpdate: (projectId: string, input: ProjectInput) => Promise<void>;
   onDelete: (project: Project) => void;
@@ -45,15 +46,18 @@ export function ProjectDashboard(props: ProjectDashboardProps) {
   const projectImages = props.images.filter((image) => image.projectId === project.projectId);
 
   return (
-    <div className="library-page project-dashboard surface-enter">
-      <button
-        className="project-back"
-        onClick={() => {
-          props.onSelect(undefined);
-        }}
-      >
-        <ArrowLeft size={16} /> All projects
-      </button>
+    <div className="library-page project-dashboard gallery-page surface-enter">
+      <div className="project-dashboard-toolbar">
+        <button
+          className="project-back"
+          onClick={() => {
+            props.onSelect(undefined);
+          }}
+        >
+          <ArrowLeft size={16} /> All projects
+        </button>
+        {props.headerActions}
+      </div>
       <div className="project-dashboard-header">
         <div>
           <span className="project-glyph">

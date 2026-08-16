@@ -48,7 +48,7 @@ test('opens the live image editor before generation and loads the completed outp
 
   await editor.getByRole('button', { name: 'Back from image editor' }).click();
   await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toHaveCount(0);
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
   await page.getByRole('button', { name: `Open editor for ${prompt}` }).click();
   await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toBeVisible();
 });
@@ -84,7 +84,7 @@ test('pops generation errors, discards failed runs, and keeps the draft ready to
   await expect(aspectRatio).toContainText('16:9');
   await expect(page.getByRole('button', { name: 'Generate', exact: true })).toBeEnabled();
 
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
   await expect(page.locator('.history-card')).toHaveCount(0);
   await expect(page.getByText('No generations here yet')).toBeVisible();
 });

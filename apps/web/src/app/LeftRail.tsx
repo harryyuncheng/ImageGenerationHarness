@@ -3,7 +3,6 @@ import { navItems, type StudioView } from './navigation.js';
 
 interface LeftRailProps {
   sidebarOpen: boolean;
-  runCount: number;
   isActiveView: (view: StudioView) => boolean;
   onSelectView: (view: StudioView) => void;
   onReset: () => void;
@@ -37,9 +36,6 @@ export function LeftRail(props: LeftRailProps) {
           >
             <Icon size={18} />
             {sidebarOpen && <span>{label}</span>}
-            {sidebarOpen && value === 'history' && props.runCount > 0 && (
-              <span className="nav-count">{props.runCount}</span>
-            )}
           </button>
         ))}
       </nav>

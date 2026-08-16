@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { EditorSelectionController } from '../features/editor/use-editor-selection.js';
-import type { StudioView } from './navigation.js';
+import type { GallerySort, StudioView } from './navigation.js';
 
 export type ModalName = 'code' | 'request' | 'metadata' | null;
 
@@ -14,6 +14,7 @@ export function useStudioNavigation(editor: EditorSelectionController) {
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [modal, setModal] = useState<ModalName>(null);
+  const [gallerySort, setGallerySort] = useState<GallerySort>('chronological');
 
   const selection = editor.selection;
   const showCreateWorkspace = view === 'create' && selection === undefined;
@@ -46,6 +47,8 @@ export function useStudioNavigation(editor: EditorSelectionController) {
     setMobileNavOpen,
     modal,
     setModal,
+    gallerySort,
+    setGallerySort,
     showCreateWorkspace,
     showSettings,
     showEditWorkspace,

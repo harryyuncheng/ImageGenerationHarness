@@ -10,7 +10,6 @@ import type { DraftActionsController } from '../features/generation/use-draft-ac
 import type { GenerationController } from '../features/generation/use-generation.js';
 import type { GenerationSettingsController } from '../features/generation/use-generation-settings.js';
 import type { PromptDraftController } from '../features/generation/use-prompt-draft.js';
-import { HistoryView } from '../features/history/components/HistoryView.js';
 import type { FavoritesController } from '../features/history/use-favorites.js';
 import type { RunsController } from '../features/history/use-runs.js';
 import { PresetsView } from '../features/presets/components/PresetsView.js';
@@ -99,12 +98,20 @@ export function CanvasViews(props: CanvasViewsProps) {
         <GalleryView
           projects={projects}
           images={images}
+          sort={navigation.gallerySort}
           repositoryReady={repositoryReady}
           onRepositoryRequired={() => {
             repository.requireRepository('create a project');
           }}
           onGenerate={props.draftActions.generateTo}
           onOpenImage={openImageEditor}
+          runs={runs.allRuns}
+          onCreate={() => {
+            navigation.selectStudioView('create');
+          }}
+          onOpenRun={editor.openRun}
+          onFavorite={props.favorites.toggleFavorite}
+          onSortChange={navigation.setGallerySort}
         />
       )}
       {navigation.showsView('references') && (
@@ -135,16 +142,6 @@ export function CanvasViews(props: CanvasViewsProps) {
           onRetry={() => {
             void references.refresh();
           }}
-        />
-      )}
-      {navigation.showsView('history') && (
-        <HistoryView
-          runs={runs.allRuns}
-          onCreate={() => {
-            navigation.selectStudioView('create');
-          }}
-          onOpenRun={editor.openRun}
-          onFavorite={props.favorites.toggleFavorite}
         />
       )}
       {navigation.showsView('presets') && (

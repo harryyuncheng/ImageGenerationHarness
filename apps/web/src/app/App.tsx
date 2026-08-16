@@ -93,7 +93,9 @@ export function App() {
   const imagesQuery = useImages(
     activeRepositoryId,
     navigation.view === 'edit' ||
-      (Boolean(projects.selectedProjectId) && navigation.view === 'gallery'),
+      (navigation.view === 'gallery' &&
+        navigation.gallerySort === 'project' &&
+        Boolean(projects.selectedProjectId)),
   );
   const references = useReferenceLibrary({
     activeRepositoryId,
@@ -149,7 +151,6 @@ export function App() {
     >
       <LeftRail
         sidebarOpen={navigation.sidebarOpen}
-        runCount={runs.allRuns.length}
         isActiveView={navigation.showsView}
         onSelectView={navigation.selectStudioView}
         onReset={draftActions.resetWorkspace}

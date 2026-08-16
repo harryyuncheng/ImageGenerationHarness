@@ -143,16 +143,51 @@ test('loads the loopback generation workspace', async ({ page }) => {
   await expect(settingsPanel).toHaveCSS('visibility', 'hidden');
 });
 
-test('omits destination controls from history and gallery', async ({ page }) => {
+test('opens the merged gallery from the bottom-right launcher', async ({ page }) => {
   await page.goto('/');
   const navigation = page.getByLabel('Studio navigation');
+  const launcher = page.getByRole('button', { name: 'View your past creations here' });
 
-  await navigation.getByRole('button', { name: 'History' }).click();
-  await expect(page.getByRole('heading', { name: 'Generation history' })).toBeVisible();
-  await expect(page.getByLabel('Image destination')).toHaveCount(0);
+  await expect(navigation.getByRole('button', { name: 'Gallery' })).toHaveCount(0);
+  await expect(launcher).toBeVisible();
+  await expect(launcher).toHaveCSS('position', 'absolute');
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const main = document.querySelector('.studio-main')?.getBoundingClientRect();
+        const button = document.querySelector('.gallery-launcher')?.getBoundingClientRect();
+        const toolbar = document.querySelector('.generation-toolbar')?.getBoundingClientRect();
+        return main && button && toolbar
+          ? {
+              right: Math.round(main.right - button.right),
+              bottom: Math.round(main.bottom - button.bottom),
+              clearsToolbar: toolbar.right <= button.left || toolbar.bottom <= button.top,
+            }
+          : null;
+      }),
+    )
+    .toEqual({ right: 18, bottom: 14, clearsToolbar: true });
 
-  await navigation.getByRole('button', { name: 'Gallery' }).click();
+  await launcher.click();
   await expect(page.getByRole('heading', { name: 'Gallery', level: 2 })).toBeVisible();
+  await expect(launcher).toHaveCount(0);
+  await expect(navigation.getByRole('button', { name: 'History' })).toHaveCount(0);
   await expect(navigation.getByRole('button', { name: 'Projects' })).toHaveCount(0);
   await expect(page.getByLabel('Image destination')).toHaveCount(0);
+
+  const sorting = page.getByRole('group', { name: 'Sort gallery' });
+  const chronological = sorting.getByRole('button', { name: 'Chronological' });
+  const byProject = sorting.getByRole('button', { name: 'By project' });
+  await expect(chronological).toHaveAttribute('aria-pressed', 'true');
+  await byProject.click();
+  await expect(byProject).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.locator('.library-heading').getByRole('button', { name: 'New project' }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Image destination')).toHaveCount(0);
+
+  await navigation.getByRole('button', { name: 'References' }).click();
+  await expect(launcher).toBeVisible();
+  await launcher.click();
+  await expect(byProject).toHaveAttribute('aria-pressed', 'true');
 });

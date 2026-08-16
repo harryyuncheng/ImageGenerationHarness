@@ -41,7 +41,13 @@ test('keeps the studio usable without a repository and prompts before repository
   expect(runRequests).toBe(0);
 
   await page.keyboard.press('Escape');
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'Gallery' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
+  await page
+    .getByRole('group', { name: 'Sort gallery' })
+    .getByRole('button', {
+      name: 'By project',
+    })
+    .click();
   await page.locator('.library-heading').getByRole('button', { name: 'New project' }).click();
   await expect(page.getByRole('heading', { name: 'Create a project' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Choose folder' })).toBeVisible();

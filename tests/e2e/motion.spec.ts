@@ -28,8 +28,14 @@ test('reuses shared entry motion across tabs, menus, panels, and dialogs', async
   await expectSharedSurfaceMotion(page.getByRole('dialog', { name: 'Get code' }));
   await page.getByRole('button', { name: 'Close dialog' }).click();
 
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'Gallery' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
   await expectSharedSurfaceMotion(page.locator('.canvas > .surface-enter'));
+  await page
+    .getByRole('group', { name: 'Sort gallery' })
+    .getByRole('button', {
+      name: 'By project',
+    })
+    .click();
   await page.locator('.library-heading').getByRole('button', { name: 'New project' }).click();
   await expectSharedSurfaceMotion(page.locator('.project-create'));
 

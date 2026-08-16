@@ -38,7 +38,13 @@ test('creates a project and nested asset, then sends the exact prompt only to th
   const submission = await recordRunSubmissions(page);
 
   await page.goto('/');
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'Gallery' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
+  await page
+    .getByRole('group', { name: 'Sort gallery' })
+    .getByRole('button', {
+      name: 'By project',
+    })
+    .click();
   await page.locator('.library-heading').getByRole('button', { name: 'New project' }).click();
   await page.getByLabel('New project name').fill(project.name);
   await page.getByLabel('New project description').fill(project.description);
@@ -100,7 +106,13 @@ test('opens the project image editor and remixes to the original destination', a
   });
 
   await page.goto('/');
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'Gallery' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
+  await page
+    .getByRole('group', { name: 'Sort gallery' })
+    .getByRole('button', {
+      name: 'By project',
+    })
+    .click();
   await page.getByRole('button', { name: project.name }).click();
   await page.getByRole('button', { name: 'Open editor for Gallery prompt' }).click();
   const editor = page.getByRole('tabpanel', { name: 'Image editor' });

@@ -11,7 +11,7 @@ export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: S
   const { navigation, repository } = canvas;
 
   return (
-    <div className="studio-main">
+    <div className={`studio-main ${navigation.showCreateWorkspace ? 'studio-main--create' : ''}`}>
       <TopBar navigation={navigation} repository={repository} />
 
       {navigation.mobileNavOpen && (
@@ -38,6 +38,19 @@ export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: S
           <CanvasViews {...canvas} />
         </main>
       </div>
+
+      {!navigation.showsView('gallery') && (
+        <button
+          type="button"
+          className="gallery-launcher surface-enter"
+          aria-label="View your past creations here"
+          onClick={() => {
+            navigation.selectStudioView('gallery');
+          }}
+        >
+          View your past creations here
+        </button>
+      )}
     </div>
   );
 }

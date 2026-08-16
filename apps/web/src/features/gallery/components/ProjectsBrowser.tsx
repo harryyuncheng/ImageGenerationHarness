@@ -1,4 +1,5 @@
 import { ArrowLeft, CloudOff, FolderPlus, FolderTree, Search } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { EmptyState } from '../../../shared/components/EmptyState.js';
 import type { Project } from '../../../shared/types/domain.js';
 import type { ProjectInput } from '../api.js';
@@ -16,6 +17,7 @@ export interface ProjectCreationDraft {
 
 interface ProjectsBrowserProps {
   projects: Project[];
+  headerActions: ReactNode;
   draft: ProjectCreationDraft;
   isLoading: boolean;
   error?: string;
@@ -27,6 +29,7 @@ interface ProjectsBrowserProps {
 /** The searchable project list and its embedded creation form. */
 export function ProjectsBrowser({
   projects,
+  headerActions,
   draft,
   isLoading,
   error,
@@ -39,15 +42,18 @@ export function ProjectsBrowser({
   );
 
   return (
-    <div className="library-page projects-page surface-enter">
+    <div className="library-page projects-page gallery-page surface-enter">
       <div className="library-heading">
         <div>
           <h2>Gallery</h2>
           <p>Keep generated images organized by project and nested visual asset.</p>
         </div>
-        <button className="primary-small" onClick={onToggleCreation}>
-          <FolderPlus size={16} /> New project
-        </button>
+        <div className="gallery-heading-actions">
+          {headerActions}
+          <button className="primary-small" onClick={onToggleCreation}>
+            <FolderPlus size={16} /> New project
+          </button>
+        </div>
       </div>
       {draft.creatingProject && (
         <form

@@ -154,6 +154,10 @@
   margin: 0 auto;
 }
 
+.studio-main--create .generation-toolbar[data-position='bottom'] {
+  bottom: 64px;
+}
+
 .generation-toolbar[data-position='left'] {
   top: 0;
   right: auto;

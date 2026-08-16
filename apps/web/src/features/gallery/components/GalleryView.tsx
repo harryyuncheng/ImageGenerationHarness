@@ -1,5 +1,9 @@
+import { CalendarDays, FolderTree } from 'lucide-react';
 import { useState } from 'react';
+import type { GallerySort } from '../../../app/navigation.js';
 import type { Destination, GalleryImage } from '../../../shared/types/domain.js';
+import { HistoryView } from '../../history/components/HistoryView.js';
+import type { StudioRun } from '../../history/run-presentation.js';
 import type { ProjectsController } from '../use-projects.js';
 import { ProjectDashboard } from './ProjectDashboard.js';
 import { ProjectsBrowser } from './ProjectsBrowser.js';
@@ -7,20 +11,66 @@ import { ProjectsBrowser } from './ProjectsBrowser.js';
 interface GalleryViewProps {
   projects: ProjectsController;
   images: GalleryImage[];
+  runs: StudioRun[];
+  sort: GallerySort;
   repositoryReady: boolean;
   onRepositoryRequired: () => void;
   onGenerate: (destination: Destination) => void;
   onOpenImage: (image: GalleryImage, location: string) => void;
+  onCreate: () => void;
+  onOpenRun: (run: StudioRun) => void;
+  onFavorite: (runId: string) => void;
+  onSortChange: (sort: GallerySort) => void;
 }
 
-/** Projects are the gallery: a browsable list or one project dashboard. */
+function GallerySortControl({
+  value,
+  onChange,
+}: {
+  value: GallerySort;
+  onChange: (value: GallerySort) => void;
+}) {
+  const options = [
+    { value: 'chronological', label: 'Chronological', Icon: CalendarDays },
+    { value: 'project', label: 'By project', Icon: FolderTree },
+  ] as const;
+
+  return (
+    <div className="gallery-sort-control">
+      <span>Sort</span>
+      <div role="group" aria-label="Sort gallery">
+        {options.map(({ value: option, label, Icon }) => (
+          <button
+            type="button"
+            key={option}
+            className={value === option ? 'selected' : ''}
+            aria-pressed={value === option}
+            onClick={() => {
+              onChange(option);
+            }}
+          >
+            <Icon size={14} /> {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** One gallery, organized either chronologically or by project. */
 export function GalleryView({
   projects,
   images,
+  runs,
+  sort,
   repositoryReady,
   onRepositoryRequired,
   onGenerate,
   onOpenImage,
+  onCreate,
+  onOpenRun,
+  onFavorite,
+  onSortChange,
 }: GalleryViewProps) {
   const [search, setSearch] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
@@ -45,11 +95,26 @@ export function GalleryView({
     setCreatingProject((value) => !value);
   }
 
+  const sortControl = <GallerySortControl value={sort} onChange={onSortChange} />;
+
+  if (sort === 'chronological') {
+    return (
+      <HistoryView
+        runs={runs}
+        headerActions={sortControl}
+        onCreate={onCreate}
+        onOpenRun={onOpenRun}
+        onFavorite={onFavorite}
+      />
+    );
+  }
+
   if (detail) {
     return (
       <ProjectDashboard
         detail={detail}
         images={images}
+        headerActions={sortControl}
         onSelect={projects.setSelectedProjectId}
         onUpdate={projects.updateProject}
         onDelete={(project) => {
@@ -71,6 +136,7 @@ export function GalleryView({
   return (
     <ProjectsBrowser
       projects={projects.projects}
+      headerActions={sortControl}
       draft={{
         search,
         setSearch,

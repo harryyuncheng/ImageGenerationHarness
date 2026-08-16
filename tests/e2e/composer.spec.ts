@@ -299,7 +299,7 @@ test('uses the greeting as a muted prompt and momentum-snaps the toolbar', async
       return toolbarBounds.left - navigation.right;
     }, target.position);
     expect(edgeGap).not.toBeNull();
-    expect(edgeGap).toBeCloseTo(24, 0);
+    expect(edgeGap).toBeCloseTo(target.position === 'bottom' ? 64 : 24, 0);
     if (target.position === 'top') {
       const stationaryHandle = await moveHandle.boundingBox();
       const stationaryToolbar = await toolbar.boundingBox();

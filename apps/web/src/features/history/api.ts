@@ -3,7 +3,7 @@ import type { RunsResponse } from '@harness/contracts';
 import { requestJson } from '../../shared/api/http.js';
 
 export function getRuns(): Promise<RunsResponse> {
-  return requestJson('/api/runs', runsResponseSchema, {}, 'Generation history unavailable');
+  return requestJson('/api/runs', runsResponseSchema, {}, 'Gallery history unavailable');
 }
 
 export function cancelRun(runId: string) {

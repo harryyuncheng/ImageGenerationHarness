@@ -47,7 +47,12 @@ test('shows all generation history newest-first as image-only tiles with a top-r
   await expect(page.getByRole('heading', { name: 'Latest run' })).toHaveCount(0);
   await expect(page.getByText('Polling is authoritative for run updates.')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Reuse', exact: true })).toHaveCount(0);
-  await page.getByLabel('Studio navigation').getByRole('button', { name: 'History' }).click();
+  await page.getByRole('button', { name: 'View your past creations here' }).click();
+  const sorting = page.getByRole('group', { name: 'Sort gallery' });
+  await expect(sorting.getByRole('button', { name: 'Chronological' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
   const cards = page.locator('.history-card');
   await expect(cards).toHaveCount(2);
@@ -88,7 +93,7 @@ test('shows all generation history newest-first as image-only tiles with a top-r
     .toEqual({ top: 10, right: 10 });
   await favorite.click();
   await expect(card.getByRole('button', { name: 'Remove favorite' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Generation history' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Gallery' })).toBeVisible();
 
   await card.getByRole('button', { name: `Open editor for ${projectPrompt}` }).click();
   await expect(page.getByRole('tabpanel', { name: 'Image editor' })).toBeVisible();

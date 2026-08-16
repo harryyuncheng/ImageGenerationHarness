@@ -1,23 +1,30 @@
 import { Clock3 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import { EmptyState } from '../../../shared/components/EmptyState.js';
 import type { StudioRun } from '../run-presentation.js';
 import { HistoryCard } from './HistoryCard.js';
 
 export function HistoryView({
   runs,
+  headerActions,
   onCreate,
   onOpenRun,
   onFavorite,
 }: {
   runs: StudioRun[];
+  headerActions: ReactNode;
   onCreate: () => void;
   onOpenRun: (run: StudioRun) => void;
   onFavorite: (runId: string) => void;
 }) {
   return (
-    <div className="library-page history-page surface-enter">
+    <div className="library-page history-page gallery-page surface-enter">
       <div className="library-heading">
-        <h2>Generation history</h2>
+        <div>
+          <h2>Gallery</h2>
+          <p>Browse generated images in chronological order.</p>
+        </div>
+        {headerActions}
       </div>
       {runs.length === 0 ? (
         <EmptyState

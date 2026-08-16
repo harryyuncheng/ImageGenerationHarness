@@ -2,6 +2,66 @@
   margin-bottom: 20px;
 }
 
+.gallery-heading-actions,
+.project-dashboard-toolbar,
+.gallery-sort-control,
+.gallery-sort-control > div {
+  display: flex;
+  align-items: center;
+}
+
+.gallery-heading-actions {
+  gap: 10px;
+}
+
+.gallery-sort-control {
+  gap: 8px;
+}
+
+.gallery-sort-control > span {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.gallery-sort-control > div {
+  gap: 2px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  padding: 3px;
+}
+
+.gallery-sort-control button {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 10px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.gallery-sort-control button.is-pointer-hover,
+.gallery-sort-control button.selected {
+  background: var(--surface-raised);
+  color: var(--accent-text);
+  box-shadow: var(--shadow-sm);
+}
+
+.project-dashboard-toolbar {
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.project-dashboard-toolbar .project-back {
+  margin: 0;
+}
+
 .history-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

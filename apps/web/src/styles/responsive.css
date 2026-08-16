@@ -181,6 +181,10 @@
   .top-controls {
     padding-inline: 10px;
   }
+  .gallery-launcher {
+    right: 10px;
+    bottom: 11px;
+  }
   .saved-state {
     display: none;
   }
@@ -212,6 +216,9 @@
     border-radius: 14px;
     padding: 3px;
   }
+  .studio-main--create .generation-toolbar[data-position='bottom'] {
+    bottom: 62px;
+  }
   .toolbar-divider {
     margin-inline: 1px;
   }
@@ -234,6 +241,18 @@
   }
   .library-heading {
     align-items: flex-start;
+  }
+  .gallery-page .library-heading {
+    flex-direction: column;
+  }
+  .gallery-heading-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .project-dashboard-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .library-heading h2 {
     font-size: 23px;
