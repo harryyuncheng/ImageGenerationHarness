@@ -24,12 +24,10 @@ const focusableSelector = [
 
 export function AppSettings({
   open,
-  sidebarOpen,
   theme,
   onOpenChange,
 }: {
   open: boolean;
-  sidebarOpen: boolean;
   theme: ThemeController;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -95,21 +93,21 @@ export function AppSettings({
   }
 
   return (
-    <div className={`app-settings ${sidebarOpen ? '' : 'app-settings--collapsed'}`}>
+    <div className="app-settings">
       <button
         ref={triggerRef}
         type="button"
-        className="app-settings__trigger"
+        className="icon-button studio-corner-icon app-settings__trigger"
         aria-label="Settings"
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? dialogId : undefined}
+        title="Settings"
         onClick={() => {
           onOpenChange(!open);
         }}
       >
         <Settings size={18} />
-        <span>Settings</span>
       </button>
 
       {open &&

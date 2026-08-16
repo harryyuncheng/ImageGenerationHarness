@@ -1,40 +1,18 @@
 .app-settings {
   position: fixed;
   z-index: 80;
-  bottom: 12px;
-  left: 12px;
+  bottom: var(--studio-edge-block);
+  left: var(--studio-edge-inline);
 }
 
 .app-settings__trigger {
-  display: flex;
-  width: 224px;
-  height: 40px;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 11px;
-  border-radius: 10px;
-  background: transparent;
-  padding: 0 11px;
-  color: var(--text-secondary);
-  text-align: left;
-  font-size: 13px;
-  font-weight: 520;
+  padding: 0;
 }
 
 .app-settings__trigger.is-pointer-hover,
 .app-settings__trigger[aria-expanded='true'] {
   background: var(--surface-hover);
   color: var(--text);
-}
-
-.app-settings--collapsed .app-settings__trigger {
-  width: 44px;
-  justify-content: center;
-  padding-inline: 0;
-}
-
-.app-settings--collapsed .app-settings__trigger span {
-  display: none;
 }
 
 .settings-dialog-backdrop {
@@ -256,31 +234,7 @@
   color: var(--accent);
 }
 
-@media (max-width: 1000px) {
-  .app-settings__trigger {
-    width: 44px;
-    justify-content: center;
-    padding-inline: 0;
-  }
-
-  .app-settings__trigger span {
-    display: none;
-  }
-}
-
 @media (max-width: 780px) {
-  .app-settings {
-    bottom: 10px;
-    left: 10px;
-  }
-
-  .app-settings__trigger {
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    background: var(--surface-raised);
-    box-shadow: var(--shadow-md);
-  }
-
   .settings-dialog-backdrop {
     padding: 12px;
   }

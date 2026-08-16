@@ -42,6 +42,7 @@ export interface CanvasViewsProps {
   runs: RunsController;
   favorites: FavoritesController;
   savedPrompts: SavedPromptsController;
+  destinationLabel?: string;
   onSavePrompt: () => void;
   onAttachReferenceImage: (image: ReferenceImage) => void;
 }
@@ -65,6 +66,9 @@ export function CanvasViews(props: CanvasViewsProps) {
           draftActions={props.draftActions}
           generation={props.generation}
           capabilities={props.capabilities}
+          {...(props.destinationLabel === undefined
+            ? {}
+            : { destinationLabel: props.destinationLabel })}
           onOpenLibrary={() => {
             navigation.selectStudioView('references');
           }}

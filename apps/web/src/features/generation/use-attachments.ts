@@ -61,11 +61,6 @@ export function useAttachments(notify: Notify, activeRepositoryId: string | unde
     });
   }
 
-  function clearAttachments() {
-    revokeUploadPreviews(attachments);
-    setAttachments([]);
-  }
-
   /** Editing always starts from a single source image. */
   function replaceWithEditingSource(attachment: UploadAttachment) {
     setAttachments((current) => {
@@ -114,7 +109,6 @@ export function useAttachments(notify: Notify, activeRepositoryId: string | unde
     handleFiles,
     handleDrop,
     removeAttachment,
-    clearAttachments,
     replaceWithEditingSource,
     hasLibraryImage,
     isFull,

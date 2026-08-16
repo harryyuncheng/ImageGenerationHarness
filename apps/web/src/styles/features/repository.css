@@ -1,11 +1,7 @@
-.repository-anchor {
-  margin-right: 5px;
-}
-
 .repository-button {
   display: flex;
   min-width: 210px;
-  height: 45px;
+  height: var(--studio-corner-control-size);
   align-items: center;
   gap: 9px;
   border: 1px solid var(--border);
@@ -74,9 +70,12 @@
 }
 
 .repository-menu {
+  --surface-enter-origin: top left;
+
   top: calc(100% + 8px);
-  right: 0;
-  width: min(360px, calc(100vw - 28px));
+  right: auto;
+  left: 0;
+  width: min(360px, calc(100vw - var(--studio-edge-inline) - var(--studio-edge-inline)));
   overflow: hidden;
 }
 

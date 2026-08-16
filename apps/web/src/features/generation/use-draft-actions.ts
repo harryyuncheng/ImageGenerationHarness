@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability, Destination, GalleryImage } from '../../shared/types/domain.js';
-import type { EditorSelectionController } from '../editor/use-editor-selection.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import { capabilityLabel, needsImage } from './capabilities.js';
 import { imageDestination } from './destination.js';
@@ -15,7 +14,6 @@ interface DraftActionsOptions {
   settings: GenerationSettingsController;
   attachments: AttachmentsController;
   destination: DestinationController;
-  editor: EditorSelectionController;
   notify: Notify;
   goToCreate: () => void;
 }
@@ -25,7 +23,6 @@ export function useDraftActions({
   settings,
   attachments,
   destination,
-  editor,
   notify,
   goToCreate,
 }: DraftActionsOptions) {
@@ -57,12 +54,9 @@ export function useDraftActions({
     openCreateAndFocus();
   }
 
-  function resetWorkspace() {
-    attachments.clearAttachments();
-    promptDraft.setPrompt('');
+  function resetDestination() {
     destination.resetDestination();
-    editor.close();
-    openCreateAndFocus();
+    notify('New images will save to the main repository.', 'success');
   }
 
   function reuseRun(run: StudioRun) {
@@ -93,7 +87,7 @@ export function useDraftActions({
     closeModelMenu,
     selectModel,
     generateTo,
-    resetWorkspace,
+    resetDestination,
     reuseRun,
     remixImage,
   };

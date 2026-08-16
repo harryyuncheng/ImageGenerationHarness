@@ -1,4 +1,4 @@
-import { ChevronDown, RefreshCw, Upload, WandSparkles } from 'lucide-react';
+import { ChevronDown, FolderTree, RefreshCw, Upload, WandSparkles, X } from 'lucide-react';
 import { useState } from 'react';
 import type { Capability } from '../../../shared/types/domain.js';
 import { capabilityLabel } from '../capabilities.js';
@@ -21,6 +21,7 @@ interface CreateViewProps {
   draftActions: DraftActionsController;
   generation: GenerationController;
   capabilities: readonly Capability[];
+  destinationLabel?: string;
   onOpenLibrary: () => void;
   onSavePrompt: () => void;
 }
@@ -32,6 +33,7 @@ export function CreateView({
   draftActions,
   generation,
   capabilities,
+  destinationLabel,
   onOpenLibrary,
   onSavePrompt,
 }: CreateViewProps) {
@@ -100,6 +102,19 @@ export function CreateView({
                 capability={selectedCapability}
                 onRemove={attachments.removeAttachment}
               />
+            )}
+            {destinationLabel !== undefined && (
+              <button
+                type="button"
+                className="destination-pill"
+                onClick={draftActions.resetDestination}
+                title="Save to the main repository instead"
+                aria-label={`Saving to ${destinationLabel}. Save to the main repository instead.`}
+              >
+                <FolderTree size={14} aria-hidden="true" />
+                <span>Saving to {destinationLabel}</span>
+                <X size={14} aria-hidden="true" />
+              </button>
             )}
           </div>
         </section>

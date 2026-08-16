@@ -23,34 +23,15 @@
 }
 
 @media (max-width: 1000px) {
-  .left-rail {
-    width: 72px;
-    min-width: 72px;
-    align-items: center;
-  }
-  .left-rail .brand > span:last-child,
-  .left-rail .new-button span,
-  .left-rail .primary-nav button span {
-    display: none;
-  }
-  .left-rail .new-button,
-  .left-rail .primary-nav button {
-    width: 44px;
-    justify-content: center;
-    padding-inline: 0;
-  }
-  .rail-collapse {
-    display: none;
-  }
   .studio-shell--panel-capable.studio-shell--panel-open {
-    grid-template-columns: auto minmax(0, 1fr) 306px;
+    grid-template-columns: minmax(0, 1fr) 306px;
   }
   .settings-panel {
     width: 306px;
   }
   .repository-button {
     min-width: 0;
-    width: 46px;
+    width: var(--studio-corner-control-size);
     justify-content: center;
   }
   .repository-button > span,
@@ -69,45 +50,6 @@
 @media (max-width: 780px) {
   .studio-shell {
     display: block;
-  }
-  .left-rail {
-    display: none;
-  }
-  .mobile-menu {
-    display: inline-flex;
-  }
-  .mobile-nav {
-    --surface-enter-offset-y: -6px;
-    --surface-enter-origin: top left;
-
-    position: fixed;
-    z-index: 70;
-    top: 58px;
-    left: 10px;
-    display: flex;
-    width: 210px;
-    flex-direction: column;
-    gap: 3px;
-    border: 1px solid var(--border);
-    border-radius: 13px;
-    background: var(--surface-raised);
-    padding: 7px;
-    box-shadow: var(--shadow-lg);
-  }
-  .mobile-nav button {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    border-radius: 8px;
-    background: transparent;
-    padding: 9px;
-    color: var(--text-secondary);
-    text-align: left;
-    font-size: 12px;
-  }
-  .mobile-nav button.active {
-    background: var(--accent-soft);
-    color: var(--accent-text);
   }
   .workspace {
     display: block;
@@ -175,15 +117,12 @@
   }
 }
 @media (max-width: 560px) {
+  :root {
+    --studio-edge-inline: 10px;
+    --studio-edge-block: 11px;
+  }
   .studio-main {
     --top-bar-height: 58px;
-  }
-  .top-controls {
-    padding-inline: 10px;
-  }
-  .gallery-launcher {
-    right: 10px;
-    bottom: 11px;
   }
   .settings-panel {
     top: 58px;

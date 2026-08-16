@@ -1,6 +1,6 @@
+import { Bookmark, FolderOpen } from 'lucide-react';
 import { CanvasEditor, type CanvasEditorProps } from './CanvasEditor.js';
 import { CanvasViews, type CanvasViewsProps } from './CanvasViews.js';
-import { MobileNav } from './MobileNav.js';
 import { TopBar } from './TopBar.js';
 
 type StudioMainProps = CanvasViewsProps &
@@ -12,16 +12,6 @@ export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: S
   return (
     <div className={`studio-main ${navigation.showCreateWorkspace ? 'studio-main--create' : ''}`}>
       <TopBar navigation={navigation} repository={repository} />
-
-      {navigation.mobileNavOpen && (
-        <MobileNav
-          isActiveView={navigation.showsView}
-          onSelectView={(view) => {
-            navigation.selectStudioView(view);
-            navigation.setMobileNavOpen(false);
-          }}
-        />
-      )}
 
       <div className="workspace">
         <main className="canvas">
@@ -37,6 +27,33 @@ export function StudioMain({ describeDestination, onViewMetadata, ...canvas }: S
           <CanvasViews {...canvas} />
         </main>
       </div>
+
+      <nav className="library-shortcuts" aria-label="Library shortcuts">
+        <button
+          type="button"
+          className={`icon-button studio-corner-icon ${navigation.showsView('references') ? 'active' : ''}`}
+          aria-label="Reference library"
+          aria-pressed={navigation.showsView('references')}
+          title="Reference library"
+          onClick={() => {
+            navigation.selectStudioView('references');
+          }}
+        >
+          <FolderOpen size={18} />
+        </button>
+        <button
+          type="button"
+          className={`icon-button studio-corner-icon ${navigation.showsView('presets') ? 'active' : ''}`}
+          aria-label="Saved presets"
+          aria-pressed={navigation.showsView('presets')}
+          title="Saved presets"
+          onClick={() => {
+            navigation.selectStudioView('presets');
+          }}
+        >
+          <Bookmark size={18} />
+        </button>
+      </nav>
 
       {!navigation.showsView('gallery') && (
         <button

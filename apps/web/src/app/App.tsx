@@ -24,7 +24,6 @@ import { useClipboard } from '../shared/hooks/use-clipboard.js';
 import { useToasts } from '../shared/hooks/use-toasts.js';
 import type { Destination } from '../shared/types/domain.js';
 import { AppSettings } from './AppSettings.js';
-import { LeftRail } from './LeftRail.js';
 import { StudioMain } from './StudioMain.js';
 import { StudioOverlays } from './StudioOverlays.js';
 import { StudioPanels } from './StudioPanels.js';
@@ -80,7 +79,6 @@ export function App() {
     settings,
     attachments,
     destination,
-    editor,
     notify,
     goToCreate: navigation.goToCreate,
   });
@@ -145,23 +143,15 @@ export function App() {
   const describeDestination = (value: Destination) =>
     runDestinationLabel(value, projects.projects, projects.selectedProjectQuery.data);
 
+  const activeDestination = destination.destination;
+  const destinationLabel =
+    activeDestination.kind === 'main' ? undefined : describeDestination(activeDestination);
+
   return (
     <div
-      className={`studio-shell ${navigation.sidebarOpen ? '' : 'studio-shell--navigation-collapsed'} ${navigation.panelCapable ? 'studio-shell--panel-capable' : ''} ${navigation.panelOpen ? 'studio-shell--panel-open' : ''}`}
+      className={`studio-shell ${navigation.panelCapable ? 'studio-shell--panel-capable' : ''} ${navigation.panelOpen ? 'studio-shell--panel-open' : ''}`}
     >
-      <LeftRail
-        sidebarOpen={navigation.sidebarOpen}
-        isActiveView={navigation.showsView}
-        onSelectView={navigation.selectStudioView}
-        onReset={draftActions.resetWorkspace}
-      />
-
-      <AppSettings
-        open={appSettingsOpen}
-        sidebarOpen={navigation.sidebarOpen}
-        theme={theme}
-        onOpenChange={setAppSettingsOpen}
-      />
+      <AppSettings open={appSettingsOpen} theme={theme} onOpenChange={setAppSettingsOpen} />
 
       <StudioMain
         navigation={navigation}
@@ -181,6 +171,7 @@ export function App() {
         favorites={favorites}
         savedPrompts={savedPrompts}
         describeDestination={describeDestination}
+        {...(destinationLabel === undefined ? {} : { destinationLabel })}
         onViewMetadata={(imageId) => {
           void metadata.viewMetadata(imageId);
         }}

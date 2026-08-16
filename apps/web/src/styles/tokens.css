@@ -8,7 +8,6 @@
   --surface-raised: #ffffff;
   --surface-soft: #f0f0f0;
   --surface-hover: #e8e8e8;
-  --rail: #f2f2f2;
   --text: #202020;
   --text-secondary: #606060;
   --text-muted: #888888;
@@ -28,6 +27,11 @@
   --shadow-lg: 0 12px 38px rgb(0 0 0 / 18%);
   --motion-surface-duration: 220ms;
   --motion-surface-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  /* Persistent screen-edge controls must use this shared inset system. */
+  --studio-edge-inline: 18px;
+  --studio-edge-block: 14px;
+  --studio-corner-control-size: 36px;
+  --studio-corner-control-gap: 8px;
 }
 
 :root[data-theme='dark'] {
@@ -36,7 +40,6 @@
   --surface-raised: #222222;
   --surface-soft: #272727;
   --surface-hover: #303030;
-  --rail: #151515;
   --text: #ededed;
   --text-secondary: #bdbdbd;
   --text-muted: #8f8f8f;

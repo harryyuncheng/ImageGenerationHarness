@@ -10,9 +10,7 @@ export type ModalName = 'code' | 'request' | 'metadata' | null;
  */
 export function useStudioNavigation(editor: EditorSelectionController) {
   const [view, setView] = useState<StudioView>('create');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(true);
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [modal, setModal] = useState<ModalName>(null);
   const [gallerySort, setGallerySort] = useState<GallerySort>('chronological');
 
@@ -39,12 +37,8 @@ export function useStudioNavigation(editor: EditorSelectionController) {
     showsView,
     selectStudioView,
     goToCreate,
-    sidebarOpen,
-    setSidebarOpen,
     settingsOpen,
     setSettingsOpen,
-    mobileNavOpen,
-    setMobileNavOpen,
     modal,
     setModal,
     gallerySort,
