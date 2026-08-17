@@ -1,63 +1,50 @@
-import type { EditSourceController } from '../features/editor/use-edit-source.js';
-import type { ImageMetadataController } from '../features/editor/use-image-metadata.js';
-import type { AttachmentsController } from '../features/generation/use-attachments.js';
-import type { GenerationController } from '../features/generation/use-generation.js';
-import type { ReferenceLibraryController } from '../features/references/use-reference-library.js';
-import type { Toast } from '../shared/hooks/use-toasts.js';
+import { useImageMetadata } from '../features/editor/use-image-metadata.js';
 import { HiddenFileInputs } from './HiddenFileInputs.js';
 import { StudioModals } from './StudioModals.js';
+import type { PreviewModal } from './StudioShell.js';
+import { useStudio, useStudioShell } from './studio-context.js';
 import { ToastStack } from './ToastStack.js';
-import type { StudioNavigation } from './use-studio-navigation.js';
 
 interface StudioOverlaysProps {
-  navigation: StudioNavigation;
-  attachments: AttachmentsController;
-  editSource: EditSourceController;
-  references: ReferenceLibraryController;
-  generation: GenerationController;
-  metadata: ImageMetadataController;
-  toasts: Toast[];
-  onDismissToast: (id: string) => void;
-  onCopy: (value: string, message?: string) => Promise<void>;
+  previewModal: PreviewModal;
+  metadataImageId: string | undefined;
+  onClosePreview: () => void;
 }
 
 export function StudioOverlays({
-  navigation,
-  attachments,
-  editSource,
-  references,
-  generation,
-  metadata,
-  toasts,
-  onDismissToast,
-  onCopy,
+  previewModal,
+  metadataImageId,
+  onClosePreview,
 }: StudioOverlaysProps) {
+  const studio = useStudio();
+  const shell = useStudioShell();
+  const metadataQuery = useImageMetadata(studio.activeRepositoryId, metadataImageId);
+  const modal = metadataImageId === undefined ? previewModal : 'metadata';
+
   return (
     <>
       <HiddenFileInputs
-        promptInput={attachments.fileInput}
-        editInput={editSource.editFileInput}
-        libraryInput={references.fileInput}
-        onPromptFiles={attachments.handleFiles}
-        onEditFile={editSource.handleEditFile}
+        promptInput={studio.attachments.fileInput}
+        editInput={studio.editSource.editFileInput}
+        libraryInput={studio.references.fileInput}
+        onPromptFiles={studio.attachments.handleFiles}
+        onEditFile={studio.editSource.handleEditFile}
         onLibraryFiles={(event) => {
-          void references.handleFiles(event);
+          void studio.references.handleFiles(event);
         }}
       />
 
-      {navigation.modal && (
+      {modal && (
         <StudioModals
-          modal={navigation.modal}
-          requestBody={generation.requestBody}
-          metadata={metadata}
-          onClose={() => {
-            navigation.setModal(null);
-          }}
-          onCopy={onCopy}
+          modal={modal}
+          requestBody={studio.generation.requestBody}
+          metadataQuery={metadataQuery}
+          onClose={metadataImageId === undefined ? onClosePreview : studio.navigate.closeMetadata}
+          onCopy={shell.copyText}
         />
       )}
 
-      <ToastStack toasts={toasts} onDismiss={onDismissToast} />
+      <ToastStack toasts={shell.toasts} onDismiss={shell.dismissToast} />
     </>
   );
 }

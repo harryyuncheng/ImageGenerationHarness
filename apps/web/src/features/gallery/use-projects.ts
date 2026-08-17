@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
@@ -10,6 +10,7 @@ import type { ProjectInput } from './api.js';
 
 interface ProjectsOptions {
   activeRepositoryId: string | undefined;
+  selectedProjectId: string | undefined;
   destination: DestinationController;
   notify: Notify;
   requireRepository: (action: string) => boolean;
@@ -17,16 +18,13 @@ interface ProjectsOptions {
 
 export function useProjects({
   activeRepositoryId,
+  selectedProjectId,
   destination,
   notify,
   requireRepository,
 }: ProjectsOptions) {
   const queryClient = useQueryClient();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>();
-
-  useEffect(() => {
-    setSelectedProjectId(undefined);
-  }, [activeRepositoryId]);
+  const navigate = useStudioNavigate();
 
   const projectsQuery = useQuery({
     queryKey: queryKeys.projects(activeRepositoryId),
@@ -72,7 +70,7 @@ export function useProjects({
     );
     if (!result.ok) return;
     await invalidateProjects();
-    setSelectedProjectId(result.value.projectId);
+    navigate.openProject(result.value.projectId);
     notify('Project created.', 'success');
   }
 
@@ -101,7 +99,7 @@ export function useProjects({
     if (current.kind !== 'main' && current.projectId === project.projectId) {
       destination.resetDestination();
     }
-    setSelectedProjectId(undefined);
+    navigate.goToProjects();
     await Promise.all([invalidateProjects(), invalidateRepositoryContent()]);
     notify('Project deleted.', 'success');
   }
@@ -156,7 +154,6 @@ export function useProjects({
     projects,
     projectsQuery,
     selectedProjectId,
-    setSelectedProjectId,
     selectedProjectQuery,
     createProject,
     updateProject,

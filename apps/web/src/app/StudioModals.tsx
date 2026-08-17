@@ -2,7 +2,6 @@ import { CloudOff, Copy } from 'lucide-react';
 import { Modal } from '../shared/components/Modal.js';
 import type { ImageMetadataController } from '../features/editor/use-image-metadata.js';
 import { buildRunCodeExample } from '../features/generation/code-sample.js';
-import type { ModalName } from './use-studio-navigation.js';
 
 const titles = {
   code: 'Get code',
@@ -11,9 +10,9 @@ const titles = {
 } as const;
 
 interface StudioModalsProps {
-  modal: Exclude<ModalName, null>;
+  modal: keyof typeof titles;
   requestBody: unknown;
-  metadata: ImageMetadataController;
+  metadataQuery: ImageMetadataController;
   onClose: () => void;
   onCopy: (value: string, message?: string) => Promise<void>;
 }
@@ -50,19 +49,30 @@ function CodePreview({
 }
 
 /** Request previews stay local: only the exact submitted payload is shown. */
-export function StudioModals({ modal, requestBody, metadata, onClose, onCopy }: StudioModalsProps) {
+export function StudioModals({
+  modal,
+  requestBody,
+  metadataQuery,
+  onClose,
+  onCopy,
+}: StudioModalsProps) {
   const requestJson = JSON.stringify(requestBody, null, 2);
   const codeExample = buildRunCodeExample(requestBody);
+  const metadataError = metadataQuery.error;
   const metadataJson =
-    metadata.metadata === undefined ? undefined : JSON.stringify(metadata.metadata, null, 2);
+    metadataQuery.data === undefined ? undefined : JSON.stringify(metadataQuery.data, null, 2);
 
   return (
     <Modal title={titles[modal]} onClose={onClose}>
       {modal === 'metadata' ? (
-        metadata.metadataError ? (
+        metadataError ? (
           <div className="metadata-error">
             <CloudOff size={22} />
-            <p>{metadata.metadataError}</p>
+            <p>
+              {metadataError instanceof Error
+                ? metadataError.message
+                : 'Image metadata unavailable'}
+            </p>
           </div>
         ) : metadataJson === undefined ? (
           <div className="metadata-loading">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability, Destination, GalleryImage } from '../../shared/types/domain.js';
 import type { StudioRun } from '../history/run-presentation.js';
@@ -15,7 +16,6 @@ interface DraftActionsOptions {
   attachments: AttachmentsController;
   destination: DestinationController;
   notify: Notify;
-  goToCreate: () => void;
 }
 
 export function useDraftActions({
@@ -24,12 +24,12 @@ export function useDraftActions({
   attachments,
   destination,
   notify,
-  goToCreate,
 }: DraftActionsOptions) {
+  const navigate = useStudioNavigate();
   const [modelMenuOpen, setModelMenuOpen] = useState(false);
 
   function openCreateAndFocus() {
-    goToCreate();
+    navigate.goToCreate();
     promptDraft.focusPromptSoon();
   }
 
@@ -66,7 +66,7 @@ export function useDraftActions({
       settings.updateSettings('aspectRatio', run.aspectRatio);
     }
     destination.setDestination(run.destination);
-    goToCreate();
+    navigate.goToCreate();
     notify('Settings restored. Add source images again if needed.', 'success');
   }
 
@@ -74,7 +74,7 @@ export function useDraftActions({
     promptDraft.setPrompt(image.prompt ?? '');
     settings.updateSettings('targetId', image.targetId);
     destination.setDestination(imageDestination(image));
-    goToCreate();
+    navigate.goToCreate();
     notify(
       'Prompt, model, and destination restored. Add source images again if needed.',
       'success',

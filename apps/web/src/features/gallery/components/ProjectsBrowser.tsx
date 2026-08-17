@@ -21,8 +21,9 @@ interface ProjectsBrowserProps {
   draft: ProjectCreationDraft;
   isLoading: boolean;
   error?: string;
-  onSelect: (projectId: string | undefined) => void;
+  onSelect: (projectId: string) => void;
   onCreate: (input: ProjectInput) => Promise<void>;
+  onRetry: () => void;
   onToggleCreation: () => void;
 }
 
@@ -34,6 +35,7 @@ export function ProjectsBrowser({
   error,
   onSelect,
   onCreate,
+  onRetry,
   onToggleCreation,
 }: ProjectsBrowserProps) {
   const filtered = projects.filter((project) =>
@@ -140,9 +142,7 @@ export function ProjectsBrowser({
           title="Projects unavailable"
           body={error}
           action="Try again"
-          onAction={() => {
-            onSelect(undefined);
-          }}
+          onAction={onRetry}
         />
       ) : isLoading ? (
         <div className="reference-loading">

@@ -15,17 +15,19 @@ import type {
 import type { ReferenceImage } from '../../shared/types/domain.js';
 import { referenceImageContentUrl } from '../references/api.js';
 
-export function useAttachments(notify: Notify, activeRepositoryId: string | undefined) {
+export function useAttachments(notify: Notify) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [dragActive, setDragActive] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const latestAttachments = useRef(attachments);
+  latestAttachments.current = attachments;
 
-  useEffect(() => {
-    setAttachments((current) => {
-      revokeUploadPreviews(current);
-      return [];
-    });
-  }, [activeRepositoryId]);
+  useEffect(
+    () => () => {
+      revokeUploadPreviews(latestAttachments.current);
+    },
+    [],
+  );
 
   async function addFiles(files: File[]) {
     const accepted = supportedImageFiles(files);

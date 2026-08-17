@@ -13,7 +13,7 @@ interface EditViewProps {
   onUpload: () => void;
   onDropFiles: (files: File[]) => void;
   onRetry: () => void;
-  onOpenImage: (image: GalleryImage, location: string) => void;
+  onOpenImage: (image: GalleryImage) => void;
 }
 
 export function EditView(props: EditViewProps) {
@@ -149,9 +149,7 @@ export function EditView(props: EditViewProps) {
                             key={image.imageId}
                             image={image}
                             subtitle={location.replace('Baroque / ', '')}
-                            onOpen={(selected) => {
-                              props.onOpenImage(selected, location);
-                            }}
+                            onOpen={props.onOpenImage}
                           />
                         );
                       })}

@@ -1,3 +1,4 @@
+import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { ReferenceImage } from '../../shared/types/domain.js';
 import type { AttachmentsController } from './use-attachments.js';
@@ -7,7 +8,6 @@ interface ReferenceAttachmentOptions {
   attachments: AttachmentsController;
   settings: GenerationSettingsController;
   notify: Notify;
-  onAttached: () => void;
 }
 
 /**
@@ -18,12 +18,13 @@ export function useReferenceAttachment({
   attachments,
   settings,
   notify,
-  onAttached,
 }: ReferenceAttachmentOptions) {
+  const navigate = useStudioNavigate();
+
   return function attachReferenceImage(image: ReferenceImage) {
     if (attachments.hasLibraryImage(image.imageId)) {
       notify('That reference is already attached.');
-      onAttached();
+      navigate.goToCreate();
       return;
     }
     if (attachments.isFull) {
@@ -34,7 +35,7 @@ export function useReferenceAttachment({
     if (settings.selectedCapability.canonicalId === 'generation/core') {
       settings.updateSettings('targetId', 'generation/sd3.5-large');
     }
-    onAttached();
+    navigate.goToCreate();
     notify('Reference image attached.', 'success');
   };
 }

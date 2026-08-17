@@ -1,49 +1,52 @@
 import { SlidersHorizontal, X } from 'lucide-react';
+import { useRouterState } from '@tanstack/react-router';
 import { RepositoryPicker } from '../features/repository/components/RepositoryPicker.js';
-import type { RepositoryController } from '../features/repository/use-repository.js';
-import type { StudioNavigation } from './use-studio-navigation.js';
+import { useStudio } from './studio-context.js';
+
+const libraryTitles: Record<string, string> = {
+  '/gallery/history': 'Gallery',
+  '/gallery/projects': 'Gallery',
+  '/references': 'Reference library',
+  '/presets': 'Saved presets',
+};
 
 export function TopBar({
-  navigation,
-  repository,
+  settingsOpen,
+  showCreateWorkspace,
+  onOpenSettings,
 }: {
-  navigation: StudioNavigation;
-  repository: RepositoryController;
+  settingsOpen: boolean;
+  showCreateWorkspace: boolean;
+  onOpenSettings: () => void;
 }) {
-  const openLibrary = navigation.showsView('gallery')
+  const studio = useStudio();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const openLibrary = pathname.startsWith('/gallery/projects/')
     ? 'Gallery'
-    : navigation.showsView('references')
-      ? 'Reference library'
-      : navigation.showsView('presets')
-        ? 'Saved presets'
-        : undefined;
+    : libraryTitles[pathname];
 
   return (
     <header className="top-controls">
       <div className="top-bar-left">
-        <RepositoryPicker repository={repository} />
+        <RepositoryPicker repository={studio.repository} />
       </div>
       <div className="top-actions">
         {openLibrary ? (
           <button
             type="button"
             className="icon-button"
-            onClick={() => {
-              navigation.selectStudioView('create');
-            }}
+            onClick={studio.navigate.goToCreate}
             aria-label={`Close ${openLibrary}`}
           >
             <X size={18} />
           </button>
         ) : (
-          navigation.showCreateWorkspace &&
-          !navigation.settingsOpen && (
+          showCreateWorkspace &&
+          !settingsOpen && (
             <button
               type="button"
               className="icon-button"
-              onClick={() => {
-                navigation.setSettingsOpen(true);
-              }}
+              onClick={onOpenSettings}
               aria-label="Open advanced settings"
             >
               <SlidersHorizontal size={18} />

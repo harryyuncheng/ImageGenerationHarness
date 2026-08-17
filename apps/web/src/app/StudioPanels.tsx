@@ -1,43 +1,59 @@
 import { EditToolsPanel } from '../features/editor/components/EditToolsPanel.js';
-import type { EditSourceController } from '../features/editor/use-edit-source.js';
-import type { EditToolsController } from '../features/editor/use-edit-tools.js';
+import type { EditorFocus } from '../features/editor/use-editor-focus.js';
 import { SettingsPanel } from '../features/generation/components/SettingsPanel.js';
-import type { GenerationSettingsController } from '../features/generation/use-generation-settings.js';
-import type { StudioNavigation } from './use-studio-navigation.js';
+import type { PreviewModal } from './StudioShell.js';
+import { useStudio } from './studio-context.js';
 
 interface StudioPanelsProps {
-  navigation: StudioNavigation;
-  settings: GenerationSettingsController;
-  editTools: EditToolsController;
-  editSource: EditSourceController;
+  showCreateWorkspace: boolean;
+  showEditWorkspace: boolean;
+  settingsOpen: boolean;
+  hasEditSource: boolean;
+  focus: EditorFocus | undefined;
+  onCloseSettings: () => void;
+  onOpenPreview: (modal: PreviewModal) => void;
 }
 
-export function StudioPanels({ navigation, settings, editTools, editSource }: StudioPanelsProps) {
+export function StudioPanels({
+  showCreateWorkspace,
+  showEditWorkspace,
+  settingsOpen,
+  hasEditSource,
+  focus,
+  onCloseSettings,
+  onOpenPreview,
+}: StudioPanelsProps) {
+  const studio = useStudio();
+
   return (
     <>
-      {navigation.showCreateWorkspace && (
+      {showCreateWorkspace && (
         <SettingsPanel
-          open={navigation.settingsOpen}
-          capability={settings.selectedCapability}
-          settings={settings.settings}
-          updateSettings={settings.updateSettings}
-          onRandomSeed={settings.chooseRandomSeed}
+          open={settingsOpen}
+          capability={studio.settings.selectedCapability}
+          settings={studio.settings.settings}
+          updateSettings={studio.settings.updateSettings}
+          onRandomSeed={studio.settings.chooseRandomSeed}
           onViewRequest={() => {
-            navigation.setModal('request');
+            onOpenPreview('request');
           }}
           onGetCode={() => {
-            navigation.setModal('code');
+            onOpenPreview('code');
           }}
-          onClose={() => {
-            navigation.setSettingsOpen(false);
-          }}
+          onClose={onCloseSettings}
         />
       )}
-      {navigation.showEditWorkspace && (
+      {showEditWorkspace && (
         <EditToolsPanel
-          selection={editTools.selection}
-          hasImage={navigation.hasEditSource}
-          {...(navigation.hasEditSource ? { onStart: editSource.startSelectedEdit } : {})}
+          selection={studio.editTools.selection}
+          hasImage={hasEditSource}
+          {...(hasEditSource
+            ? {
+                onStart: () => {
+                  studio.editSource.startSelectedEdit(focus);
+                },
+              }
+            : {})}
         />
       )}
     </>

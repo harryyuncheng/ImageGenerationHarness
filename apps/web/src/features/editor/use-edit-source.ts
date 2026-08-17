@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
+import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import { runMutation } from '../../shared/api/mutation.js';
 import {
   readAsData,
@@ -13,19 +14,21 @@ import type { AttachmentsController } from '../generation/use-attachments.js';
 import type { DestinationController } from '../generation/use-destination.js';
 import type { GenerationSettingsController } from '../generation/use-generation-settings.js';
 import type { PromptDraftController } from '../generation/use-prompt-draft.js';
+import type {
+  EditorFocus,
+  UploadSelection,
+  UploadSelectionController,
+} from './use-editor-focus.js';
 import type { EditToolsController } from './use-edit-tools.js';
-import type { EditorSelectionController, ImageEditorSelection } from './use-editor-selection.js';
 
 interface EditSourceOptions {
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
   attachments: AttachmentsController;
   destination: DestinationController;
-  editor: EditorSelectionController;
+  upload: UploadSelectionController;
   editTools: EditToolsController;
   notify: Notify;
-  goToEdit: () => void;
-  goToCreate: () => void;
 }
 
 /**
@@ -37,12 +40,11 @@ export function useEditSource({
   settings,
   attachments,
   destination,
-  editor,
+  upload,
   editTools,
   notify,
-  goToEdit,
-  goToCreate,
 }: EditSourceOptions) {
+  const navigate = useStudioNavigate();
   const editFileInput = useRef<HTMLInputElement>(null);
 
   const reportError = (message: string) => {
@@ -56,8 +58,8 @@ export function useEditSource({
       notify('Use a PNG, JPEG, or WebP image up to 10 MB.', 'error');
       return;
     }
-    editor.openUpload(file);
-    goToEdit();
+    upload.openUpload(file);
+    navigate.goToEdit();
   }
 
   function handleEditFile(event: ChangeEvent<HTMLInputElement>) {
@@ -84,12 +86,11 @@ export function useEditSource({
     promptDraft.setPrompt(image.prompt ?? '');
     settings.updateSettings('targetId', toolId);
     destination.setDestination(imageDestination(image));
-    editor.close();
-    goToCreate();
+    navigate.goToCreate();
     notify('Image added as the editing source.', 'success');
   }
 
-  async function editUploadedImage(selection: Extract<ImageEditorSelection, { kind: 'upload' }>) {
+  async function editUploadedImage(selection: UploadSelection) {
     const toolId = requireEditingTool();
     if (!toolId) return;
     const result = await runMutation(
@@ -102,19 +103,18 @@ export function useEditSource({
     promptDraft.setPrompt('');
     settings.updateSettings('targetId', toolId);
     destination.resetDestination();
-    editor.close();
-    goToCreate();
+    upload.clearUpload();
+    navigate.goToCreate();
     notify('Image added as the editing source.', 'success');
   }
 
-  function startSelectedEdit() {
-    const selection = editor.selection;
-    if (selection?.kind === 'upload') {
-      void editUploadedImage(selection);
+  function startSelectedEdit(focus: EditorFocus | undefined) {
+    if (focus?.kind === 'upload') {
+      void editUploadedImage(focus);
       return;
     }
-    if (selection?.kind === 'image' && selection.intent === 'edit') {
-      void editBaroqueImage(selection.image);
+    if (focus?.kind === 'image' && focus.intent === 'edit') {
+      void editBaroqueImage(focus.image);
     }
   }
 

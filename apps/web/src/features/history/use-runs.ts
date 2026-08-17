@@ -4,7 +4,6 @@ import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability } from '../../shared/types/domain.js';
-import type { EditorSelectionController } from '../editor/use-editor-selection.js';
 import { cancelRun, getRuns, retryRun } from './api.js';
 import { collectRunFailures, mergeRuns, toStudioRuns, type StudioRun } from './run-presentation.js';
 import type { FavoritesController } from './use-favorites.js';
@@ -15,9 +14,9 @@ interface RunsOptions {
   activeRepositoryId: string | undefined;
   capabilities: readonly Capability[];
   favorites: FavoritesController;
-  editor: EditorSelectionController;
   notify: Notify;
-  onFailedRunDismissed: () => void;
+  focusedRunId: string | undefined;
+  onFocusedRunFailed: () => void;
 }
 
 /**
@@ -25,7 +24,7 @@ interface RunsOptions {
  * the gap between submitting a run and seeing it in a poll.
  */
 export function useRuns(options: RunsOptions) {
-  const { activeRepositoryId, capabilities, favorites, editor, notify } = options;
+  const { activeRepositoryId, capabilities, favorites, notify, focusedRunId } = options;
   const queryClient = useQueryClient();
   const [optimisticRuns, setOptimisticRuns] = useState<StudioRun[]>([]);
   const handledFailureIds = useRef(new Set<string>());
@@ -38,12 +37,6 @@ export function useRuns(options: RunsOptions) {
     retry: false,
     refetchInterval: pollingIntervalMs,
   });
-
-  useEffect(() => {
-    setOptimisticRuns([]);
-    handledFailureIds.current.clear();
-    discardedRunIds.current.clear();
-  }, [activeRepositoryId]);
 
   const runFailures = useMemo(() => collectRunFailures(runsQuery.data), [runsQuery.data]);
   const durableRuns = useMemo(
@@ -71,9 +64,9 @@ export function useRuns(options: RunsOptions) {
       return remaining.length === current.length ? current : remaining;
     });
     favorites.dropFavorites(failedIds);
-    if (editor.showsFailedRun(failedIds)) options.onFailedRunDismissed();
+    if (focusedRunId !== undefined && failedIds.has(focusedRunId)) options.onFocusedRunFailed();
     for (const failure of unhandled) notify(failure.error, 'error');
-  }, [runFailures, editor.selection, optimisticRuns, favorites.dropFavorites]);
+  }, [runFailures, focusedRunId, optimisticRuns, favorites.dropFavorites]);
 
   function addOptimisticRun(run: StudioRun) {
     setOptimisticRuns((current) => [run, ...current].slice(0, 20));

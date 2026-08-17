@@ -14,6 +14,8 @@ export const queryKeys = {
   allRuns: (repositoryId: string | undefined) => ['runs', repositoryId, 'all'] as const,
   images: (repositoryId: string | undefined) => ['images', repositoryId] as const,
   allImages: (repositoryId: string | undefined) => ['images', repositoryId, 'all'] as const,
+  imageMetadata: (repositoryId: string | undefined, imageId: string | undefined) =>
+    ['images', repositoryId, 'metadata', imageId] as const,
 };
 
 export const repositoryScopedQueryPrefixes: readonly string[] = [

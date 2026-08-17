@@ -27,6 +27,8 @@ Shared package schemas are grouped by resource or durable entity. Their root `in
 
 The browser owns presentation state and non-authoritative preferences. It receives stable IDs and safe metadata, never arbitrary filesystem paths or AWS credentials. It submits strict model requests plus an explicit destination and polls run snapshots for authoritative state.
 
+Addressable state lives in the URL: the visible view is a route, the selected project is a route parameter, and the focused image, run, and metadata dialog are Zod-validated search parameters holding identifiers only. Identifiers are resolved against cached query data at render time, so a link that no longer resolves degrades to its underlying view. Live uploads and draft-derived previews stay in component state because they cannot be addressed. Repository-scoped state is mounted under a key derived from the active repository, which is what prevents drafts, destinations, and optimistic runs from crossing a repository switch.
+
 ### Loopback server
 
 Fastify binds to loopback and validates Host and Origin headers. It owns repository selection, manifest validation, project/reference APIs, durable run creation, local queueing, input hydration, Bedrock invocation, output persistence, and ID-resolved content delivery.

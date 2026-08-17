@@ -16,14 +16,14 @@ interface ProjectDashboardProps {
   detail: ProjectDetailResponse;
   images: GalleryImage[];
   headerActions: ReactNode;
-  onSelect: (projectId: string | undefined) => void;
+  onBack: () => void;
   onUpdate: (projectId: string, input: ProjectInput) => Promise<void>;
   onDelete: (project: Project) => void;
   onCreateAsset: (projectId: string, input: ProjectInput) => Promise<void>;
   onEditAsset: (asset: ProjectAsset) => void;
   onDeleteAsset: (asset: ProjectAsset) => void;
   onGenerate: (destination: Destination) => void;
-  onOpenImage: (image: GalleryImage, location: string) => void;
+  onOpenImage: (image: GalleryImage) => void;
 }
 
 export function ProjectDashboard(props: ProjectDashboardProps) {
@@ -47,12 +47,7 @@ export function ProjectDashboard(props: ProjectDashboardProps) {
   return (
     <div className="library-page project-dashboard gallery-page surface-enter">
       <div className="project-dashboard-toolbar">
-        <button
-          className="project-back"
-          onClick={() => {
-            props.onSelect(undefined);
-          }}
-        >
+        <button className="project-back" onClick={props.onBack}>
           <ArrowLeft size={16} /> All projects
         </button>
         {props.headerActions}
@@ -130,7 +125,6 @@ export function ProjectDashboard(props: ProjectDashboardProps) {
       />
 
       <ProjectImagesSection
-        project={project}
         assets={assets}
         images={projectImages}
         onOpenImage={props.onOpenImage}

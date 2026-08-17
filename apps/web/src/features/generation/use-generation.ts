@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { KeyboardEvent, SyntheticEvent } from 'react';
+import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
-import type { EditorSelectionController } from '../editor/use-editor-selection.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import type { RunsController } from '../history/use-runs.js';
 import { queueRun } from './api.js';
@@ -18,14 +18,13 @@ interface GenerationOptions {
   attachments: AttachmentsController;
   destination: DestinationController;
   runs: RunsController;
-  editor: EditorSelectionController;
   notify: Notify;
   requireRepository: (action: string) => boolean;
-  onSubmissionFailed: () => void;
 }
 
 export function useGeneration(options: GenerationOptions) {
-  const { promptDraft, settings, attachments, destination, runs, editor, notify } = options;
+  const { promptDraft, settings, attachments, destination, runs, notify } = options;
+  const navigate = useStudioNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { prompt } = promptDraft;
   const { selectedCapability } = settings;
@@ -107,21 +106,21 @@ export function useGeneration(options: GenerationOptions) {
       favorite: false,
     };
     runs.addOptimisticRun(baseRun);
-    editor.openRunDraft(localId, baseRun);
+    navigate.openRun(localId);
     setIsSubmitting(true);
 
     try {
       const { runId: remoteId } = await queueRun(requestBody);
       runs.markRunQueued(localId, remoteId);
-      editor.attachRemoteId(localId, remoteId);
+      navigate.readdressRun(remoteId);
       void runs.invalidateRuns();
       const { outputCount } = settings.settings;
       notify(`${String(outputCount)} image${outputCount === 1 ? '' : 's'} queued.`, 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Generation could not be queued.';
       runs.discardOptimisticRun(localId);
-      editor.closeRun(localId);
-      options.onSubmissionFailed();
+      navigate.goToCreate();
+      promptDraft.focusPromptSoon();
       notify(message, 'error');
     } finally {
       setIsSubmitting(false);

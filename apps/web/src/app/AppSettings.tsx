@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ThemeSelector } from '../features/theme/components/ThemeSelector.js';
-import type { ThemeController } from '../features/theme/use-theme.js';
 import { ShortcutList } from '../shared/components/ShortcutList.js';
+import { useStudioShell } from './studio-context.js';
 
 const dialogId = 'app-settings-dialog';
 const settingsTabs = [
@@ -24,13 +24,12 @@ const focusableSelector = [
 
 export function AppSettings({
   open,
-  theme,
   onOpenChange,
 }: {
   open: boolean;
-  theme: ThemeController;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { theme } = useStudioShell();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
