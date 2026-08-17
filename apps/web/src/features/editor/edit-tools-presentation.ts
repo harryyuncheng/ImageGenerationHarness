@@ -22,25 +22,6 @@ export function editorProgressMessage(status: RunStatus, hasImage: boolean): str
   return 'Generation failed.';
 }
 
-export function editToolDescription(capability: Capability): string {
-  switch (capability.canonicalId) {
-    case 'service/inpaint':
-      return 'Paint new content into a selected area.';
-    case 'service/outpaint':
-      return 'Extend the image beyond its current frame.';
-    case 'service/search-recolor':
-      return 'Find an object and change its color.';
-    case 'service/search-replace':
-      return 'Find an object and replace it with something new.';
-    case 'service/erase':
-      return 'Remove a selected object or region.';
-    case 'service/remove-background':
-      return 'Isolate the subject on a transparent background.';
-    default:
-      return 'Edit this image with Stability on Bedrock.';
-  }
-}
-
 export function editToolIcon(capability: Capability): LucideIcon {
   switch (capability.canonicalId) {
     case 'service/inpaint':

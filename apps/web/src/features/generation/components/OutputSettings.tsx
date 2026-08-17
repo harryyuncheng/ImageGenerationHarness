@@ -11,6 +11,20 @@ interface OutputSettingsProps {
   onRandomSeed: () => void;
 }
 
+const seedStrategies = [
+  { value: 'random', label: 'Random', description: 'Use a fresh random seed for each image.' },
+  { value: 'fixed', label: 'Fixed', description: 'Reuse the same seed for every image.' },
+  {
+    value: 'sequential',
+    label: 'Sequential',
+    description: 'Increase the seed by one for each image.',
+  },
+] as const satisfies readonly {
+  value: GenerationSettings['seedMode'];
+  label: string;
+  description: string;
+}[];
+
 export function OutputSettings({
   capability,
   settings,
@@ -20,6 +34,12 @@ export function OutputSettings({
   const seedMaximum = maximumSeed(capability);
   const outputFormats = supportedOutputFormats(capability);
   const selectedOutputFormatIndex = Math.max(outputFormats.indexOf(settings.outputFormat), 0);
+  const selectedSeedStrategyIndex = Math.max(
+    seedStrategies.findIndex((strategy) => strategy.value === settings.seedMode),
+    0,
+  );
+  const selectedSeedStrategy =
+    seedStrategies.find((strategy) => strategy.value === settings.seedMode) ?? seedStrategies[0];
   return (
     <>
       {hasParameter(capability, 'negative_prompt') && (
@@ -63,32 +83,59 @@ export function OutputSettings({
       )}
       {seedMaximum !== undefined && (
         <SettingGroup label="Seed strategy">
-          <select
-            value={settings.seedMode}
-            onChange={(event) => {
-              updateSettings('seedMode', event.target.value as GenerationSettings['seedMode']);
-            }}
+          <div
+            className="segmented-control seed-strategy-control"
+            role="group"
+            aria-label="Seed strategy"
           >
-            <option value="random">Random per image</option>
-            <option value="fixed">Repeat one seed</option>
-            <option value="sequential">Sequential seeds</option>
-          </select>
-          {settings.seedMode !== 'random' && (
-            <div className="seed-input">
-              <input
-                type="number"
-                min="0"
-                max={seedMaximum}
-                value={settings.seed}
-                onChange={(event) => {
-                  updateSettings('seed', Number(event.target.value));
+            <span
+              className="segmented-control__indicator"
+              aria-hidden="true"
+              style={{
+                width: `${String(100 / seedStrategies.length)}%`,
+                transform: `translateX(${String(selectedSeedStrategyIndex * 100)}%)`,
+              }}
+            />
+            {seedStrategies.map((strategy) => (
+              <button
+                type="button"
+                key={strategy.value}
+                className={settings.seedMode === strategy.value ? 'selected' : ''}
+                aria-pressed={settings.seedMode === strategy.value}
+                onClick={() => {
+                  updateSettings('seedMode', strategy.value);
                 }}
-              />
-              <button className="icon-button" onClick={onRandomSeed} title="Random seed">
-                <Dice5 size={17} />
+              >
+                {strategy.label}
               </button>
-            </div>
-          )}
+            ))}
+          </div>
+          <small className="seed-strategy-description">{selectedSeedStrategy.description}</small>
+          <div className="seed-input">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={String(seedMaximum).length}
+              value={settings.seedMode === 'random' ? '' : settings.seed}
+              placeholder="Random per image"
+              aria-label="Seed"
+              disabled={settings.seedMode === 'random'}
+              onChange={(event) => {
+                if (!/^\d*$/.test(event.target.value)) return;
+                updateSettings('seed', Math.min(Number(event.target.value || '0'), seedMaximum));
+              }}
+            />
+            <button
+              type="button"
+              className="icon-button"
+              onClick={onRandomSeed}
+              title="Random seed"
+              disabled={settings.seedMode === 'random'}
+            >
+              <Dice5 size={17} />
+            </button>
+          </div>
         </SettingGroup>
       )}
     </>

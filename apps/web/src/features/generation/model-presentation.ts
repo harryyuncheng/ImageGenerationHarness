@@ -1,24 +1,22 @@
-import { Eraser, Paintbrush, Scaling, Sparkles, type LucideIcon } from 'lucide-react';
 import type { Capability } from '../../shared/types/domain.js';
 import { hasParameter } from './capabilities.js';
 
-export const categoryMeta: Record<Capability['category'], { label: string; Icon: LucideIcon }> = {
-  generation: { label: 'Generate', Icon: Sparkles },
-  control: { label: 'Control & style', Icon: Paintbrush },
-  upscale: { label: 'Upscale', Icon: Scaling },
-  edit: { label: 'Edit', Icon: Eraser },
-};
+export const toolbarTabs = [
+  { id: 'create', label: 'Create', category: 'generation' },
+  { id: 'style', label: 'Style', category: 'control' },
+  { id: 'edit', label: 'Edit', category: 'edit' },
+  { id: 'export', label: 'Export', category: 'upscale' },
+] as const satisfies readonly {
+  id: string;
+  label: string;
+  category: Capability['category'];
+}[];
 
-export const modelCategories = ['generation', 'control', 'upscale', 'edit'] as const;
-
-export function shortModelName(name: string): string {
-  return name.replace('Stable Diffusion', 'SD').replace('Stable Image', 'Stable');
-}
-
-export function modelPromptSummary(capability: Capability): string {
-  if (capability.modes.includes('image-to-image')) return 'Text or image prompt';
-  if (capability.modes.includes('text-to-image')) return 'Text prompt';
-  return 'Source image required';
+export function toolbarToolLabel(capability: Capability): string {
+  if (capability.canonicalId === 'generation/core') return 'Core';
+  if (capability.canonicalId === 'generation/ultra') return 'Ultra';
+  if (capability.canonicalId === 'generation/sd3.5-large') return '3.5 Large';
+  return capability.name;
 }
 
 export function attachmentRole(capability: Capability, index: number): string {

@@ -1,4 +1,4 @@
-import { Check, ChevronDown } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -7,7 +7,7 @@ interface ComposerSettingOption {
   value: string;
   label: string;
   description: string;
-  preview: ReactNode;
+  preview?: ReactNode;
 }
 
 interface ComposerSettingPickerProps {
@@ -165,7 +165,6 @@ export function ComposerSettingPicker({
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         aria-describedby={`${menuId}-current-value`}
-        title={label}
         onClick={() => {
           onOpenChange(!open);
         }}
@@ -180,7 +179,6 @@ export function ComposerSettingPicker({
           Current value: {value}
         </span>
         {triggerContent}
-        <ChevronDown className="composer-setting-chevron" size={13} />
       </button>
       {open &&
         createPortal(
@@ -223,7 +221,9 @@ export function ComposerSettingPicker({
                       <strong>{option.label}</strong>
                       <small>{option.description}</small>
                     </span>
-                    {selected && <Check className="composer-setting-option-check" size={14} />}
+                    {selected && variant === 'dimensions' && (
+                      <Check className="composer-setting-option-check" size={14} />
+                    )}
                   </button>
                 );
               })}

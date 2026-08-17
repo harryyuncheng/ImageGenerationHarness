@@ -1,5 +1,4 @@
-import { Bookmark, FolderOpen, Image as ImageIcon, ImagePlus } from 'lucide-react';
-import type { RefObject } from 'react';
+import { Bookmark, Image as ImageIcon } from 'lucide-react';
 import { hasParameter } from '../capabilities.js';
 import { aspectRatios, outputCounts } from '../settings.js';
 import type { GenerationSettingsController } from '../use-generation-settings.js';
@@ -9,57 +8,19 @@ export type ComposerSettingMenu = 'dimensions' | 'count' | null;
 
 interface ComposerToolsProps {
   settings: GenerationSettingsController;
-  fileInput: RefObject<HTMLInputElement | null>;
   settingMenu: ComposerSettingMenu;
-  onSettingMenuChange: (menu: 'dimensions' | 'count', open: boolean) => void;
-  onOpenLibrary: () => void;
+  onSettingMenuChange: (menu: Exclude<ComposerSettingMenu, null>, open: boolean) => void;
   onSavePrompt: () => void;
 }
 
 export function ComposerTools({
   settings,
-  fileInput,
   settingMenu,
   onSettingMenuChange,
-  onOpenLibrary,
   onSavePrompt,
 }: ComposerToolsProps) {
   return (
     <div className="composer-tools">
-      <div className="toolbar-control-group" role="group" aria-label="Prompt resources">
-        <button
-          type="button"
-          className="round-tool"
-          aria-label="Add images"
-          onClick={() => {
-            fileInput.current?.click();
-          }}
-          title="Add images (⌘⇧O)"
-        >
-          <ImagePlus size={17} />
-        </button>
-        <button
-          type="button"
-          className="tool-chip"
-          onClick={onOpenLibrary}
-          title="Open reference library"
-          aria-label="References"
-        >
-          <FolderOpen size={16} />
-          <span>References</span>
-        </button>
-        <button
-          type="button"
-          className="tool-chip"
-          onClick={onSavePrompt}
-          title="Save prompt"
-          aria-label="Save"
-        >
-          <Bookmark size={16} />
-          <span>Save</span>
-        </button>
-      </div>
-
       <div className="toolbar-control-group" role="group" aria-label="Output setup">
         {hasParameter(settings.selectedCapability, 'aspect_ratio') && (
           <ComposerSettingPicker
@@ -102,7 +63,6 @@ export function ComposerTools({
             value: String(count),
             label: String(count),
             description: count === 1 ? 'image' : 'images',
-            preview: <span className="image-count-preview">{count}</span>,
           }))}
           open={settingMenu === 'count'}
           variant="count"
@@ -119,6 +79,18 @@ export function ComposerTools({
             settings.updateSettings('outputCount', Number(value));
           }}
         />
+      </div>
+      <div className="toolbar-control-group" role="group" aria-label="Prompt resources">
+        <button
+          type="button"
+          className="tool-chip"
+          onClick={onSavePrompt}
+          title="Save prompt"
+          aria-label="Save"
+        >
+          <Bookmark size={16} />
+          <span>Save</span>
+        </button>
       </div>
     </div>
   );

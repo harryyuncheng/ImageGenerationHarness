@@ -186,9 +186,27 @@
   margin-top: 7px;
 }
 
+.seed-strategy-control button {
+  font-size: 9px;
+}
+
+.seed-strategy-description {
+  display: block;
+  margin: 7px 3px 0;
+  color: var(--text-muted);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
 .seed-input .icon-button {
   border: 1px solid var(--border);
   border-radius: 9px;
+}
+
+.seed-input input:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .settings-footer {

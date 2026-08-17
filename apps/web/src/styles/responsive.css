@@ -129,11 +129,10 @@
     width: 100%;
   }
   .prompt-stage {
-    padding: calc(24px + var(--top-bar-height)) 14px 126px;
+    padding: calc(44px + var(--top-bar-height)) 14px 158px;
   }
   .prompt-canvas-input {
     min-height: 3em;
-    font-size: clamp(28px, 9vw, 40px);
   }
   .edit-image-picker-backdrop {
     padding: 10px;
@@ -147,7 +146,6 @@
   .generation-toolbar {
     --toolbar-edge-gap: 14px;
     --toolbar-inline-inset: 28px;
-    --toolbar-block-inset: 28px;
 
     border-radius: 14px;
     padding: 3px;
@@ -166,8 +164,12 @@
     min-width: 23px;
     font-size: 10px;
   }
-  .composer-setting--count .composer-setting-value {
-    min-width: 8px;
+  .toolbar-tab {
+    min-width: 58px;
+    padding-inline: 9px;
+  }
+  .toolbar-tool-option {
+    padding-inline: 8px;
   }
   .library-page {
     padding-top: calc(var(--top-bar-height) + 28px);

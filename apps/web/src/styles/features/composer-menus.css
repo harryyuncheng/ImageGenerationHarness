@@ -11,21 +11,13 @@
   text-align: left;
 }
 
-.composer-setting-chevron {
-  margin-left: 1px;
-  transition: transform 140ms ease;
-}
-
-.composer-setting.is-open .composer-setting-chevron {
-  transform: rotate(180deg);
-}
-
 .composer-setting--count {
   padding-left: 8px;
 }
 
 .composer-setting--count .composer-setting-value {
   min-width: 9px;
+  text-align: left;
 }
 
 .composer-setting-menu {
@@ -38,12 +30,12 @@
   overscroll-behavior: contain;
 }
 
-.composer-setting-menu:not([data-positioned='true']) {
-  visibility: hidden;
+.composer-setting-menu--count {
+  width: min(280px, calc(100vw - 24px));
 }
 
-.composer-setting-menu--count {
-  width: min(258px, calc(100vw - 24px));
+.composer-setting-menu:not([data-positioned='true']) {
+  visibility: hidden;
 }
 
 .composer-setting-menu[data-placement='above'] {
@@ -83,7 +75,8 @@
 }
 
 .composer-setting-options--count {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .composer-setting-option {
@@ -118,10 +111,15 @@
 }
 
 .composer-setting-option--count {
-  min-height: 68px;
-  gap: 9px;
-  padding: 9px 10px;
-  text-align: left;
+  min-height: 62px;
+  justify-content: center;
+  padding: 8px 4px;
+  text-align: center;
+}
+
+.composer-setting-option--count.selected {
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
+  background: var(--accent-soft);
 }
 
 .composer-setting-option-preview {
@@ -166,25 +164,18 @@
   height: 24px;
 }
 
-.image-count-preview {
-  display: inline-flex;
-  width: 29px;
-  height: 29px;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-  box-shadow: 3px 3px 0 var(--border-soft);
-}
-
 .composer-setting-option-copy {
   display: flex;
   min-width: 0;
   flex-direction: column;
+}
+
+.composer-setting-option--count .composer-setting-option-copy {
+  align-items: center;
+}
+
+.composer-setting-option--count .composer-setting-option-copy strong {
+  font-size: 15px;
 }
 
 .composer-setting-option-copy strong {

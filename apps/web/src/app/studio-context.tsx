@@ -74,7 +74,6 @@ function useStudioValue({
   const draftActions = useDraftActions({
     promptDraft,
     settings,
-    attachments,
     destination,
     notify,
   });

@@ -1,6 +1,6 @@
 import { Check, Pencil } from 'lucide-react';
-import { capabilityLabel } from '../../generation/capabilities.js';
-import { editToolDescription, editToolIcon } from '../edit-tools-presentation.js';
+import { capabilityDescription, capabilityLabel } from '../../generation/capabilities.js';
+import { editToolIcon } from '../edit-tools-presentation.js';
 import type { EditingToolSelection } from '../use-edit-tools.js';
 
 export function EditToolsPanel({
@@ -30,7 +30,7 @@ export function EditToolsPanel({
           <h3>{selectedTool ? capabilityLabel(selectedTool) : 'No tools available'}</h3>
           <p>
             {selectedTool
-              ? editToolDescription(selectedTool)
+              ? capabilityDescription(selectedTool)
               : 'No image editing capabilities are available.'}
           </p>
         </div>
@@ -52,7 +52,7 @@ export function EditToolsPanel({
                 </span>
                 <span>
                   <strong>{capabilityLabel(tool)}</strong>
-                  <small>{editToolDescription(tool)}</small>
+                  <small>{capabilityDescription(tool)}</small>
                 </span>
                 {selected && <Check size={14} />}
               </button>

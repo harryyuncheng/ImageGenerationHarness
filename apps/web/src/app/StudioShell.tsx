@@ -58,7 +58,6 @@ function StudioLayout() {
     closeOverlays: () => {
       setPreviewModal(null);
       studio.navigate.closeMetadata();
-      studio.draftActions.closeModelMenu();
       setAppSettingsOpen(false);
       studio.repository.setMenuOpen(false);
     },

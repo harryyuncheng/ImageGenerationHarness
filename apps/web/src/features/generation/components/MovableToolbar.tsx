@@ -7,6 +7,11 @@ interface ToolbarPosition {
   top: number;
 }
 
+interface ToolbarSize {
+  width: number;
+  height: number;
+}
+
 interface DragState extends ToolbarPosition {
   pointerId: number;
   pointerX: number;
@@ -25,15 +30,7 @@ interface MovableToolbarProps {
   onMoveStart: () => void;
 }
 
-const toolbarSnapPoints = [
-  { position: 'top', x: 0.5, y: 0 },
-  { position: 'right', x: 1, y: 0.5 },
-  { position: 'bottom', x: 0.5, y: 1 },
-  { position: 'left', x: 0, y: 0.5 },
-] as const;
-
-type ToolbarSnapPosition = (typeof toolbarSnapPoints)[number]['position'];
-type ArrowKey = 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown';
+type ToolbarSnapPosition = 'top' | 'bottom';
 
 const boundaryGap = 3;
 const snapDuration = 300;
@@ -89,21 +86,16 @@ function momentumSnapPosition(
   const velocityStart =
     samples.find((sample) => Math.hypot(latest.x - sample.x, latest.y - sample.y) >= 4) ?? latest;
   const elapsed = Math.max(1, latest.time - velocityStart.time);
-  const velocityX = (latest.x - velocityStart.x) / elapsed;
   const velocityY = (latest.y - velocityStart.y) / elapsed;
-  const speed = Math.hypot(velocityX, velocityY);
-  const displacementX = latest.x - drag.pointerX;
   const displacementY = latest.y - drag.pointerY;
-  const displacement = Math.hypot(displacementX, displacementY);
-  if (speed < momentumSpeedThreshold && displacement < momentumDistanceThreshold) {
+  if (
+    Math.abs(velocityY) < momentumSpeedThreshold &&
+    Math.abs(displacementY) < momentumDistanceThreshold
+  ) {
     return currentPosition;
   }
 
-  const directionX = speed >= momentumSpeedThreshold ? velocityX : displacementX;
-  const directionY = speed >= momentumSpeedThreshold ? velocityY : displacementY;
-  if (Math.abs(directionX) > Math.abs(directionY)) {
-    return directionX > 0 ? 'right' : 'left';
-  }
+  const directionY = Math.abs(velocityY) >= momentumSpeedThreshold ? velocityY : displacementY;
   return directionY > 0 ? 'bottom' : 'top';
 }
 
@@ -114,13 +106,8 @@ function nearestSnapPosition(
 ): ToolbarSnapPosition {
   const toolbarBounds = toolbar.getBoundingClientRect();
   const bounds = boundary.getBoundingClientRect();
-  const centerX = (position.left + toolbarBounds.width / 2) / Math.max(bounds.width, 1);
   const centerY = (position.top + toolbarBounds.height / 2) / Math.max(bounds.height, 1);
-  return toolbarSnapPoints.reduce((nearest, point) => {
-    const nearestDistance = Math.hypot(centerX - nearest.x, centerY - nearest.y);
-    const pointDistance = Math.hypot(centerX - point.x, centerY - point.y);
-    return pointDistance < nearestDistance ? point : nearest;
-  }).position;
+  return centerY < 0.5 ? 'top' : 'bottom';
 }
 
 function releaseSnapPosition(
@@ -147,43 +134,6 @@ function releaseSnapPosition(
     : nearestSnapPosition(toolbar, boundary, finalPosition);
 }
 
-function isArrowKey(key: string): key is ArrowKey {
-  return ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key);
-}
-
-function nextSnapPosition(
-  currentPosition: ToolbarSnapPosition,
-  key: ArrowKey,
-): ToolbarSnapPosition {
-  const current = toolbarSnapPoints.find((point) => point.position === currentPosition);
-  if (!current) return currentPosition;
-  const candidates = toolbarSnapPoints.filter((point) => {
-    if (key === 'ArrowLeft') return point.x < current.x;
-    if (key === 'ArrowRight') return point.x > current.x;
-    if (key === 'ArrowUp') return point.y < current.y;
-    return point.y > current.y;
-  });
-  let next = current;
-  let nextScore = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const crossAxisDistance =
-      key === 'ArrowLeft' || key === 'ArrowRight'
-        ? Math.abs(candidate.y - current.y)
-        : Math.abs(candidate.x - current.x);
-    const primaryAxisDistance =
-      key === 'ArrowLeft' || key === 'ArrowRight'
-        ? Math.abs(candidate.x - current.x)
-        : Math.abs(candidate.y - current.y);
-    const score = crossAxisDistance * 10 + primaryAxisDistance;
-    if (score < nextScore) {
-      next = candidate;
-      nextScore = score;
-    }
-  }
-  return next.position;
-}
-
 export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const dragState = useRef<DragState | null>(null);
@@ -191,6 +141,7 @@ export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
   const snapAnimation = useRef<Animation | null>(null);
   const [snapPosition, setSnapPosition] = useState<ToolbarSnapPosition>('bottom');
   const [dragPosition, setDragPosition] = useState<ToolbarPosition | null>(null);
+  const [dragSize, setDragSize] = useState<ToolbarSize | null>(null);
   const [dragging, setDragging] = useState(false);
 
   useLayoutEffect(() => {
@@ -277,6 +228,7 @@ export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
     snapAnimation.current = null;
     delete toolbar.dataset['snapping'];
     const start = measuredPosition(toolbar, boundary);
+    const bounds = toolbar.getBoundingClientRect();
     dragState.current = {
       ...start,
       pointerId: event.pointerId,
@@ -285,6 +237,7 @@ export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
       samples: [{ x: event.clientX, y: event.clientY, time: event.timeStamp }],
     };
     setDragPosition(constrainedPosition(toolbar, boundary, start));
+    setDragSize({ width: bounds.width, height: bounds.height });
     setDragging(true);
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -336,6 +289,7 @@ export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
     }
     dragState.current = null;
     setDragPosition(null);
+    setDragSize(null);
     setDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -349,40 +303,37 @@ export function MovableToolbar({ children, onMoveStart }: MovableToolbarProps) {
       snapTo('bottom');
       return;
     }
-    if (!isArrowKey(event.key)) return;
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return;
 
     event.preventDefault();
     onMoveStart();
-    snapTo(nextSnapPosition(snapPosition, event.key));
+    snapTo(event.key === 'ArrowUp' ? 'top' : 'bottom');
   }
 
-  const orientation =
-    snapPosition === 'top' || snapPosition === 'bottom' ? 'horizontal' : 'vertical';
   const style: CSSProperties | undefined = dragPosition
-    ? { left: dragPosition.left, top: dragPosition.top }
+    ? { ...dragPosition, ...(dragSize ?? {}) }
     : undefined;
 
   return (
     <div
       ref={toolbarRef}
-      className={`generation-toolbar ${orientation === 'vertical' ? 'is-vertical' : ''} ${dragPosition ? 'is-positioned' : ''} ${dragging ? 'is-dragging' : ''}`}
+      className={`generation-toolbar ${dragPosition ? 'is-positioned' : ''} ${dragging ? 'is-dragging' : ''}`}
       role="toolbar"
       aria-label="Generation toolbar"
       data-position={snapPosition}
-      data-orientation={orientation}
       data-snap-duration={snapDuration}
       style={style}
     >
       <span id="generation-toolbar-move-instructions" className="visually-hidden">
-        Flick toward an edge for a quick snap, or drag near an edge for direct placement. Use the
-        arrow keys to move between positions, or press Home to reset to the bottom.
+        Flick or drag vertically to move between the top and bottom. Use the up and down arrow keys,
+        or press Home to reset to the bottom.
       </span>
       <button
         type="button"
         className="toolbar-drag-handle"
         aria-label="Move generation toolbar"
         aria-describedby="generation-toolbar-move-instructions"
-        title="Flick or drag toward an edge · Home to reset"
+        title="Move to top or bottom · Home to reset"
         onPointerDown={beginPointerMove}
         onPointerMove={continuePointerMove}
         onPointerUp={endPointerMove}

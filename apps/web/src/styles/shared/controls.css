@@ -37,8 +37,7 @@
   background: var(--accent-hover);
 }
 
-.popover-anchor,
-.model-picker-wrap {
+.popover-anchor {
   position: relative;
 }
 

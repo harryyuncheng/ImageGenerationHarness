@@ -28,7 +28,6 @@ function CreateRoute() {
       generation={studio.generation}
       capabilities={studio.capabilities}
       {...(destinationLabel === undefined ? {} : { destinationLabel })}
-      onOpenLibrary={studio.navigate.goToReferences}
       onSavePrompt={() => {
         studio.savedPrompts.savePrompt(studio.promptDraft.prompt);
       }}

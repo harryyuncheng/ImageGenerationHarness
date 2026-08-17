@@ -13,7 +13,7 @@
   place-items: center;
   border: 1px solid transparent;
   border-radius: 24px;
-  padding: calc(30px + var(--top-bar-height)) 34px 142px;
+  padding: calc(54px + var(--top-bar-height)) 34px 174px;
   transition:
     border-color 160ms ease,
     background 160ms ease;
@@ -26,7 +26,7 @@
 
 .prompt-editor {
   display: flex;
-  width: min(880px, 100%);
+  width: min(960px, 100%);
   min-width: 0;
   flex-direction: column;
   align-items: center;
@@ -147,13 +147,12 @@
 .generation-toolbar {
   --toolbar-edge-gap: 24px;
   --toolbar-inline-inset: 48px;
-  --toolbar-block-inset: 48px;
+  --toolbar-width: 900px;
 
   position: absolute;
   z-index: 20;
   display: flex;
-  width: max-content;
-  max-width: calc(100% - var(--toolbar-inline-inset));
+  width: min(var(--toolbar-width), calc(100% - var(--toolbar-inline-inset)));
   align-items: center;
   gap: 5px;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
@@ -171,7 +170,6 @@
   right: 0;
   bottom: auto;
   left: 0;
-  max-width: calc(100% - var(--toolbar-inline-inset));
   margin: 0 auto;
 }
 
@@ -180,7 +178,6 @@
   right: 0;
   bottom: var(--toolbar-edge-gap);
   left: 0;
-  max-width: calc(100% - var(--toolbar-inline-inset));
   margin: 0 auto;
 }
 
@@ -188,26 +185,8 @@
   bottom: 64px;
 }
 
-.generation-toolbar[data-position='left'] {
-  top: 0;
-  right: auto;
-  bottom: 0;
-  left: var(--toolbar-edge-gap);
-  margin: auto 0;
-}
-
-.studio-main--create .generation-toolbar[data-position='left'] {
-  left: calc(
-    var(--studio-edge-inline) + var(--studio-corner-control-size) + var(--studio-corner-control-gap)
-  );
-}
-
-.generation-toolbar[data-position='right'] {
-  top: 0;
-  right: var(--toolbar-edge-gap);
-  bottom: 0;
-  left: auto;
-  margin: auto 0;
+.studio-main--create .generation-toolbar[data-position='top'] {
+  top: 64px;
 }
 
 .generation-toolbar.is-positioned {
@@ -223,6 +202,8 @@
 }
 
 .generation-toolbar-controls,
+.toolbar-tab-row,
+.toolbar-tool-row,
 .composer-tools,
 .toolbar-control-group {
   display: flex;
@@ -231,42 +212,54 @@
 
 .generation-toolbar-controls {
   min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.generation-toolbar[data-position='bottom'] .generation-toolbar-controls {
+  flex-direction: column-reverse;
+}
+
+.toolbar-tab-row,
+.toolbar-tool-row {
+  width: 100%;
+  min-width: 0;
+}
+
+.toolbar-tab-row {
+  justify-content: center;
+  overflow-x: auto;
+  padding: 1px 0;
+}
+
+.generation-toolbar[data-position='top'] .toolbar-tab-row {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.generation-toolbar[data-position='bottom'] .toolbar-tab-row {
+  border-top: 1px solid var(--border-soft);
+}
+
+.toolbar-tool-row {
   gap: 5px;
   overflow-x: auto;
+  padding: 1px 0;
+}
+
+.toolbar-tab-row,
+.toolbar-tool-row {
   scrollbar-width: none;
 }
 
-.generation-toolbar-controls::-webkit-scrollbar {
+.toolbar-tab-row::-webkit-scrollbar,
+.toolbar-tool-row::-webkit-scrollbar {
   display: none;
-}
-
-.generation-toolbar.is-vertical {
-  height: max-content;
-  max-height: calc(100% - var(--toolbar-block-inset));
-  flex-direction: column;
-  border-radius: 14px;
-}
-
-.generation-toolbar.is-vertical .generation-toolbar-controls,
-.generation-toolbar.is-vertical .composer-tools,
-.generation-toolbar.is-vertical .toolbar-control-group {
-  flex-direction: column;
-}
-
-.generation-toolbar.is-vertical .generation-toolbar-controls {
-  width: 100%;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
 .composer-tools {
   flex: 0 0 auto;
   gap: 5px;
-}
-
-.generation-toolbar.is-vertical .composer-tools {
-  width: 100%;
 }
 
 .toolbar-control-group {
@@ -300,11 +293,6 @@
   cursor: grabbing;
 }
 
-.generation-toolbar.is-vertical .toolbar-drag-handle {
-  width: 38px;
-  height: 24px;
-}
-
 .toolbar-divider {
   width: 1px;
   height: 22px;
@@ -313,13 +301,6 @@
   background: var(--border-soft);
 }
 
-.generation-toolbar.is-vertical .toolbar-divider {
-  width: 28px;
-  height: 1px;
-  margin: 1px 0;
-}
-
-.round-tool,
 .tool-chip,
 .composer-setting {
   display: inline-flex;
@@ -330,10 +311,6 @@
   border-radius: 10px;
   background: transparent;
   color: var(--text-secondary);
-}
-
-.round-tool {
-  width: 34px;
 }
 
 .tool-chip,
@@ -352,7 +329,6 @@
   display: none;
 }
 
-.round-tool.is-pointer-hover,
 .tool-chip.is-pointer-hover {
   background: transparent;
   color: var(--text);
@@ -372,33 +348,4 @@
 
 .composer-setting-picker {
   display: inline-flex;
-}
-
-.generation-toolbar.is-vertical .model-picker {
-  width: 38px;
-  height: 36px;
-  justify-content: center;
-  padding: 3px;
-}
-
-.generation-toolbar.is-vertical .model-picker-copy,
-.generation-toolbar.is-vertical .model-picker-chevron,
-.generation-toolbar.is-vertical .composer-setting-value,
-.generation-toolbar.is-vertical .composer-setting-chevron,
-.generation-toolbar.is-vertical .generate-button > span {
-  display: none;
-}
-
-.generation-toolbar.is-vertical .composer-setting {
-  width: 34px;
-  height: 34px;
-  justify-content: center;
-  padding: 0;
-}
-
-.generation-toolbar.is-vertical .generate-button {
-  width: 38px;
-  height: 36px;
-  justify-content: center;
-  padding: 0;
 }

@@ -9,6 +9,45 @@ export function capabilityLabel(capability: Capability): string {
   return capability.name;
 }
 
+export function capabilityDescription(capability: Capability): string {
+  switch (capability.canonicalId) {
+    case 'generation/core':
+      return 'Create an image from text with a fast, general-purpose model.';
+    case 'generation/ultra':
+      return 'Create a high-quality image from text or a source image.';
+    case 'generation/sd3.5-large':
+      return 'Follow detailed prompts with optional source-image guidance.';
+    case 'service/control-sketch':
+      return 'Turn a sketch into a finished image while preserving its lines.';
+    case 'service/control-structure':
+      return 'Restyle an image while preserving its layout and structure.';
+    case 'service/style-guide':
+      return 'Create new content guided by the look of a reference image.';
+    case 'service/style-transfer':
+      return "Apply one image's style to another image's composition.";
+    case 'service/creative-upscale':
+      return 'Upscale to 4K while adding and reimagining detail.';
+    case 'service/conservative-upscale':
+      return 'Upscale to 4K while preserving the original image.';
+    case 'service/fast-upscale':
+      return 'Quickly increase resolution by 4x with minimal changes.';
+    case 'service/inpaint':
+      return 'Paint new content into a selected area.';
+    case 'service/outpaint':
+      return 'Extend the image beyond its current frame.';
+    case 'service/search-recolor':
+      return 'Find an object and change its color.';
+    case 'service/search-replace':
+      return 'Find an object and replace it with something new.';
+    case 'service/erase':
+      return 'Remove a selected object or region.';
+    case 'service/remove-background':
+      return 'Isolate the subject on a transparent background.';
+    default:
+      return `Use ${capability.name} with Stability AI on Bedrock.`;
+  }
+}
+
 export function needsImage(capability: Capability): boolean {
   return capability.modes.includes('image-service');
 }

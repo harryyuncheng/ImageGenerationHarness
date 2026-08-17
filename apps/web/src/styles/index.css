@@ -12,7 +12,7 @@
 @import './features/app-settings.css';
 @import './features/repository.css';
 @import './workspace.css';
-@import './features/model-picker.css';
+@import './features/toolbar-picker.css';
 @import './features/composer.css';
 @import './features/composer-menus.css';
 @import './features/composer-submit.css';

@@ -1,11 +1,8 @@
-import { useState } from 'react';
 import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability, Destination, GalleryImage } from '../../shared/types/domain.js';
 import type { StudioRun } from '../history/run-presentation.js';
-import { capabilityLabel, needsImage } from './capabilities.js';
 import { imageDestination } from './destination.js';
-import type { AttachmentsController } from './use-attachments.js';
 import type { DestinationController } from './use-destination.js';
 import type { GenerationSettingsController } from './use-generation-settings.js';
 import type { PromptDraftController } from './use-prompt-draft.js';
@@ -13,7 +10,6 @@ import type { PromptDraftController } from './use-prompt-draft.js';
 interface DraftActionsOptions {
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
-  attachments: AttachmentsController;
   destination: DestinationController;
   notify: Notify;
 }
@@ -21,32 +17,18 @@ interface DraftActionsOptions {
 export function useDraftActions({
   promptDraft,
   settings,
-  attachments,
   destination,
   notify,
 }: DraftActionsOptions) {
   const navigate = useStudioNavigate();
-  const [modelMenuOpen, setModelMenuOpen] = useState(false);
 
   function openCreateAndFocus() {
     navigate.goToCreate();
     promptDraft.focusPromptSoon();
   }
 
-  function toggleModelMenu() {
-    setModelMenuOpen((open) => !open);
-  }
-
-  function closeModelMenu() {
-    setModelMenuOpen(false);
-  }
-
-  function selectModel(capability: Capability) {
+  function selectTool(capability: Capability) {
     settings.updateSettings('targetId', capability.canonicalId);
-    setModelMenuOpen(false);
-    if (needsImage(capability) && attachments.attachments.length === 0) {
-      notify(`${capabilityLabel(capability)} needs a source image.`);
-    }
   }
 
   function generateTo(nextDestination: Destination) {
@@ -82,10 +64,7 @@ export function useDraftActions({
   }
 
   return {
-    modelMenuOpen,
-    toggleModelMenu,
-    closeModelMenu,
-    selectModel,
+    selectTool,
     generateTo,
     resetDestination,
     reuseRun,
