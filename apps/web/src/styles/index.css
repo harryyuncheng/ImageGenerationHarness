@@ -23,12 +23,9 @@
 @import './features/history.css';
 @import './shared/empty-state.css';
 @import './shared/gallery-card.css';
-@import './features/edit-canvas.css';
-@import './features/edit-tools.css';
-@import './features/image-editor.css';
+@import './features/loaded-image.css';
 @import './features/presets.css';
 @import './features/projects.css';
-@import './features/metadata.css';
 @import './features/references.css';
 @import './shared/modal.css';
 @import './shared/shortcuts.css';

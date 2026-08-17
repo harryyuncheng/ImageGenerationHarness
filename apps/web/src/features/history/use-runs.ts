@@ -4,7 +4,7 @@ import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Capability } from '../../shared/types/domain.js';
-import { cancelRun, getRuns, retryRun } from './api.js';
+import { cancelRun, getRuns } from './api.js';
 import { collectRunFailures, mergeRuns, toStudioRuns, type StudioRun } from './run-presentation.js';
 import type { FavoritesController } from './use-favorites.js';
 
@@ -29,6 +29,7 @@ export function useRuns(options: RunsOptions) {
   const [optimisticRuns, setOptimisticRuns] = useState<StudioRun[]>([]);
   const handledFailureIds = useRef(new Set<string>());
   const discardedRunIds = useRef(new Set<string>());
+  const submittedRunIds = useRef(new Set<string>());
 
   const runsQuery = useQuery({
     queryKey: queryKeys.allRuns(activeRepositoryId),
@@ -68,13 +69,36 @@ export function useRuns(options: RunsOptions) {
     for (const failure of unhandled) notify(failure.error, 'error');
   }, [runFailures, focusedRunId, optimisticRuns, favorites.dropFavorites]);
 
+  /**
+   * Draft ownership lasts only while the submitted run stays focused, which is what
+   * carries it across the local-to-remote identity change. Focusing anything else
+   * hands the draft back, so reopening that run from the gallery restores it again.
+   */
+  useEffect(() => {
+    if (focusedRunId !== undefined && submittedRunIds.current.has(focusedRunId)) return;
+    submittedRunIds.current.clear();
+  }, [focusedRunId]);
+
   function addOptimisticRun(run: StudioRun) {
+    submittedRunIds.current.add(run.id);
     setOptimisticRuns((current) => [run, ...current].slice(0, 20));
   }
 
   function markRunQueued(localId: string, remoteId: string) {
+    submittedRunIds.current.add(remoteId);
     setOptimisticRuns((current) =>
       current.map((run) => (run.id === localId ? { ...run, remoteId, status: 'queued' } : run)),
+    );
+  }
+
+  /**
+   * A run keeps the composer draft it was submitted with, so loading it must not
+   * overwrite edits made while it was still in flight.
+   */
+  function wasSubmittedHere(run: StudioRun): boolean {
+    return (
+      submittedRunIds.current.has(run.id) ||
+      (run.remoteId !== undefined && submittedRunIds.current.has(run.remoteId))
     );
   }
 
@@ -100,29 +124,15 @@ export function useRuns(options: RunsOptions) {
     notify('Queued work cancelled. Active Bedrock calls may still finish.', 'success');
   }
 
-  async function retry(run: StudioRun) {
-    if (!run.remoteId) return;
-    const result = await runMutation(
-      () => retryRun(run.remoteId ?? ''),
-      'Could not retry the run.',
-      (message) => {
-        notify(message, 'error');
-      },
-    );
-    if (!result.ok) return;
-    await invalidateRuns();
-    notify('Run queued for an explicit retry.', 'success');
-  }
-
   return {
     runsQuery,
     allRuns,
     addOptimisticRun,
     markRunQueued,
+    wasSubmittedHere,
     discardOptimisticRun,
     invalidateRuns,
     cancel,
-    retry,
   };
 }
 

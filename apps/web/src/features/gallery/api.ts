@@ -1,12 +1,10 @@
 import {
   galleryResponseSchema,
-  generatedImageSidecarSchema,
   projectAssetDtoSchema,
   projectDetailResponseSchema,
   projectDtoSchema,
   projectsResponseSchema,
 } from '@harness/contracts';
-import type { GeneratedImageSidecar } from '@harness/contracts';
 import { jsonBody, requestJson, requestVoid } from '../../shared/api/http.js';
 import type {
   Destination,
@@ -87,13 +85,4 @@ export function deleteProjectAsset(projectId: string, assetId: string) {
 export function getImages(destination?: Destination): Promise<GalleryResponse> {
   const suffix = destination ? `?${destinationQuery(destination)}` : '';
   return requestJson(`/api/images${suffix}`, galleryResponseSchema, {}, 'Gallery unavailable');
-}
-
-export function getImageMetadata(imageId: string): Promise<GeneratedImageSidecar> {
-  return requestJson(
-    `/api/images/${imageId}/metadata`,
-    generatedImageSidecarSchema,
-    {},
-    'Image metadata unavailable',
-  );
 }

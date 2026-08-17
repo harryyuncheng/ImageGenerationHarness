@@ -13,7 +13,8 @@
   place-items: center;
   border: 1px solid transparent;
   border-radius: 24px;
-  padding: calc(54px + var(--top-bar-height)) 34px 174px;
+  /* Pushes the greeting below centre; scales so short windows keep it clear of the toolbar. */
+  padding: max(calc(54px + var(--top-bar-height)), 26dvh) 34px 174px;
   transition:
     border-color 160ms ease,
     background 160ms ease;
@@ -22,6 +23,18 @@
 .prompt-stage--drag {
   border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
   background: color-mix(in srgb, var(--accent-soft) 38%, transparent);
+}
+
+/* Alongside an image the prompt rides higher, level with the artwork. */
+.prompt-workspace--loaded .prompt-stage {
+  justify-items: end;
+  padding-top: calc(24px + var(--top-bar-height));
+  padding-right: 24px;
+  padding-bottom: 204px;
+}
+
+.prompt-workspace--loaded .prompt-editor {
+  width: min(520px, 100%);
 }
 
 .prompt-editor {
@@ -151,8 +164,12 @@
 
   position: absolute;
   z-index: 20;
+  right: 0;
+  bottom: var(--toolbar-edge-gap);
+  left: 0;
   display: flex;
   width: min(var(--toolbar-width), calc(100% - var(--toolbar-inline-inset)));
+  margin: 0 auto;
   align-items: center;
   gap: 5px;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
@@ -162,43 +179,10 @@
   box-shadow:
     0 12px 32px rgb(0 0 0 / 14%),
     0 2px 7px rgb(0 0 0 / 7%);
-  user-select: none;
 }
 
-.generation-toolbar[data-position='top'] {
-  top: var(--toolbar-edge-gap);
-  right: 0;
-  bottom: auto;
-  left: 0;
-  margin: 0 auto;
-}
-
-.generation-toolbar[data-position='bottom'] {
-  top: auto;
-  right: 0;
-  bottom: var(--toolbar-edge-gap);
-  left: 0;
-  margin: 0 auto;
-}
-
-.studio-main--create .generation-toolbar[data-position='bottom'] {
+.studio-main--create .generation-toolbar {
   bottom: 64px;
-}
-
-.studio-main--create .generation-toolbar[data-position='top'] {
-  top: 64px;
-}
-
-.generation-toolbar.is-positioned {
-  right: auto;
-  bottom: auto;
-  margin: 0;
-}
-
-.generation-toolbar.is-dragging {
-  box-shadow:
-    0 18px 44px rgb(0 0 0 / 18%),
-    0 4px 12px rgb(0 0 0 / 9%);
 }
 
 .generation-toolbar-controls,
@@ -213,12 +197,8 @@
 .generation-toolbar-controls {
   min-width: 0;
   flex: 1 1 auto;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.generation-toolbar[data-position='bottom'] .generation-toolbar-controls {
   flex-direction: column-reverse;
+  overflow: hidden;
 }
 
 .toolbar-tab-row,
@@ -230,15 +210,8 @@
 .toolbar-tab-row {
   justify-content: center;
   overflow-x: auto;
-  padding: 1px 0;
-}
-
-.generation-toolbar[data-position='top'] .toolbar-tab-row {
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.generation-toolbar[data-position='bottom'] .toolbar-tab-row {
   border-top: 1px solid var(--border-soft);
+  padding: 1px 0;
 }
 
 .toolbar-tool-row {
@@ -270,29 +243,6 @@
   padding: 2px;
 }
 
-.toolbar-drag-handle {
-  display: inline-flex;
-  width: 25px;
-  height: 36px;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: grab;
-  touch-action: none;
-}
-
-.toolbar-drag-handle.is-pointer-hover {
-  background: transparent;
-  color: var(--text);
-}
-
-.generation-toolbar.is-dragging .toolbar-drag-handle {
-  cursor: grabbing;
-}
-
 .toolbar-divider {
   width: 1px;
   height: 22px;
@@ -318,6 +268,7 @@
   padding: 0 9px;
   font-size: 11px;
   font-weight: 600;
+  text-decoration: none;
 }
 
 .generation-toolbar .tool-chip {

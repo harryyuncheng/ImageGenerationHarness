@@ -15,7 +15,7 @@ export function GalleryTabs() {
           <Link
             key={to}
             to={to}
-            search={{ image: undefined, mode: undefined, run: undefined }}
+            search={{ image: undefined, run: undefined }}
             activeOptions={{ exact: false }}
             activeProps={{ className: 'selected', 'aria-current': 'page' }}
           >

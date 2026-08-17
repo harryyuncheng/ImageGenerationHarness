@@ -1,6 +1,5 @@
 import { createRootRoute, createRoute, createRouter, Navigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import { EditView } from '../features/editor/components/EditView.js';
 import { GalleryTabs } from '../features/gallery/components/GalleryTabs.js';
 import { ProjectDashboard } from '../features/gallery/components/ProjectDashboard.js';
 import { ProjectsBrowser } from '../features/gallery/components/ProjectsBrowser.js';
@@ -27,38 +26,10 @@ function CreateRoute() {
       draftActions={studio.draftActions}
       generation={studio.generation}
       capabilities={studio.capabilities}
+      {...(studio.viewer === undefined ? {} : { loaded: studio.viewer })}
       {...(destinationLabel === undefined ? {} : { destinationLabel })}
       onSavePrompt={() => {
         studio.savedPrompts.savePrompt(studio.promptDraft.prompt);
-      }}
-    />
-  );
-}
-
-function EditRoute() {
-  const studio = useStudio();
-  const imagesQuery = useImages(studio.activeRepositoryId);
-  const { error } = imagesQuery;
-
-  return (
-    <EditView
-      images={imagesQuery.data?.images ?? []}
-      projects={studio.projects.projects}
-      isLoading={imagesQuery.isLoading}
-      repositoryReady={Boolean(studio.activeRepositoryId)}
-      {...(error instanceof Error ? { error: error.message } : {})}
-      onRepositoryRequired={() => {
-        studio.repository.requireRepository('choose an image from Baroque');
-      }}
-      onUpload={() => {
-        studio.editSource.editFileInput.current?.click();
-      }}
-      onDropFiles={studio.editSource.openEditFile}
-      onRetry={() => {
-        void imagesQuery.refetch();
-      }}
-      onOpenImage={(image) => {
-        studio.navigate.openImage(image, 'edit');
       }}
     />
   );
@@ -216,12 +187,6 @@ const indexRoute = createRoute({
   component: CreateRoute,
 });
 
-const editViewRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/edit',
-  component: EditRoute,
-});
-
 const galleryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/gallery',
@@ -260,7 +225,6 @@ const presetsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  editViewRoute,
   galleryRoute,
   historyRoute,
   projectsRoute,

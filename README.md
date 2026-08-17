@@ -12,7 +12,7 @@ The browser workbench provides:
 - Projects with editable organizational descriptions, generated images, and nested project assets.
 - An explicit generation destination: the main repository, a project, or a nested project asset.
 - A fully local reference-image library with reusable folders and opaque `repo-image://<image-id>` browser references.
-- Durable server-backed history and gallery views for retained work, polling-based status, cancellation of queued work, explicit retries for interrupted runs, and generated metadata inspection. Failed attempts surface as pop-up errors and are discarded.
+- Durable server-backed history and gallery views for retained work, polling-based status, and cancellation of queued work. Selecting a saved image or run loads it into the main area beside the prompt it was made from. Failed attempts surface as pop-up errors and are discarded.
 - Adjacent, strict JSON sidecars containing the exact prompt, normalized settings, seed provenance, dimensions, hashes, invocation target, inputs, and non-secret provider metadata.
 
 Project and project-asset descriptions are organizational notes only. They are never included in a Bedrock request.

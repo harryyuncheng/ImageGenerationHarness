@@ -1,8 +1,4 @@
-import {
-  galleryResponseSchema,
-  generatedImageSidecarSchema,
-  imageParamsSchema,
-} from '@harness/contracts';
+import { galleryResponseSchema, imageParamsSchema } from '@harness/contracts';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { ApiError, requireService } from '../app/api-error.js';
 import { sendImmutableImage } from '../app/image-response.js';
@@ -42,13 +38,5 @@ export function registerImageRoutes(app: FastifyInstance, runService: RunService
     const image = await service().getImage(imageId);
     if (!image) throw new ApiError(404, 'Image not found.');
     return sendGeneratedImage(reply, service(), image);
-  });
-  app.get('/api/images/:imageId/metadata', async (request) => {
-    const { imageId } = imageParamsSchema.parse(request.params);
-    const metadata = await service().getImageMetadata(imageId);
-    if (!metadata) throw new ApiError(404, 'Image metadata not found.');
-    const parsed = generatedImageSidecarSchema.safeParse(metadata);
-    if (!parsed.success) throw new Error('Generated image metadata is invalid.');
-    return parsed.data;
   });
 }

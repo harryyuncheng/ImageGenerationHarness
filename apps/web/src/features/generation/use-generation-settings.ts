@@ -48,7 +48,11 @@ export function useGenerationSettings(capabilities: readonly Capability[]) {
     updateSettings('seed', seedMaximum === undefined ? 0 : value % (seedMaximum + 1));
   }
 
-  return { settings, updateSettings, selectedCapability, chooseRandomSeed };
+  function resetSettings() {
+    setSettings(defaultSettings);
+  }
+
+  return { settings, updateSettings, selectedCapability, chooseRandomSeed, resetSettings };
 }
 
 export type GenerationSettingsController = ReturnType<typeof useGenerationSettings>;

@@ -1,5 +1,7 @@
-import { FolderTree, RefreshCw, Upload, WandSparkles, X } from 'lucide-react';
+import { Download, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { ImageViewer } from '../../editor/components/ImageViewer.js';
+import type { LoadedImage } from '../../editor/use-loaded-image.js';
 import type { Capability } from '../../../shared/types/domain.js';
 import { toolbarTabs } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
@@ -9,8 +11,10 @@ import type { GenerationSettingsController } from '../use-generation-settings.js
 import type { PromptDraftController } from '../use-prompt-draft.js';
 import { AttachmentStrip } from './AttachmentStrip.js';
 import { ComposerTools, type ComposerSettingMenu } from './ComposerTools.js';
-import { MovableToolbar } from './MovableToolbar.js';
+import { DestinationPill } from './DestinationPill.js';
 import { PromptCanvas } from './PromptCanvas.js';
+import { SubmitButton } from './SubmitButton.js';
+import { ToolbarTabs } from './ToolbarTabs.js';
 import { ToolbarToolButton } from './ToolbarToolButton.js';
 
 interface CreateViewProps {
@@ -20,6 +24,7 @@ interface CreateViewProps {
   draftActions: DraftActionsController;
   generation: GenerationController;
   capabilities: readonly Capability[];
+  loaded?: LoadedImage;
   destinationLabel?: string;
   onSavePrompt: () => void;
 }
@@ -31,6 +36,7 @@ export function CreateView({
   draftActions,
   generation,
   capabilities,
+  loaded,
   destinationLabel,
   onSavePrompt,
 }: CreateViewProps) {
@@ -84,7 +90,7 @@ export function CreateView({
         onSubmit={(event) => {
           void generation.generate(event);
         }}
-        className="prompt-workspace"
+        className={`prompt-workspace ${loaded ? 'prompt-workspace--loaded' : ''}`}
         onDragEnter={(event) => {
           event.preventDefault();
           attachments.setDragActive(true);
@@ -130,96 +136,87 @@ export function CreateView({
                 onRemove={attachments.removeAttachment}
               />
             )}
-            {destinationLabel !== undefined && (
-              <button
-                type="button"
-                className="destination-pill"
-                onClick={draftActions.resetDestination}
-                title="Save to the main repository instead"
-                aria-label={`Saving to ${destinationLabel}. Save to the main repository instead.`}
-              >
-                <FolderTree size={14} aria-hidden="true" />
-                <span>Saving to {destinationLabel}</span>
-                <X size={14} aria-hidden="true" />
-              </button>
+            {destinationLabel !== undefined && loaded === undefined && (
+              <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
             )}
           </div>
         </section>
 
-        <MovableToolbar onMoveStart={closeToolbarMenus}>
-          <div className="toolbar-tab-row">
-            <div className="toolbar-tabs" role="group" aria-label="Workflow">
-              {toolbarTabs.map((tab) => {
-                const selected = tab.category === activeTab.category;
-                const available = capabilities.some(
-                  (capability) => capability.category === tab.category,
-                );
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    className={`toolbar-tab ${selected ? 'selected' : ''}`}
-                    aria-pressed={selected}
-                    disabled={!available}
-                    onClick={() => {
-                      selectTab(tab.category);
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {loaded && (
+          <ImageViewer
+            loaded={loaded}
+            destination={
+              destinationLabel === undefined ? null : (
+                <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
+              )
+            }
+            onReset={draftActions.resetDraft}
+          />
+        )}
 
-          <div className="toolbar-tool-row">
-            <div
-              className="toolbar-tool-options"
-              role="group"
-              aria-label={`${activeTab.label} tools`}
-              style={{
-                gridTemplateColumns: `repeat(${String(visibleTools.length)}, minmax(0, 1fr))`,
-              }}
-            >
-              {visibleTools.map((capability) => {
-                const selected = capability.canonicalId === selectedCapability.canonicalId;
-                return (
-                  <ToolbarToolButton
-                    key={capability.canonicalId}
-                    capability={capability}
-                    selected={selected}
-                    onSelect={() => {
-                      selectTool(capability);
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            <span className="toolbar-divider" aria-hidden="true" />
-            <ComposerTools
-              settings={settings}
-              settingMenu={settingMenu}
-              onSettingMenuChange={updateSettingMenu}
-              onSavePrompt={onSavePrompt}
+        <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
+          <div className="generation-toolbar-controls">
+            <ToolbarTabs
+              capabilities={capabilities}
+              activeCategory={activeTab.category}
+              onSelect={selectTab}
             />
 
-            <span className="toolbar-divider" aria-hidden="true" />
-            <button
-              className="generate-button"
-              type="submit"
-              disabled={generation.isSubmitting}
-              title="Generate (⌘ Enter)"
-            >
-              {generation.isSubmitting ? (
-                <RefreshCw className="spin" size={18} />
-              ) : (
-                <WandSparkles size={17} />
+            <div className="toolbar-tool-row">
+              <div
+                className="toolbar-tool-options"
+                role="group"
+                aria-label={`${activeTab.label} tools`}
+                style={{
+                  gridTemplateColumns: `repeat(${String(visibleTools.length)}, minmax(0, 1fr))`,
+                }}
+              >
+                {visibleTools.map((capability) => {
+                  const selected = capability.canonicalId === selectedCapability.canonicalId;
+                  return (
+                    <ToolbarToolButton
+                      key={capability.canonicalId}
+                      capability={capability}
+                      selected={selected}
+                      onSelect={() => {
+                        selectTool(capability);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
+              {activeTab.id === 'export' && loaded?.selectedOutput && (
+                <div className="toolbar-control-group" role="group" aria-label="Export actions">
+                  <a
+                    className="tool-chip"
+                    href={loaded.selectedOutput.url}
+                    download={loaded.selectedOutput.name}
+                    title="Download image"
+                    aria-label="Download image"
+                  >
+                    <Download size={16} />
+                    <span>Download</span>
+                  </a>
+                </div>
               )}
-              <span>Generate</span>
-            </button>
+
+              <span className="toolbar-divider" aria-hidden="true" />
+              <ComposerTools
+                settings={settings}
+                settingMenu={settingMenu}
+                onSettingMenuChange={updateSettingMenu}
+                onSavePrompt={onSavePrompt}
+              />
+
+              <span className="toolbar-divider" aria-hidden="true" />
+              <SubmitButton
+                isSubmitting={generation.isSubmitting}
+                {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
+              />
+            </div>
           </div>
-        </MovableToolbar>
+        </div>
       </form>
     </div>
   );

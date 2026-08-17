@@ -31,9 +31,7 @@ export interface RunService {
   listRuns(destination?: Destination): Promise<RunSnapshot[]>;
   consumeFailures(destination?: Destination): GenerationFailure[];
   cancel(runId: string): Promise<RunSnapshot>;
-  retry(runId: string): Promise<{ runId: string }>;
   getImage(imageId: string): Promise<GeneratedImageRecord | undefined>;
-  getImageMetadata(imageId: string): Promise<GeneratedImageSidecar | undefined>;
   readImage(image: GeneratedImageRecord): Promise<Uint8Array>;
   listImages(destination?: Destination): Promise<GalleryImage[]>;
   recover(): Promise<void>;

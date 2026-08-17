@@ -1,9 +1,6 @@
 import { createContext, use, type ReactNode } from 'react';
-import { useEditSource } from '../features/editor/use-edit-source.js';
-import { useEditTools } from '../features/editor/use-edit-tools.js';
-import { useUploadSelection } from '../features/editor/use-editor-focus.js';
+import { useLoadedImage } from '../features/editor/use-loaded-image.js';
 import { useProjects } from '../features/gallery/use-projects.js';
-import { imageDestination } from '../features/generation/destination.js';
 import { useAttachments } from '../features/generation/use-attachments.js';
 import { useCapabilities } from '../features/generation/use-capabilities.js';
 import { useDestination } from '../features/generation/use-destination.js';
@@ -21,13 +18,14 @@ import { useRepository, type RepositoryController } from '../features/repository
 import { useTheme, type ThemeController } from '../features/theme/use-theme.js';
 import { useClipboard } from '../shared/hooks/use-clipboard.js';
 import { useToasts, type Notify, type Toast } from '../shared/hooks/use-toasts.js';
-import type { Capability, Destination, GalleryImage } from '../shared/types/domain.js';
+import type { Capability, Destination } from '../shared/types/domain.js';
 import { useStudioNavigate } from './use-studio-navigate.js';
 
 interface ScopeProps {
   notify: Notify;
   repository: RepositoryController;
   capabilities: readonly Capability[];
+  focusedImageId: string | undefined;
   focusedRunId: string | undefined;
   selectedProjectId: string | undefined;
 }
@@ -36,20 +34,19 @@ function useStudioValue({
   notify,
   repository,
   capabilities,
+  focusedImageId,
   focusedRunId,
   selectedProjectId,
 }: ScopeProps) {
   const navigate = useStudioNavigate();
   const activeRepositoryId = repository.activeRepositoryId;
 
-  const upload = useUploadSelection();
   const promptDraft = usePromptDraft();
   const settings = useGenerationSettings(capabilities);
   const attachments = useAttachments(notify);
   const destination = useDestination();
   const favorites = useFavorites();
   const savedPrompts = useSavedPrompts(notify);
-  const editTools = useEditTools(capabilities);
 
   const runs = useRuns({
     activeRepositoryId,
@@ -90,14 +87,18 @@ function useStudioValue({
     requireRepository: repository.requireRepository,
     removeLibraryImages: attachments.removeLibraryImages,
   });
-  const editSource = useEditSource({
-    promptDraft,
-    settings,
-    attachments,
-    destination,
-    upload,
-    editTools,
-    notify,
+  const viewer = useLoadedImage({
+    activeRepositoryId,
+    imageId: focusedImageId,
+    runId: focusedRunId,
+    runs: runs.allRuns,
+    onLoadImage: draftActions.loadImageDraft,
+    onLoadRun: (run) => {
+      if (!runs.wasSubmittedHere(run)) draftActions.loadRunDraft(run);
+    },
+    onCancelRun: (run) => {
+      void runs.cancel(run);
+    },
   });
   const attachReferenceImage = useReferenceAttachment({ attachments, settings, notify });
 
@@ -110,23 +111,20 @@ function useStudioValue({
     activeRepositoryId,
     repository,
     capabilities,
-    upload,
     promptDraft,
     settings,
     attachments,
     destination,
     favorites,
     savedPrompts,
-    editTools,
     runs,
     generation,
     draftActions,
     projects,
     references,
-    editSource,
+    viewer,
     attachReferenceImage,
     describeDestination,
-    describeImageLocation: (image: GalleryImage) => describeDestination(imageDestination(image)),
   };
 }
 
@@ -160,6 +158,7 @@ function RepositoryScope({ children, ...scope }: ScopeProps & { children: ReactN
 }
 
 interface StudioProviderProps {
+  focusedImageId: string | undefined;
   focusedRunId: string | undefined;
   selectedProjectId: string | undefined;
   children: ReactNode;

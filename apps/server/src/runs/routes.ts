@@ -36,10 +36,4 @@ export function registerRunRoutes(app: FastifyInstance, runService: RunService |
     if (!(await service().getSnapshot(runId))) throw new ApiError(404, 'Run not found.');
     return runSnapshotDto(await service().cancel(runId));
   });
-  app.post('/api/runs/:runId/retry', async (request, reply) => {
-    const { runId } = runParamsSchema.parse(request.params);
-    if (!(await service().getSnapshot(runId))) throw new ApiError(404, 'Run not found.');
-    const result = await service().retry(runId);
-    return reply.code(202).send(queuedRunResponseSchema.parse({ ...result, status: 'queued' }));
-  });
 }

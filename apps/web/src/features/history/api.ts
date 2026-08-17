@@ -1,4 +1,4 @@
-import { queuedRunResponseSchema, runSnapshotSchema, runsResponseSchema } from '@harness/contracts';
+import { runSnapshotSchema, runsResponseSchema } from '@harness/contracts';
 import type { RunsResponse } from '@harness/contracts';
 import { requestJson } from '../../shared/api/http.js';
 
@@ -12,14 +12,5 @@ export function cancelRun(runId: string) {
     runSnapshotSchema,
     { method: 'POST' },
     'Could not cancel the run.',
-  );
-}
-
-export function retryRun(runId: string) {
-  return requestJson(
-    `/api/runs/${runId}/retry`,
-    queuedRunResponseSchema,
-    { method: 'POST' },
-    'Could not retry the run.',
   );
 }

@@ -110,12 +110,12 @@
   z-index: 21;
   right: var(--studio-edge-inline);
   bottom: var(--studio-edge-block);
-  height: var(--studio-corner-control-size);
-  border-radius: 10px;
+  height: 44px;
+  border-radius: 12px;
   background: transparent;
-  padding: 0 10px;
+  padding: 0 16px;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 650;
 }
 

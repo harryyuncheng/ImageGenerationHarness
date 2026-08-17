@@ -22,18 +22,14 @@ export function useDraftActions({
 }: DraftActionsOptions) {
   const navigate = useStudioNavigate();
 
-  function openCreateAndFocus() {
-    navigate.goToCreate();
-    promptDraft.focusPromptSoon();
-  }
-
   function selectTool(capability: Capability) {
     settings.updateSettings('targetId', capability.canonicalId);
   }
 
   function generateTo(nextDestination: Destination) {
     destination.setDestination(nextDestination);
-    openCreateAndFocus();
+    navigate.goToCreate();
+    promptDraft.focusPromptSoon();
   }
 
   function resetDestination() {
@@ -41,34 +37,34 @@ export function useDraftActions({
     notify('New images will save to the main repository.', 'success');
   }
 
-  function reuseRun(run: StudioRun) {
-    promptDraft.setPrompt(run.prompt);
-    settings.updateSettings('targetId', run.targetId);
-    if (run.aspectRatio !== 'saved settings') {
-      settings.updateSettings('aspectRatio', run.aspectRatio);
-    }
-    destination.setDestination(run.destination);
-    navigate.goToCreate();
-    notify('Settings restored. Add source images again if needed.', 'success');
-  }
-
-  function remixImage(image: GalleryImage) {
+  /** Loading a saved image restores the draft that produced it, ready to run again. */
+  function loadImageDraft(image: GalleryImage) {
     promptDraft.setPrompt(image.prompt ?? '');
     settings.updateSettings('targetId', image.targetId);
     destination.setDestination(imageDestination(image));
-    navigate.goToCreate();
-    notify(
-      'Prompt, model, and destination restored. Add source images again if needed.',
-      'success',
-    );
+  }
+
+  /** Durable snapshots report a placeholder aspect ratio, so only real settings are restored. */
+  function loadRunDraft(run: StudioRun) {
+    promptDraft.setPrompt(run.prompt);
+    settings.updateSettings('targetId', run.targetId);
+    destination.setDestination(run.destination);
+  }
+
+  function resetDraft() {
+    promptDraft.setPrompt('');
+    settings.resetSettings();
+    destination.resetDestination();
+    navigate.closeFocus();
   }
 
   return {
     selectTool,
     generateTo,
     resetDestination,
-    reuseRun,
-    remixImage,
+    loadImageDraft,
+    loadRunDraft,
+    resetDraft,
   };
 }
 

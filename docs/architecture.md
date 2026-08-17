@@ -27,7 +27,7 @@ Shared package schemas are grouped by resource or durable entity. Their root `in
 
 The browser owns presentation state and non-authoritative preferences. It receives stable IDs and safe metadata, never arbitrary filesystem paths or AWS credentials. It submits strict model requests plus an explicit destination and polls run snapshots for authoritative state.
 
-Addressable state lives in the URL: the visible view is a route, the selected project is a route parameter, and the focused image, run, and metadata dialog are Zod-validated search parameters holding identifiers only. Identifiers are resolved against cached query data at render time, so a link that no longer resolves degrades to its underlying view. Live uploads and draft-derived previews stay in component state because they cannot be addressed. Repository-scoped state is mounted under a key derived from the active repository, which is what prevents drafts, destinations, and optimistic runs from crossing a repository switch.
+Addressable state lives in the URL: the visible view is a route, the selected project is a route parameter, and the loaded image or run is a Zod-validated search parameter holding an identifier only. Identifiers are resolved against cached query data at render time, so a link that no longer resolves degrades to its underlying view. Loading a saved image also restores the prompt, tool, and destination it was produced with, so viewing and remixing are the same gesture and generating from the restored draft simply creates a new image. Repository-scoped state is mounted under a key derived from the active repository, which is what prevents drafts, destinations, and optimistic runs from crossing a repository switch.
 
 ### Loopback server
 
@@ -58,12 +58,12 @@ Project and project-asset descriptions are not inputs to this lifecycle and cann
 
 ## Restart and cancellation semantics
 
-Queued jobs are durable and are re-enqueued when the active repository opens. A job found in `running` state is changed to `interrupted`; its active attempt becomes `ambiguous`. Automatic retry is prohibited because provider acceptance and billing may already have occurred. The UI offers explicit retry, which creates a new run and attempt history.
+Queued jobs are durable and are re-enqueued when the active repository opens. A job found in `running` state is changed to `interrupted`; its active attempt becomes `ambiguous`. Automatic retry is prohibited because provider acceptance and billing may already have occurred. An interrupted run is re-run deliberately by generating again from its restored prompt and settings, which creates a new run and attempt history.
 
 Cancellation removes queued jobs honestly. Once an invocation is active, cancellation cannot reliably stop the remote call; it is allowed to complete and records the known outcome.
 
-## Content and metadata access
+## Content access
 
-Generated and reference content routes accept UUIDs only. Services locate and validate the corresponding manifest, verify hashes before reads where applicable, and then serve private loopback content. Gallery/history DTOs omit repository paths. The metadata endpoint intentionally exposes repository-relative provenance paths from the strict sidecar, never absolute paths.
+Generated and reference content routes accept UUIDs only. Services locate and validate the corresponding manifest, verify hashes before reads where applicable, and then serve private loopback content. Gallery/history DTOs omit repository paths, and the strict sidecar stays on disk as the authoritative provenance record.
 
-Polling remains the authoritative browser update mechanism. The browser turns transient generation failures into pop-up errors, removes discarded optimistic runs from recents and history, and returns an open failed-run editor to the unchanged prompt and settings.
+Polling remains the authoritative browser update mechanism. The browser turns transient generation failures into pop-up errors, removes discarded optimistic runs from recents and history, and returns a loaded failed run to the unchanged prompt and settings.

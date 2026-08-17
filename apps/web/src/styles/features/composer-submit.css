@@ -17,6 +17,15 @@
   background: var(--accent-hover);
 }
 
+.generate-button--cancel {
+  background: var(--danger);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--danger) 22%, transparent);
+}
+
+.generate-button--cancel.is-pointer-hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger) 88%, black);
+}
+
 .spin {
   animation: spin 850ms linear infinite;
 }

@@ -15,7 +15,7 @@ async function responseError(response: Response, fallback: string): Promise<Erro
   }
 }
 
-export async function requestResponse(
+async function requestResponse(
   url: string,
   init: RequestInit = {},
   fallback = defaultFallback,

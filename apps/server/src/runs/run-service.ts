@@ -6,7 +6,6 @@ import {
   localRunSchema,
   SCHEMA_VERSION,
   type Destination,
-  type GeneratedImageSidecar,
   type LocalJob,
 } from '@harness/domain';
 import { GeneratedImageStore } from '../images/generated-image-store.js';
@@ -20,7 +19,7 @@ import type { LocalImageRepository } from '../repository/local-image-repository.
 import type { LocalRepositoryManager } from '../repository/repository-manager.js';
 import { GenerationQueue } from './generation-queue.js';
 import { GenerationWorker } from './generation-worker.js';
-import { hydrateInputs, InputStager } from './input-stager.js';
+import { InputStager } from './input-stager.js';
 import {
   jobRecordPath,
   plannedSeed,
@@ -224,28 +223,8 @@ export class LocalRunService implements RunService {
     return { run, jobs };
   }
 
-  async retry(runId: string): Promise<{ runId: string }> {
-    const snapshot = await this.getSnapshot(runId);
-    if (!snapshot) throw new Error('Run not found');
-    const firstJob = snapshot.jobs[0];
-    if (!firstJob) throw new Error('Run has no jobs');
-    const repository = this.#manager.getActiveRepository();
-    const hydrated = await hydrateInputs(repository, firstJob.request, firstJob.inputs);
-    return this.submit({
-      targetId: snapshot.run.targetId,
-      request: hydrated,
-      requestedJobCount: snapshot.run.requestedJobCount,
-      seedPlan: snapshot.run.seedPlan,
-      destination: snapshot.run.destination,
-    });
-  }
-
   getImage(imageId: string): Promise<GeneratedImageRecord | undefined> {
     return this.#images.getImage(imageId);
-  }
-
-  getImageMetadata(imageId: string): Promise<GeneratedImageSidecar | undefined> {
-    return this.#images.getImageMetadata(imageId);
   }
 
   readImage(image: GeneratedImageRecord): Promise<Uint8Array> {

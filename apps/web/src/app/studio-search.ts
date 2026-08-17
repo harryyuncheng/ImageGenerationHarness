@@ -6,9 +6,7 @@ import { z } from 'zod';
  */
 export const studioSearchSchema = z.object({
   image: z.uuid().optional().catch(undefined),
-  mode: z.enum(['view', 'edit']).optional().catch(undefined),
   run: z.uuid().optional().catch(undefined),
-  metadata: z.uuid().optional().catch(undefined),
 });
 
 export type StudioSearch = z.infer<typeof studioSearchSchema>;

@@ -20,7 +20,7 @@ export function GeneratedImageCard({
         onClick={() => {
           onOpen(image);
         }}
-        aria-label={`Open editor for ${imageName}`}
+        aria-label={`Load ${imageName}`}
       >
         <img src={outputUrl} alt={imageName} />
         <span className="gallery-open-hint">

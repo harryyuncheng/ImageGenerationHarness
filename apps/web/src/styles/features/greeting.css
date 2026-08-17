@@ -30,7 +30,8 @@
   field-sizing: content;
   width: 100%;
   min-width: 0;
-  min-height: 2.3em;
+  /* Five lines of writing room at the 1.12 line height above. */
+  min-height: 5.6em;
   max-height: min(46dvh, 420px);
   overflow-y: auto;
   resize: none;

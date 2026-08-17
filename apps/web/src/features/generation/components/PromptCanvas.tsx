@@ -35,7 +35,7 @@ export function PromptCanvas({
           onChange(event.target.value);
         }}
         onKeyDown={onKeyDown}
-        rows={2}
+        rows={5}
         maxLength={10_000}
         placeholder={placeholder}
         aria-label="Image prompt"

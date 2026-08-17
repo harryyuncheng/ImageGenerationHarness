@@ -1,63 +1,29 @@
 import { Bookmark, FolderOpen } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useParams, useRouterState, useSearch } from '@tanstack/react-router';
-import { resolveEditorFocus, type EditorFocus } from '../features/editor/use-editor-focus.js';
-import { useImages } from '../features/gallery/use-images.js';
+import { SettingsPanel } from '../features/generation/components/SettingsPanel.js';
 import { AppSettings } from './AppSettings.js';
-import { CanvasEditor } from './CanvasEditor.js';
 import { StudioOverlays } from './StudioOverlays.js';
-import { StudioPanels } from './StudioPanels.js';
 import { StudioProvider, useStudio } from './studio-context.js';
 import { TopBar } from './TopBar.js';
 import { useGlobalShortcuts } from './use-global-shortcuts.js';
 
 export type PreviewModal = 'code' | 'request' | null;
 
-/** Which surface the current route and focus combine to show. */
-function useStudioSurface(focus: EditorFocus | undefined, settingsOpen: boolean) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const hasEditSource =
-    focus?.kind === 'upload' || (focus?.kind === 'image' && focus.intent === 'edit');
-  const showCreateWorkspace = pathname === '/' && focus === undefined;
-  const showEditWorkspace = pathname === '/edit' && (focus === undefined || hasEditSource);
-  const showSettings = showCreateWorkspace && settingsOpen;
-
-  return {
-    pathname,
-    hasEditSource,
-    showCreateWorkspace,
-    showEditWorkspace,
-    showSettings,
-    panelCapable: showCreateWorkspace || showEditWorkspace,
-    panelOpen: showSettings || showEditWorkspace,
-  };
-}
-
 function StudioLayout() {
   const studio = useStudio();
-  const search = useSearch({ strict: false });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [previewModal, setPreviewModal] = useState<PreviewModal>(null);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  const imagesQuery = useImages(studio.activeRepositoryId, search.image !== undefined);
-  const focus = resolveEditorFocus(
-    search,
-    imagesQuery.data?.images ?? [],
-    studio.runs.allRuns,
-    studio.upload.upload,
-  );
-  const surface = useStudioSurface(focus, settingsOpen);
-
-  const { clearUpload } = studio.upload;
-  useEffect(() => {
-    if (surface.pathname !== '/edit') clearUpload();
-  }, [surface.pathname, clearUpload]);
+  const showCreateWorkspace = pathname === '/';
+  const showSettings = showCreateWorkspace && settingsOpen;
+  const isGallery = pathname.startsWith('/gallery');
 
   useGlobalShortcuts({
     closeOverlays: () => {
       setPreviewModal(null);
-      studio.navigate.closeMetadata();
       setAppSettingsOpen(false);
       studio.repository.setMenuOpen(false);
     },
@@ -69,33 +35,33 @@ function StudioLayout() {
     promptInput: studio.promptDraft.promptInput,
   });
 
-  const isGallery = surface.pathname.startsWith('/gallery');
-
   return (
     <div
-      className={`studio-shell ${surface.panelCapable ? 'studio-shell--panel-capable' : ''} ${surface.panelOpen ? 'studio-shell--panel-open' : ''}`}
+      className={`studio-shell ${showCreateWorkspace ? 'studio-shell--panel-capable' : ''} ${showSettings ? 'studio-shell--panel-open' : ''}`}
     >
       <AppSettings open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
 
-      <div className={`studio-main ${surface.showCreateWorkspace ? 'studio-main--create' : ''}`}>
+      <div className={`studio-main ${showCreateWorkspace ? 'studio-main--create' : ''}`}>
         <TopBar
           settingsOpen={settingsOpen}
-          showCreateWorkspace={surface.showCreateWorkspace}
+          showCreateWorkspace={showCreateWorkspace}
           onOpenSettings={() => {
             setSettingsOpen(true);
           }}
         />
 
         <div className="workspace">
-          <main className="canvas">{focus ? <CanvasEditor focus={focus} /> : <Outlet />}</main>
+          <main className="canvas">
+            <Outlet />
+          </main>
         </div>
 
         <nav className="library-shortcuts" aria-label="Library shortcuts">
           <button
             type="button"
-            className={`icon-button studio-corner-icon ${surface.pathname === '/references' ? 'active' : ''}`}
+            className={`icon-button studio-corner-icon ${pathname === '/references' ? 'active' : ''}`}
             aria-label="Reference library"
-            aria-pressed={surface.pathname === '/references'}
+            aria-pressed={pathname === '/references'}
             title="Reference library"
             onClick={studio.navigate.goToReferences}
           >
@@ -103,9 +69,9 @@ function StudioLayout() {
           </button>
           <button
             type="button"
-            className={`icon-button studio-corner-icon ${surface.pathname === '/presets' ? 'active' : ''}`}
+            className={`icon-button studio-corner-icon ${pathname === '/presets' ? 'active' : ''}`}
             aria-label="Saved presets"
-            aria-pressed={surface.pathname === '/presets'}
+            aria-pressed={pathname === '/presets'}
             title="Saved presets"
             onClick={studio.navigate.goToPresets}
           >
@@ -117,29 +83,35 @@ function StudioLayout() {
           <button
             type="button"
             className="gallery-launcher surface-enter"
-            aria-label="View your past creations here"
+            aria-label="View your past creations"
             onClick={studio.navigate.goToHistory}
           >
-            View your past creations here
+            View your past creations
           </button>
         )}
       </div>
 
-      <StudioPanels
-        showCreateWorkspace={surface.showCreateWorkspace}
-        showEditWorkspace={surface.showEditWorkspace}
-        settingsOpen={settingsOpen}
-        hasEditSource={surface.hasEditSource}
-        focus={focus}
-        onCloseSettings={() => {
-          setSettingsOpen(false);
-        }}
-        onOpenPreview={setPreviewModal}
-      />
+      {showCreateWorkspace && (
+        <SettingsPanel
+          open={settingsOpen}
+          capability={studio.settings.selectedCapability}
+          settings={studio.settings.settings}
+          updateSettings={studio.settings.updateSettings}
+          onRandomSeed={studio.settings.chooseRandomSeed}
+          onViewRequest={() => {
+            setPreviewModal('request');
+          }}
+          onGetCode={() => {
+            setPreviewModal('code');
+          }}
+          onClose={() => {
+            setSettingsOpen(false);
+          }}
+        />
+      )}
 
       <StudioOverlays
         previewModal={previewModal}
-        metadataImageId={search.metadata}
         onClosePreview={() => {
           setPreviewModal(null);
         }}
@@ -157,7 +129,11 @@ export function StudioShell() {
   const params = useParams({ strict: false });
 
   return (
-    <StudioProvider focusedRunId={search.run} selectedProjectId={params.projectId}>
+    <StudioProvider
+      focusedImageId={search.image}
+      focusedRunId={search.run}
+      selectedProjectId={params.projectId}
+    >
       <StudioLayout />
     </StudioProvider>
   );

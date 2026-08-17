@@ -7,11 +7,7 @@ import {
   supportedImageFiles,
 } from '../../shared/images/files.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
-import type {
-  Attachment,
-  LibraryAttachment,
-  UploadAttachment,
-} from '../../shared/types/attachments.js';
+import type { Attachment, LibraryAttachment } from '../../shared/types/attachments.js';
 import type { ReferenceImage } from '../../shared/types/domain.js';
 import { referenceImageContentUrl } from '../references/api.js';
 
@@ -63,14 +59,6 @@ export function useAttachments(notify: Notify) {
     });
   }
 
-  /** Editing always starts from a single source image. */
-  function replaceWithEditingSource(attachment: UploadAttachment) {
-    setAttachments((current) => {
-      revokeUploadPreviews(current);
-      return [attachment];
-    });
-  }
-
   function hasLibraryImage(imageId: string): boolean {
     return attachments.some(
       (attachment) => attachment.source === 'library' && attachment.imageId === imageId,
@@ -111,7 +99,6 @@ export function useAttachments(notify: Notify) {
     handleFiles,
     handleDrop,
     removeAttachment,
-    replaceWithEditingSource,
     hasLibraryImage,
     isFull,
     addLibraryImage,

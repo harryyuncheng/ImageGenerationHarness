@@ -24,7 +24,7 @@ export function HistoryCard({
         onClick={() => {
           onOpen(run);
         }}
-        aria-label={`Open editor for ${imageName}`}
+        aria-label={`Load ${imageName}`}
       >
         {outputUrl ? (
           <img src={outputUrl} alt={imageName || 'Generated image'} />

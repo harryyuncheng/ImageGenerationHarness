@@ -9,7 +9,6 @@ interface TooltipPosition {
   left: number;
   top: number;
   width: number;
-  placement: 'above' | 'below';
 }
 
 const tooltipDelay = 180;
@@ -29,16 +28,10 @@ function positionTooltip(button: HTMLButtonElement): TooltipPosition {
     Math.max(centeredLeft, viewportLeft + viewportMargin),
     viewportRight - width - viewportMargin,
   );
-  const placement =
-    button.closest<HTMLElement>('.generation-toolbar')?.dataset['position'] === 'top'
-      ? 'below'
-      : 'above';
-
   return {
     left,
-    top: placement === 'above' ? bounds.top - tooltipGap : bounds.bottom + tooltipGap,
+    top: bounds.top - tooltipGap,
     width,
-    placement,
   };
 }
 
@@ -111,13 +104,7 @@ export function ToolbarToolButton({
       </button>
       {tooltipPosition &&
         createPortal(
-          <div
-            id={tooltipId}
-            role="tooltip"
-            className="toolbar-tool-tooltip"
-            data-placement={tooltipPosition.placement}
-            style={tooltipStyle}
-          >
+          <div id={tooltipId} role="tooltip" className="toolbar-tool-tooltip" style={tooltipStyle}>
             <strong>{capability.name}</strong>
             <span>{description}</span>
           </div>,
