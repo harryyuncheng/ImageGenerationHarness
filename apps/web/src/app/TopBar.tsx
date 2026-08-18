@@ -12,11 +12,11 @@ const libraryTitles: Record<string, string> = {
 
 export function TopBar({
   settingsOpen,
-  showCreateWorkspace,
+  showSettingsButton,
   onOpenSettings,
 }: {
   settingsOpen: boolean;
-  showCreateWorkspace: boolean;
+  showSettingsButton: boolean;
   onOpenSettings: () => void;
 }) {
   const studio = useStudio();
@@ -41,7 +41,7 @@ export function TopBar({
             <X size={18} />
           </button>
         ) : (
-          showCreateWorkspace &&
+          showSettingsButton &&
           !settingsOpen && (
             <button
               type="button"

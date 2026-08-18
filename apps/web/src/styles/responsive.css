@@ -152,7 +152,23 @@
     bottom: 62px;
   }
   .toolbar-divider {
-    margin-inline: 1px;
+    display: none;
+  }
+  .toolbar-tool-row,
+  .composer-tools {
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 4px;
+  }
+  .toolbar-tool-row {
+    overflow-x: visible;
+  }
+  .toolbar-tool-options {
+    flex-basis: 100%;
+  }
+  .composer-tools {
+    min-width: 0;
+    flex: 1 1 auto;
   }
   .composer-setting {
     padding-inline: 7px;

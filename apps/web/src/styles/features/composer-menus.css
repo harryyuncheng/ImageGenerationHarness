@@ -7,8 +7,32 @@
 .composer-setting-value {
   min-width: 25px;
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
   font-weight: 650;
-  text-align: left;
+  text-align: center;
+}
+
+/* Every trigger keeps one width so changing a value never reflows the toolbar. */
+.composer-setting-shape {
+  display: inline-flex;
+  width: 15px;
+  height: 13px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.composer-setting--dimensions .composer-setting-value {
+  min-width: 27px;
+}
+
+.composer-setting--format .composer-setting-value {
+  min-width: 34px;
+}
+
+.composer-setting--seed {
+  width: 34px;
+  padding: 0;
 }
 
 .composer-setting--count {
@@ -17,7 +41,6 @@
 
 .composer-setting--count .composer-setting-value {
   min-width: 9px;
-  text-align: left;
 }
 
 .composer-setting-menu {
@@ -32,6 +55,42 @@
 
 .composer-setting-menu--count {
   width: min(280px, calc(100vw - 24px));
+}
+
+.composer-setting-menu--format,
+.composer-setting-menu--seed {
+  width: min(286px, calc(100vw - 24px));
+}
+
+.composer-setting-menu--strength {
+  width: min(262px, calc(100vw - 24px));
+}
+
+/* The slider and seed row are panel controls, so the popover drops the panel framing. */
+.composer-setting-menu .setting-group {
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 0;
+  padding: 10px 9px 4px;
+}
+
+.composer-setting-menu .seed-input {
+  padding: 0 2px 2px;
+}
+
+.composer-setting-menu .seed-input input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  padding: 8px 10px;
+  color: var(--text);
+  outline: 0;
+  font-size: 11px;
+}
+
+.composer-setting-menu .seed-input input:focus {
+  border-color: var(--accent);
 }
 
 .composer-setting-menu:not([data-positioned='true']) {
@@ -79,6 +138,12 @@
   gap: 4px;
 }
 
+.composer-setting-options--format,
+.composer-setting-options--seed {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+}
+
 .composer-setting-option {
   position: relative;
   display: flex;
@@ -115,6 +180,20 @@
   justify-content: center;
   padding: 8px 4px;
   text-align: center;
+}
+
+.composer-setting-option--format,
+.composer-setting-option--seed {
+  min-height: 42px;
+  padding: 7px 28px 7px 10px;
+  text-align: left;
+}
+
+.composer-setting-option--format .composer-setting-option-check,
+.composer-setting-option--seed .composer-setting-option-check {
+  top: 50%;
+  right: 9px;
+  transform: translateY(-50%);
 }
 
 .composer-setting-option--count.selected {

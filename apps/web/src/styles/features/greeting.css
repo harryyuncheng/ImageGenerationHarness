@@ -1,3 +1,12 @@
+.prompt-canvas {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
 .prompt-canvas-field {
   display: grid;
   width: fit-content;
@@ -53,6 +62,97 @@
 }
 
 .prompt-canvas-input:focus-visible {
+  outline: 0;
+}
+
+.prompt-negative-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 12px 5px 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.prompt-negative-toggle.is-pointer-hover {
+  border-color: var(--border-soft);
+  background: var(--surface-soft);
+  color: var(--text-secondary);
+}
+
+.prompt-negative {
+  display: flex;
+  width: min(560px, 100%);
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid var(--border-soft);
+  border-radius: 15px;
+  background: var(--surface-soft);
+  padding: 7px 10px 11px 14px;
+  text-align: left;
+}
+
+.prompt-negative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.prompt-negative-label {
+  color: var(--text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.prompt-negative-remove {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.prompt-negative-remove.is-pointer-hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.prompt-negative-input {
+  field-sizing: content;
+  width: 100%;
+  min-width: 0;
+  max-height: 128px;
+  overflow-y: auto;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 450;
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+.prompt-negative-input::placeholder {
+  color: var(--text-muted);
+}
+
+.prompt-negative-input:focus-visible {
   outline: 0;
 }
 

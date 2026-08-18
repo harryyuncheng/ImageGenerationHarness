@@ -16,7 +16,6 @@ import { useSavedPrompts } from '../features/presets/use-saved-prompts.js';
 import { useReferenceLibrary } from '../features/references/use-reference-library.js';
 import { useRepository, type RepositoryController } from '../features/repository/use-repository.js';
 import { useTheme, type ThemeController } from '../features/theme/use-theme.js';
-import { useClipboard } from '../shared/hooks/use-clipboard.js';
 import { useToasts, type Notify, type Toast } from '../shared/hooks/use-toasts.js';
 import type { Capability, Destination } from '../shared/types/domain.js';
 import { useStudioNavigate } from './use-studio-navigate.js';
@@ -133,7 +132,6 @@ export type StudioValue = ReturnType<typeof useStudioValue>;
 interface ShellValue {
   toasts: Toast[];
   dismissToast: (id: string) => void;
-  copyText: (value: string, message?: string) => Promise<void>;
   theme: ThemeController;
 }
 
@@ -170,13 +168,12 @@ interface StudioProviderProps {
  */
 export function StudioProvider({ children, ...scope }: StudioProviderProps) {
   const { toasts, notify, dismiss } = useToasts();
-  const copyText = useClipboard(notify);
   const theme = useTheme();
   const repository = useRepository(notify);
   const { capabilities } = useCapabilities();
 
   return (
-    <ShellContext value={{ toasts, dismissToast: dismiss, copyText, theme }}>
+    <ShellContext value={{ toasts, dismissToast: dismiss, theme }}>
       <RepositoryScope
         key={repository.activeRepositoryId ?? 'none'}
         notify={notify}

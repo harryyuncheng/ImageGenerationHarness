@@ -38,7 +38,7 @@
 
 .toolbar-tool-options {
   display: grid;
-  min-width: 0;
+  min-width: min-content;
   flex: 1 1 0;
   gap: 2px;
   padding: 2px;

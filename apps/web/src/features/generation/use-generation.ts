@@ -134,7 +134,7 @@ export function useGeneration(options: GenerationOptions) {
     }
   }
 
-  return { isSubmitting, requestBody, generate, handlePromptKeyDown };
+  return { isSubmitting, generate, handlePromptKeyDown };
 }
 
 export type GenerationController = ReturnType<typeof useGeneration>;

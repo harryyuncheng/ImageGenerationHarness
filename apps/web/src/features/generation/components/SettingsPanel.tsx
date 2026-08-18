@@ -1,4 +1,4 @@
-import { Braces, Code2, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import type { Capability } from '../../../shared/types/domain.js';
 import { hasParameter } from '../capabilities.js';
 import {
@@ -17,8 +17,6 @@ interface SettingsPanelProps {
   settings: GenerationSettings;
   updateSettings: UpdateSettings;
   onRandomSeed: () => void;
-  onViewRequest: () => void;
-  onGetCode: () => void;
   onClose: () => void;
 }
 
@@ -29,8 +27,6 @@ export function SettingsPanel({
   settings,
   updateSettings,
   onRandomSeed,
-  onViewRequest,
-  onGetCode,
   onClose,
 }: SettingsPanelProps) {
   const showStyle = hasParameter(capability, 'style_preset');
@@ -129,14 +125,6 @@ export function SettingsPanel({
           updateSettings={updateSettings}
           onRandomSeed={onRandomSeed}
         />
-      </div>
-      <div className="settings-footer settings-footer--actions">
-        <button className="text-button" onClick={onViewRequest}>
-          <Braces size={16} /> View request
-        </button>
-        <button className="text-button" onClick={onGetCode}>
-          <Code2 size={16} /> Get code
-        </button>
       </div>
     </aside>
   );

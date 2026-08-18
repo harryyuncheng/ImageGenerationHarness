@@ -17,18 +17,6 @@ export function CapabilityRangeSettings({
 }: CapabilityRangeSettingsProps) {
   return (
     <>
-      {capability.modes.includes('image-to-image') && (
-        <RangeSetting
-          label="Image strength"
-          value={settings.strength}
-          min={0}
-          max={1}
-          step={0.05}
-          onChange={(value) => {
-            updateSettings('strength', value);
-          }}
-        />
-      )}
       {capability.category === 'control' && capability.canonicalId.includes('control-') && (
         <RangeSetting
           label="Control strength"

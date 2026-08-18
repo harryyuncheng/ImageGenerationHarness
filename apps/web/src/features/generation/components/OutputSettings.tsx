@@ -1,8 +1,7 @@
-import { Dice5 } from 'lucide-react';
 import type { Capability } from '../../../shared/types/domain.js';
 import { hasParameter, maximumSeed, supportedOutputFormats } from '../capabilities.js';
-import type { GenerationSettings, UpdateSettings } from '../settings.js';
-import { SettingGroup } from './SettingControls.js';
+import { seedStrategies, type GenerationSettings, type UpdateSettings } from '../settings.js';
+import { SeedValueInput, SettingGroup } from './SettingControls.js';
 
 interface OutputSettingsProps {
   capability: Capability;
@@ -10,20 +9,6 @@ interface OutputSettingsProps {
   updateSettings: UpdateSettings;
   onRandomSeed: () => void;
 }
-
-const seedStrategies = [
-  { value: 'random', label: 'Random', description: 'Use a fresh random seed for each image.' },
-  { value: 'fixed', label: 'Fixed', description: 'Reuse the same seed for every image.' },
-  {
-    value: 'sequential',
-    label: 'Sequential',
-    description: 'Increase the seed by one for each image.',
-  },
-] as const satisfies readonly {
-  value: GenerationSettings['seedMode'];
-  label: string;
-  description: string;
-}[];
 
 export function OutputSettings({
   capability,
@@ -111,31 +96,15 @@ export function OutputSettings({
             ))}
           </div>
           <small className="seed-strategy-description">{selectedSeedStrategy.description}</small>
-          <div className="seed-input">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={String(seedMaximum).length}
-              value={settings.seedMode === 'random' ? '' : settings.seed}
-              placeholder="Random per image"
-              aria-label="Seed"
-              disabled={settings.seedMode === 'random'}
-              onChange={(event) => {
-                if (!/^\d*$/.test(event.target.value)) return;
-                updateSettings('seed', Math.min(Number(event.target.value || '0'), seedMaximum));
-              }}
-            />
-            <button
-              type="button"
-              className="icon-button"
-              onClick={onRandomSeed}
-              title="Random seed"
-              disabled={settings.seedMode === 'random'}
-            >
-              <Dice5 size={17} />
-            </button>
-          </div>
+          <SeedValueInput
+            seed={settings.seed}
+            seedMaximum={seedMaximum}
+            disabled={settings.seedMode === 'random'}
+            onChange={(value) => {
+              updateSettings('seed', value);
+            }}
+            onRandomSeed={onRandomSeed}
+          />
         </SettingGroup>
       )}
     </>

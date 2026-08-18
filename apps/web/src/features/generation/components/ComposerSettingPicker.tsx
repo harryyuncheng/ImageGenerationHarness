@@ -3,12 +3,7 @@ import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
-interface ComposerSettingOption {
-  value: string;
-  label: string;
-  description: string;
-  preview?: ReactNode;
-}
+type ComposerSettingVariant = 'count' | 'dimensions' | 'format' | 'seed' | 'strength';
 
 interface ComposerSettingPickerProps {
   menuId: string;
@@ -16,12 +11,11 @@ interface ComposerSettingPickerProps {
   menuLabel: string;
   menuDescription: string;
   value: string;
-  options: readonly ComposerSettingOption[];
   open: boolean;
-  variant: 'dimensions' | 'count';
+  variant: ComposerSettingVariant;
   triggerContent: ReactNode;
   onOpenChange: (open: boolean) => void;
-  onSelect: (value: string) => void;
+  children: (close: () => void) => ReactNode;
 }
 
 /**
@@ -34,12 +28,11 @@ export function ComposerSettingPicker({
   menuLabel,
   menuDescription,
   value,
-  options,
   open,
   variant,
   triggerContent,
   onOpenChange,
-  onSelect,
+  children,
 }: ComposerSettingPickerProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -100,9 +93,11 @@ export function ComposerSettingPicker({
     };
 
     positionMenu();
-    menu
-      .querySelector<HTMLButtonElement>('[role="option"][aria-selected="true"]')
-      ?.focus({ preventScroll: true });
+    const initialFocus =
+      menu.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
+      menu.querySelector<HTMLElement>('input:not([disabled]), button:not([disabled])') ??
+      menu;
+    initialFocus.focus({ preventScroll: true });
     const resizeObserver = new ResizeObserver(positionMenu);
     resizeObserver.observe(trigger);
     resizeObserver.observe(menu);
@@ -123,33 +118,7 @@ export function ComposerSettingPicker({
     };
   }, [open]);
 
-  function moveOptionFocus(event: KeyboardEvent<HTMLDivElement>) {
-    if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
-      return;
-    }
-    const optionElements = Array.from(
-      menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? [],
-    );
-    if (optionElements.length === 0) return;
-    event.preventDefault();
-    const focusedIndex = optionElements.findIndex((option) => option === document.activeElement);
-    let nextIndex = focusedIndex;
-    if (event.key === 'Home') nextIndex = 0;
-    if (event.key === 'End') nextIndex = optionElements.length - 1;
-    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
-      nextIndex = focusedIndex < 0 ? 0 : (focusedIndex + 1) % optionElements.length;
-    }
-    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
-      nextIndex =
-        focusedIndex < 0
-          ? optionElements.length - 1
-          : (focusedIndex - 1 + optionElements.length) % optionElements.length;
-    }
-    optionElements[nextIndex]?.focus();
-  }
-
-  function selectOption(nextValue: string) {
-    onSelect(nextValue);
+  function close() {
     onOpenChange(false);
     triggerRef.current?.focus();
   }
@@ -161,7 +130,7 @@ export function ComposerSettingPicker({
         type="button"
         className={`composer-setting composer-setting--${variant} ${open ? 'is-open' : ''}`}
         aria-label={label}
-        aria-haspopup="listbox"
+        aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         aria-describedby={`${menuId}-current-value`}
@@ -184,53 +153,112 @@ export function ComposerSettingPicker({
         createPortal(
           <div
             ref={menuRef}
+            id={menuId}
+            role="dialog"
+            aria-label={menuLabel}
+            tabIndex={-1}
             className={`composer-setting-menu composer-setting-menu--${variant} popover surface-enter`}
           >
             <div className="composer-setting-menu-header">
               <strong>{menuLabel}</strong>
               <small>{menuDescription}</small>
             </div>
-            <div
-              id={menuId}
-              className={`composer-setting-options composer-setting-options--${variant}`}
-              role="listbox"
-              aria-label={menuLabel}
-              onKeyDown={moveOptionFocus}
-            >
-              {options.map((option) => {
-                const selected = option.value === value;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`composer-setting-option composer-setting-option--${variant} ${selected ? 'selected' : ''}`}
-                    role="option"
-                    aria-label={
-                      variant === 'count'
-                        ? `${option.label} ${option.description}`
-                        : `${option.description}, ${option.label}`
-                    }
-                    aria-selected={selected}
-                    tabIndex={selected ? 0 : -1}
-                    onClick={() => {
-                      selectOption(option.value);
-                    }}
-                  >
-                    <span className="composer-setting-option-preview">{option.preview}</span>
-                    <span className="composer-setting-option-copy">
-                      <strong>{option.label}</strong>
-                      <small>{option.description}</small>
-                    </span>
-                    {selected && variant === 'dimensions' && (
-                      <Check className="composer-setting-option-check" size={14} />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            {children(close)}
           </div>,
           document.body,
         )}
     </span>
+  );
+}
+
+interface ComposerSettingOption<Value extends string> {
+  value: Value;
+  label: string;
+  description: string;
+  preview?: ReactNode;
+  disabled?: boolean;
+}
+
+/** The list body shared by every chip menu that picks one value from a fixed set. */
+export function ComposerSettingOptions<Value extends string>({
+  label,
+  variant,
+  value,
+  options,
+  onSelect,
+}: {
+  label: string;
+  variant: ComposerSettingVariant;
+  value: Value;
+  options: readonly ComposerSettingOption<Value>[];
+  onSelect: (value: Value) => void;
+}) {
+  const listRef = useRef<HTMLDivElement>(null);
+
+  function moveOptionFocus(event: KeyboardEvent<HTMLDivElement>) {
+    if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
+      return;
+    }
+    const optionElements = Array.from(
+      listRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]:not([disabled])') ?? [],
+    );
+    if (optionElements.length === 0) return;
+    event.preventDefault();
+    const focusedIndex = optionElements.findIndex((option) => option === document.activeElement);
+    let nextIndex = focusedIndex;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = optionElements.length - 1;
+    if (event.key === 'ArrowDown' || event.key === 'ArrowRight') {
+      nextIndex = focusedIndex < 0 ? 0 : (focusedIndex + 1) % optionElements.length;
+    }
+    if (event.key === 'ArrowUp' || event.key === 'ArrowLeft') {
+      nextIndex =
+        focusedIndex < 0
+          ? optionElements.length - 1
+          : (focusedIndex - 1 + optionElements.length) % optionElements.length;
+    }
+    optionElements[nextIndex]?.focus();
+  }
+
+  return (
+    <div
+      ref={listRef}
+      className={`composer-setting-options composer-setting-options--${variant}`}
+      role="listbox"
+      aria-label={label}
+      onKeyDown={moveOptionFocus}
+    >
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={`composer-setting-option composer-setting-option--${variant} ${selected ? 'selected' : ''}`}
+            role="option"
+            aria-label={
+              variant === 'count'
+                ? `${option.label} ${option.description}`
+                : `${option.label}, ${option.description}`
+            }
+            aria-selected={selected}
+            disabled={option.disabled}
+            tabIndex={selected ? 0 : -1}
+            onClick={() => {
+              onSelect(option.value);
+            }}
+          >
+            <span className="composer-setting-option-preview">{option.preview}</span>
+            <span className="composer-setting-option-copy">
+              <strong>{option.label}</strong>
+              <small>{option.description}</small>
+            </span>
+            {selected && variant !== 'count' && (
+              <Check className="composer-setting-option-check" size={14} />
+            )}
+          </button>
+        );
+      })}
+    </div>
   );
 }

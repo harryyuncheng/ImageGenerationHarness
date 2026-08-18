@@ -94,6 +94,32 @@ export const stylePresets: readonly (readonly [string, string])[] = [
 
 export const outputCounts = [1, 2, 3, 4] as const;
 
+export const outputFormats = [
+  'png',
+  'jpeg',
+  'webp',
+] as const satisfies readonly GenerationSettings['outputFormat'][];
+
+export const outputFormatDescriptions = {
+  png: 'Lossless, keeps transparency',
+  jpeg: 'Smallest files, no transparency',
+  webp: 'Lossless and compact',
+} as const satisfies Record<GenerationSettings['outputFormat'], string>;
+
+export const seedStrategies = [
+  { value: 'random', label: 'Random', description: 'Use a fresh random seed for each image.' },
+  { value: 'fixed', label: 'Fixed', description: 'Reuse the same seed for every image.' },
+  {
+    value: 'sequential',
+    label: 'Sequential',
+    description: 'Increase the seed by one for each image.',
+  },
+] as const satisfies readonly {
+  value: GenerationSettings['seedMode'];
+  label: string;
+  description: string;
+}[];
+
 export const outpaintDirections = [
   { label: 'Left', key: 'outpaintLeft' },
   { label: 'Right', key: 'outpaintRight' },

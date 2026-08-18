@@ -1,6 +1,7 @@
 import { Bookmark, FolderOpen } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useParams, useRouterState, useSearch } from '@tanstack/react-router';
+import { usesToolbarSettings } from '../features/generation/capabilities.js';
 import { SettingsPanel } from '../features/generation/components/SettingsPanel.js';
 import { AppSettings } from './AppSettings.js';
 import { StudioOverlays } from './StudioOverlays.js';
@@ -8,27 +9,28 @@ import { StudioProvider, useStudio } from './studio-context.js';
 import { TopBar } from './TopBar.js';
 import { useGlobalShortcuts } from './use-global-shortcuts.js';
 
-export type PreviewModal = 'code' | 'request' | null;
-
 function StudioLayout() {
   const studio = useStudio();
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [previewModal, setPreviewModal] = useState<PreviewModal>(null);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
+  const panelCapable = !usesToolbarSettings(studio.settings.selectedCapability);
   const showCreateWorkspace = pathname === '/';
-  const showSettings = showCreateWorkspace && settingsOpen;
+  const showSettings = showCreateWorkspace && panelCapable && settingsOpen;
   const isGallery = pathname.startsWith('/gallery');
+
+  // Selecting a toolbar-only tool retires the panel, so it must not reappear on the way back.
+  useEffect(() => {
+    if (!panelCapable) setSettingsOpen(false);
+  }, [panelCapable]);
 
   useGlobalShortcuts({
     closeOverlays: () => {
-      setPreviewModal(null);
       setAppSettingsOpen(false);
       studio.repository.setMenuOpen(false);
     },
     openSettings: () => {
-      setPreviewModal(null);
       setAppSettingsOpen(true);
     },
     fileInput: studio.attachments.fileInput,
@@ -44,7 +46,7 @@ function StudioLayout() {
       <div className={`studio-main ${showCreateWorkspace ? 'studio-main--create' : ''}`}>
         <TopBar
           settingsOpen={settingsOpen}
-          showCreateWorkspace={showCreateWorkspace}
+          showSettingsButton={showCreateWorkspace && panelCapable}
           onOpenSettings={() => {
             setSettingsOpen(true);
           }}
@@ -91,31 +93,20 @@ function StudioLayout() {
         )}
       </div>
 
-      {showCreateWorkspace && (
+      {showCreateWorkspace && panelCapable && (
         <SettingsPanel
-          open={settingsOpen}
+          open={showSettings}
           capability={studio.settings.selectedCapability}
           settings={studio.settings.settings}
           updateSettings={studio.settings.updateSettings}
           onRandomSeed={studio.settings.chooseRandomSeed}
-          onViewRequest={() => {
-            setPreviewModal('request');
-          }}
-          onGetCode={() => {
-            setPreviewModal('code');
-          }}
           onClose={() => {
             setSettingsOpen(false);
           }}
         />
       )}
 
-      <StudioOverlays
-        previewModal={previewModal}
-        onClosePreview={() => {
-          setPreviewModal(null);
-        }}
-      />
+      <StudioOverlays />
     </div>
   );
 }

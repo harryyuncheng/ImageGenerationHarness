@@ -210,7 +210,6 @@
 .toolbar-tab-row {
   justify-content: center;
   overflow-x: auto;
-  border-top: 1px solid var(--border-soft);
   padding: 1px 0;
 }
 

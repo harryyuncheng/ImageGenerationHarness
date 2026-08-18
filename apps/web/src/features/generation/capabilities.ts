@@ -52,6 +52,11 @@ export function needsImage(capability: Capability): boolean {
   return capability.modes.includes('image-service');
 }
 
+/** Generation targets carry every setting in the toolbar; image services still use the advanced panel. */
+export function usesToolbarSettings(capability: Capability): boolean {
+  return capability.category === 'generation';
+}
+
 export function hasParameter(capability: Capability, parameter: RequestParameter): boolean {
   return capability.parameters.includes(parameter);
 }

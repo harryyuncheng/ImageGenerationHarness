@@ -53,18 +53,15 @@ export function CreateView({
 
   useEffect(() => {
     lastToolByCategory.current[selectedCapability.category] = selectedCapability.canonicalId;
+    setSettingMenu(null);
   }, [selectedCapability.canonicalId, selectedCapability.category]);
 
   function updateSettingMenu(menu: Exclude<ComposerSettingMenu, null>, open: boolean) {
     setSettingMenu((current) => (open ? menu : current === menu ? null : current));
   }
 
-  function closeToolbarMenus() {
-    setSettingMenu(null);
-  }
-
   function selectTool(capability: Capability) {
-    closeToolbarMenus();
+    setSettingMenu(null);
     lastToolByCategory.current[capability.category] = capability.canonicalId;
     if (capability.canonicalId !== selectedCapability.canonicalId) {
       draftActions.selectTool(capability);
@@ -126,7 +123,11 @@ export function CreateView({
               capability={selectedCapability}
               inputRef={promptDraft.promptInput}
               value={promptDraft.prompt}
+              negativePrompt={settings.settings.negativePrompt}
               onChange={promptDraft.setPrompt}
+              onNegativePromptChange={(value) => {
+                settings.updateSettings('negativePrompt', value);
+              }}
               onKeyDown={generation.handlePromptKeyDown}
             />
             {attachments.attachments.length > 0 && (
@@ -168,7 +169,7 @@ export function CreateView({
                 role="group"
                 aria-label={`${activeTab.label} tools`}
                 style={{
-                  gridTemplateColumns: `repeat(${String(visibleTools.length)}, minmax(0, 1fr))`,
+                  gridTemplateColumns: `repeat(${String(visibleTools.length)}, minmax(56px, 1fr))`,
                 }}
               >
                 {visibleTools.map((capability) => {

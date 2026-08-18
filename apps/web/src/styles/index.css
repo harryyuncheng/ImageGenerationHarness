@@ -27,7 +27,6 @@
 @import './features/presets.css';
 @import './features/projects.css';
 @import './features/references.css';
-@import './shared/modal.css';
 @import './shared/shortcuts.css';
 @import './shared/toast.css';
 @import './shared/accessibility.css';
