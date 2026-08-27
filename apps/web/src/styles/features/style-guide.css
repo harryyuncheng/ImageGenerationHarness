@@ -405,7 +405,6 @@
   width: var(--style-guide-tile-size);
   height: var(--style-guide-tile-size);
   overflow: hidden;
-  border: 1.5px solid var(--border-soft);
   border-radius: 22px;
   background: var(--surface);
   box-shadow: var(--shadow-sm);
@@ -431,9 +430,9 @@
   rotate: 9deg;
 }
 
+/* Only the empty slots are outlined; that dashed edge is all that makes them visible. */
 .style-guide-tile--empty {
-  border-color: var(--border);
-  border-style: dashed;
+  border: 1.5px dashed var(--border);
   background: var(--surface-soft);
   box-shadow: none;
 }
@@ -444,8 +443,22 @@
   object-fit: cover;
 }
 
-.style-guide-stack.is-pointer-hover .style-guide-tile {
+.style-guide-tile__add {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border);
+  transition: color 180ms ease;
+}
+
+.style-guide-stack.is-pointer-hover .style-guide-tile--empty {
   border-color: var(--text-secondary);
+}
+
+.style-guide-stack.is-pointer-hover .style-guide-tile__add {
+  color: var(--text-secondary);
 }
 
 .style-guide-stack.is-pointer-hover .style-guide-tile:nth-child(1) {

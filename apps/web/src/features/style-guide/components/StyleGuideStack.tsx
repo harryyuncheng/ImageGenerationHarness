@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useRef } from 'react';
 import type { StyleGuideFolder } from '../../../shared/types/domain.js';
 import { styleGuideImageContentUrl } from '../api.js';
@@ -59,6 +60,11 @@ export function StyleGuideStack({
             >
               {image && (
                 <img src={styleGuideImageContentUrl(image.folderId, image.imageId)} alt="" />
+              )}
+              {!image && slot === PREVIEW_SLOTS.length - 1 && (
+                <span className="style-guide-tile__add">
+                  <Plus size={22} strokeWidth={1.5} />
+                </span>
               )}
             </span>
           );
