@@ -8,9 +8,9 @@ import type {
   ProjectDetailResponse,
   ProjectDto,
   ProjectsResponse,
-  ReferenceFolderDto,
-  ReferenceImageDto,
-  ReferenceLibraryResponse,
+  StyleGuideFolderDto,
+  StyleGuideImageDto,
+  StyleGuideResponse,
   RepositoryStatus,
 } from '@harness/contracts';
 
@@ -18,8 +18,8 @@ export type Capability = CapabilityDescriptor;
 export type GalleryImage = GalleryImageDto;
 export type Project = ProjectDto;
 export type ProjectAsset = ProjectAssetDto;
-export type ReferenceFolder = ReferenceFolderDto;
-export type ReferenceImage = ReferenceImageDto;
+export type StyleGuideFolder = StyleGuideFolderDto;
+export type StyleGuideImage = StyleGuideImageDto;
 
 export type {
   CapabilitiesResponse,
@@ -27,6 +27,6 @@ export type {
   GalleryResponse,
   ProjectDetailResponse,
   ProjectsResponse,
-  ReferenceLibraryResponse,
+  StyleGuideResponse,
   RepositoryStatus,
 };

@@ -28,7 +28,7 @@ export {
 export type { RepositoryDescriptor } from './repository.js';
 export { projectAssetSchema, projectSchema } from './projects.js';
 export type { Project, ProjectAsset } from './projects.js';
-export { referenceFolderSchema, referenceImageSchema } from './references.js';
-export type { ReferenceFolder, ReferenceImage } from './references.js';
+export { styleGuideFolderSchema, styleGuideImageSchema } from './style-guide.js';
+export type { StyleGuideFolder, StyleGuideImage } from './style-guide.js';
 export { localJobSchema, localRunSchema } from './runs.js';
 export type { LocalInputReference, LocalJob, LocalRun } from './runs.js';

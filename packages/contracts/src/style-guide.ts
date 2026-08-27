@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { MAX_IMAGE_BYTES, nonEmptyStringSchema, timestampSchema, uuidSchema } from './common.js';
 import { mediaTypeSchema } from './media.js';
 
-export const referenceImageDtoSchema = z
+export const styleGuideImageDtoSchema = z
   .object({
     folderId: uuidSchema,
     imageId: uuidSchema,
@@ -16,25 +16,25 @@ export const referenceImageDtoSchema = z
     updatedAt: timestampSchema,
   })
   .strict();
-export const referenceFolderDtoSchema = z
+export const styleGuideFolderDtoSchema = z
   .object({
     folderId: uuidSchema,
     name: nonEmptyStringSchema.max(80),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
-    images: z.array(referenceImageDtoSchema),
+    images: z.array(styleGuideImageDtoSchema),
   })
   .strict();
-export const referenceLibraryResponseSchema = z
-  .object({ folders: z.array(referenceFolderDtoSchema) })
+export const styleGuideResponseSchema = z
+  .object({ folders: z.array(styleGuideFolderDtoSchema) })
   .strict();
-export const referenceFolderNameRequestSchema = z
+export const styleGuideFolderNameRequestSchema = z
   .object({ name: nonEmptyStringSchema.max(80) })
   .strict();
-export const referenceImageNameRequestSchema = z
+export const styleGuideImageNameRequestSchema = z
   .object({ name: nonEmptyStringSchema.max(160) })
   .strict();
-export const createReferenceImageRequestSchema = z
+export const createStyleGuideImageRequestSchema = z
   .object({
     name: nonEmptyStringSchema.max(160),
     mediaType: mediaTypeSchema,
@@ -46,11 +46,11 @@ export const createReferenceImageRequestSchema = z
   .strict();
 
 export const folderParamsSchema = z.object({ folderId: uuidSchema }).strict();
-export const referenceImageParamsSchema = z
+export const styleGuideImageParamsSchema = z
   .object({ folderId: uuidSchema, imageId: uuidSchema })
   .strict();
 
-export type ReferenceImageDto = z.infer<typeof referenceImageDtoSchema>;
-export type ReferenceFolderDto = z.infer<typeof referenceFolderDtoSchema>;
-export type ReferenceLibraryResponse = z.infer<typeof referenceLibraryResponseSchema>;
-export type CreateReferenceImageRequest = z.infer<typeof createReferenceImageRequestSchema>;
+export type StyleGuideImageDto = z.infer<typeof styleGuideImageDtoSchema>;
+export type StyleGuideFolderDto = z.infer<typeof styleGuideFolderDtoSchema>;
+export type StyleGuideResponse = z.infer<typeof styleGuideResponseSchema>;
+export type CreateStyleGuideImageRequest = z.infer<typeof createStyleGuideImageRequestSchema>;

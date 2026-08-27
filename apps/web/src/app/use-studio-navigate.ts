@@ -15,8 +15,8 @@ export function useStudioNavigate() {
     goToCreate: () => {
       void navigate({ to: '/', search: clearedFocus });
     },
-    goToReferences: () => {
-      void navigate({ to: '/references', search: clearedFocus });
+    goToStyleGuide: () => {
+      void navigate({ to: '/style-guide', search: clearedFocus });
     },
     goToPresets: () => {
       void navigate({ to: '/presets', search: clearedFocus });

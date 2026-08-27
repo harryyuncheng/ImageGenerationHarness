@@ -11,7 +11,7 @@ The browser workbench provides:
 - A prominent local image-repository selector with native macOS folder selection, New Folder support, recent repositories, and automatic reopening of the last valid repository.
 - Projects with editable organizational descriptions, generated images, and nested project assets.
 - An explicit generation destination: the main repository, a project, or a nested project asset.
-- A fully local reference-image library with reusable folders and opaque `repo-image://<image-id>` browser references.
+- A fully local style guide of reusable image folders. Applying one folder attaches its images to Create-tab generations through opaque `repo-image://<image-id>` browser references.
 - Durable server-backed history and gallery views for retained work, polling-based status, and cancellation of queued work. Selecting a saved image or run loads it into the main area beside the prompt it was made from. Failed attempts surface as pop-up errors and are discarded.
 - Adjacent, strict JSON sidecars containing the exact prompt, normalized settings, seed provenance, dimensions, hashes, invocation target, inputs, and non-secret provider metadata.
 
@@ -44,14 +44,14 @@ The monorepo keeps deployable applications separate from reusable boundaries:
 apps/
   web/src/
     app/          # application composition and shell
-    features/     # generation, editing, gallery, projects, references, and history
+    features/     # generation, editing, gallery, projects, style guide, and history
     shared/       # browser-only HTTP, hooks, image helpers, and reusable UI
     styles/       # ordered global, shell, shared, and feature styles
   server/src/
     app/          # Fastify composition, errors, and loopback security
     repository/   # selected-repository path and filesystem authority
     projects/     # project and nested-asset behavior
-    references/   # local reference-library behavior
+    style-guide/  # local style guide behavior
     runs/         # durable run orchestration, queueing, workers, and recovery
     images/       # generated-image lookup, integrity checks, and HTTP routes
     providers/    # server-only Bedrock adapter
@@ -76,7 +76,7 @@ ESLint treats production files above 425 non-blank, non-comment lines as an arch
     jobs/
     inputs/
   images/
-  references/
+  style-guide/
     <folder-slug>--<folder-id>/
   projects/
     <project-slug>--<project-id>/
@@ -108,7 +108,7 @@ Switching repositories does not redirect already queued work: every in-memory qu
 - Content routes resolve stable IDs through validated records; they do not accept filesystem paths.
 - Browser DTOs omit absolute paths, internal input paths, and provider request bodies.
 - Sidecars contain no credentials, authorization data, or base64 image bodies.
-- Reference bytes selected for a run are snapshotted under the repository control directory so later library edits do not invalidate queued work.
+- Style guide bytes selected for a run are snapshotted under the repository control directory so later edits do not invalidate queued work.
 
 ## Bedrock prompt caching
 

@@ -4,14 +4,14 @@ import type { ChangeEvent, RefObject } from 'react';
 /** The studio's file pickers stay mounted so shortcuts can open them at any time. */
 export function HiddenFileInputs({
   promptInput,
-  libraryInput,
+  styleGuideInput,
   onPromptFiles,
-  onLibraryFiles,
+  onStyleGuideFiles,
 }: {
   promptInput: RefObject<HTMLInputElement | null>;
-  libraryInput: RefObject<HTMLInputElement | null>;
+  styleGuideInput: RefObject<HTMLInputElement | null>;
   onPromptFiles: (event: ChangeEvent<HTMLInputElement>) => void;
-  onLibraryFiles: (event: ChangeEvent<HTMLInputElement>) => void;
+  onStyleGuideFiles: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <>
@@ -24,12 +24,12 @@ export function HiddenFileInputs({
         onChange={onPromptFiles}
       />
       <input
-        ref={libraryInput}
+        ref={styleGuideInput}
         className="visually-hidden"
         type="file"
         accept={MEDIA_TYPES.join(',')}
         multiple
-        onChange={onLibraryFiles}
+        onChange={onStyleGuideFiles}
       />
     </>
   );

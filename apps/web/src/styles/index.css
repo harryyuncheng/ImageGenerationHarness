@@ -26,9 +26,10 @@
 @import './features/loaded-image.css';
 @import './features/presets.css';
 @import './features/projects.css';
-@import './features/references.css';
+@import './features/style-guide.css';
 @import './shared/shortcuts.css';
 @import './shared/toast.css';
+@import './shared/studio-dialog.css';
 @import './shared/accessibility.css';
 @import './responsive.css';
 @import './motion.css';

@@ -1,7 +1,17 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import { access, lstat, mkdir, readFile, readdir, realpath, rm, stat } from 'node:fs/promises';
+import {
+  access,
+  lstat,
+  mkdir,
+  readFile,
+  readdir,
+  realpath,
+  rename,
+  rm,
+  stat,
+} from 'node:fs/promises';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import {
   assertSafeRepositoryRelativePath,
@@ -25,10 +35,26 @@ const REQUIRED_DIRECTORIES = [
   '.image-harness/jobs',
   '.image-harness/inputs',
   'images',
-  'references',
+  'style-guide',
   'projects',
 ] as const;
 const REPOSITORY_DESCRIPTOR_PATH = '.image-harness/repository.json';
+const LEGACY_STYLE_GUIDE_DIRECTORY = 'references';
+const STYLE_GUIDE_DIRECTORY = 'style-guide';
+
+/**
+ * Manifests embed their own repository-relative paths, so the stored prefix is rewritten
+ * before the directory moves. Matching on the trailing slash keeps folder names untouched.
+ */
+async function rewriteLegacyStyleGuidePaths(absolutePath: string): Promise<void> {
+  const original = await readFile(absolutePath, 'utf8');
+  const rewritten = original.replaceAll(
+    `"${LEGACY_STYLE_GUIDE_DIRECTORY}/`,
+    `"${STYLE_GUIDE_DIRECTORY}/`,
+  );
+  if (rewritten === original) return;
+  await atomicWriteAbsolute(absolutePath, new TextEncoder().encode(rewritten), 0o600);
+}
 
 export function isContained(root: string, candidate: string): boolean {
   return candidate === root || candidate.startsWith(`${root}${sep}`);
@@ -139,6 +165,7 @@ export class LocalImageRepository {
   ): Promise<LocalImageRepository> {
     const repository = new LocalImageRepository(canonicalRoot, descriptor);
     await repository.withMutation(async () => {
+      await repository.#migrateLegacyStyleGuideUnlocked();
       for (const directory of REQUIRED_DIRECTORIES) {
         await repository.#ensureDirectoryUnlocked(directory);
       }
@@ -298,8 +325,33 @@ export class LocalImageRepository {
     });
   }
 
+  /** Repositories created before the style guide rename keep their folders under `references/`. */
+  async #migrateLegacyStyleGuideUnlocked(): Promise<void> {
+    const legacyRoot = join(this.#canonicalRoot, LEGACY_STYLE_GUIDE_DIRECTORY);
+    try {
+      if (!(await lstat(legacyRoot)).isDirectory()) return;
+    } catch (error) {
+      if (isMissing(error)) return;
+      throw error;
+    }
+
+    await this.#ensureDirectoryUnlocked(STYLE_GUIDE_DIRECTORY);
+    const styleGuideRoot = join(this.#canonicalRoot, STYLE_GUIDE_DIRECTORY);
+    for (const folderName of await readdir(legacyRoot)) {
+      const legacyFolder = join(legacyRoot, folderName);
+      if (!(await lstat(legacyFolder)).isDirectory()) continue;
+      for (const fileName of await readdir(legacyFolder)) {
+        if (!fileName.endsWith('.json')) continue;
+        await rewriteLegacyStyleGuidePaths(join(legacyFolder, fileName));
+      }
+      await rename(legacyFolder, join(styleGuideRoot, folderName));
+    }
+    await rm(legacyRoot, { recursive: true, force: true });
+    await syncDirectory(this.#canonicalRoot);
+  }
+
   async #cleanupManagedTempsUnlocked(): Promise<void> {
-    for (const directory of ['.image-harness', 'images', 'references', 'projects'] as const) {
+    for (const directory of ['.image-harness', 'images', 'style-guide', 'projects'] as const) {
       const absoluteDirectory = await this.#resolveExisting(directory);
       await cleanupTempsRecursively(absoluteDirectory);
     }

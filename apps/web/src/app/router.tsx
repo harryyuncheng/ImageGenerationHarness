@@ -7,7 +7,6 @@ import { useImages } from '../features/gallery/use-images.js';
 import { CreateView } from '../features/generation/components/CreateView.js';
 import { HistoryView } from '../features/history/components/HistoryView.js';
 import { PresetsView } from '../features/presets/components/PresetsView.js';
-import { ReferenceLibraryView } from '../features/references/components/ReferenceLibraryView.js';
 import { useStudio } from './studio-context.js';
 import { studioSearchSchema } from './studio-search.js';
 import { StudioShell } from './StudioShell.js';
@@ -125,41 +124,6 @@ function ProjectRoute() {
   );
 }
 
-function ReferencesRoute() {
-  const studio = useStudio();
-  const { references } = studio;
-  const { error } = references.referenceLibraryQuery;
-
-  return (
-    <ReferenceLibraryView
-      folders={references.referenceLibraryQuery.data?.folders ?? []}
-      isLoading={references.referenceLibraryQuery.isLoading}
-      isMutating={references.isMutating}
-      {...(error instanceof Error ? { error: error.message } : {})}
-      onCreateFolder={() => {
-        void references.createFolder();
-      }}
-      onRenameFolder={(folder) => {
-        void references.renameFolder(folder);
-      }}
-      onDeleteFolder={(folder) => {
-        void references.deleteFolder(folder);
-      }}
-      onAddImages={references.chooseUploads}
-      onUseImage={studio.attachReferenceImage}
-      onRenameImage={(image) => {
-        void references.renameImage(image);
-      }}
-      onDeleteImage={(image) => {
-        void references.deleteImage(image);
-      }}
-      onRetry={() => {
-        void references.refresh();
-      }}
-    />
-  );
-}
-
 function PresetsRoute() {
   const studio = useStudio();
 
@@ -211,10 +175,11 @@ const projectRoute = createRoute({
   component: ProjectRoute,
 });
 
-const referencesRoute = createRoute({
+// The style guide renders as a modal in the shell, so this route keeps the create screen behind it.
+const styleGuideRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: '/references',
-  component: ReferencesRoute,
+  path: '/style-guide',
+  component: CreateRoute,
 });
 
 const presetsRoute = createRoute({
@@ -229,7 +194,7 @@ const routeTree = rootRoute.addChildren([
   historyRoute,
   projectsRoute,
   projectRoute,
-  referencesRoute,
+  styleGuideRoute,
   presetsRoute,
 ]);
 

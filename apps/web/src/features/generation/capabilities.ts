@@ -22,7 +22,7 @@ export function capabilityDescription(capability: Capability): string {
     case 'service/control-structure':
       return 'Restyle an image while preserving its layout and structure.';
     case 'service/style-guide':
-      return 'Create new content guided by the look of a reference image.';
+      return 'Create new content guided by the look of a source image.';
     case 'service/style-transfer':
       return "Apply one image's style to another image's composition.";
     case 'service/creative-upscale':

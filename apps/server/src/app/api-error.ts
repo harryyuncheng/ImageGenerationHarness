@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { ProjectServiceError } from '../projects/project-records.js';
-import { ReferenceLibraryError } from '../references/reference-records.js';
+import { StyleGuideError } from '../style-guide/style-guide-records.js';
 import { RepositoryUnavailableError } from '../repository/errors.js';
 
 export class ApiError extends Error {
@@ -27,7 +27,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (error instanceof RepositoryUnavailableError) {
       return reply.code(503).send({ error: error.message });
     }
-    if (error instanceof ProjectServiceError || error instanceof ReferenceLibraryError) {
+    if (error instanceof ProjectServiceError || error instanceof StyleGuideError) {
       return reply.code(error.statusCode).send({ error: error.message });
     }
     if (error instanceof z.ZodError) {

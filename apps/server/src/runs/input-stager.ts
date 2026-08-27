@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import type { LocalInputReference, ReferenceImage } from '@harness/domain';
+import type { LocalInputReference, StyleGuideImage } from '@harness/domain';
 import { characterizeImageData, imageBytesMatch, outputFileForMediaType } from '@harness/image';
-import type { ReferenceLibraryService } from '../references/reference-library-service.js';
+import type { StyleGuideService } from '../style-guide/style-guide-service.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { StagedRequest } from './run-types.js';
 
@@ -25,7 +25,7 @@ export async function hydrateInputs(
 }
 
 export class InputStager {
-  constructor(private readonly references: ReferenceLibraryService) {}
+  constructor(private readonly styleGuide: StyleGuideService) {}
 
   async stage(
     repository: LocalImageRepository,
@@ -38,13 +38,13 @@ export class InputStager {
       for (const [field, value] of Object.entries(request)) {
         if (!imageFields.has(field) || typeof value !== 'string') continue;
         const reference = referencePattern.exec(value);
-        let image: ReferenceImage | undefined;
-        if (reference?.[1]) image = await this.references.getImageById(reference[1]);
-        if (reference && !image) throw new Error('Reference image not found');
+        let image: StyleGuideImage | undefined;
+        if (reference?.[1]) image = await this.styleGuide.getImageById(reference[1]);
+        if (reference && !image) throw new Error('Style guide image not found');
         if (image) {
           const bytes = await repository.readBytes(image.repositoryRelativePath);
           if (!imageBytesMatch(bytes, image.sha256, image.byteLength)) {
-            throw new Error('Reference image integrity verification failed');
+            throw new Error('Style guide image integrity verification failed');
           }
           const extension = outputFileForMediaType(image.mediaType).extension;
           const snapshotPath = `.image-harness/inputs/${image.sha256}--${image.imageId}.${extension}`;
@@ -52,7 +52,7 @@ export class InputStager {
             if (await repository.exists(snapshotPath)) {
               const existing = await repository.readBytes(snapshotPath);
               if (!imageBytesMatch(existing, image.sha256)) {
-                throw new Error('Staged reference image integrity verification failed');
+                throw new Error('Staged style guide image integrity verification failed');
               }
             } else {
               await repository.writeImmutable(snapshotPath, bytes);
@@ -71,7 +71,7 @@ export class InputStager {
           continue;
         }
         if (value.startsWith('repo-image://')) {
-          throw new Error('Invalid reference image identifier');
+          throw new Error('Invalid style guide image identifier');
         }
         const imageData = await characterizeImageData(value, { label: 'Input image data' });
         const imageId = randomUUID();

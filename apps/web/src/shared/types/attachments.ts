@@ -13,10 +13,10 @@ export interface UploadAttachment extends AttachmentBase {
   data: string;
 }
 
-export interface LibraryAttachment extends AttachmentBase {
-  source: 'library';
+export interface StyleGuideAttachment extends AttachmentBase {
+  source: 'style-guide';
   folderId: string;
   imageId: string;
 }
 
-export type Attachment = UploadAttachment | LibraryAttachment;
+export type Attachment = UploadAttachment | StyleGuideAttachment;

@@ -50,6 +50,8 @@ export function CreateView({
     [selectedCapability.category]: selectedCapability.canonicalId,
   });
   const [settingMenu, setSettingMenu] = useState<ComposerSettingMenu>(null);
+  // Style guide images are represented by the fan and its modal, never in the composer strip.
+  const uploads = attachments.attachments.filter((item) => item.source === 'upload');
 
   useEffect(() => {
     lastToolByCategory.current[selectedCapability.category] = selectedCapability.canonicalId;
@@ -130,11 +132,11 @@ export function CreateView({
               }}
               onKeyDown={generation.handlePromptKeyDown}
             />
-            {attachments.attachments.length > 0 && (
+            {uploads.length > 0 && (
               <AttachmentStrip
-                attachments={attachments.attachments}
+                attachments={uploads}
                 capability={selectedCapability}
-                onRemove={attachments.removeAttachment}
+                onRemove={attachments.removeUpload}
               />
             )}
             {destinationLabel !== undefined && loaded === undefined && (

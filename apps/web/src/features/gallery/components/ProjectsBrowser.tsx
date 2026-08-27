@@ -145,7 +145,7 @@ export function ProjectsBrowser({
           onAction={onRetry}
         />
       ) : isLoading ? (
-        <div className="reference-loading">
+        <div className="library-loading">
           <span className="loader-ring" />
           <p>Loading projects…</p>
         </div>

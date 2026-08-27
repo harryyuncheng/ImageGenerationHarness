@@ -1,4 +1,5 @@
 import { HiddenFileInputs } from './HiddenFileInputs.js';
+import { StudioDialog } from '../shared/components/StudioDialog.js';
 import { useStudio, useStudioShell } from './studio-context.js';
 import { ToastStack } from './ToastStack.js';
 
@@ -10,14 +11,15 @@ export function StudioOverlays() {
     <>
       <HiddenFileInputs
         promptInput={studio.attachments.fileInput}
-        libraryInput={studio.references.fileInput}
+        styleGuideInput={studio.styleGuide.fileInput}
         onPromptFiles={studio.attachments.handleFiles}
-        onLibraryFiles={(event) => {
-          void studio.references.handleFiles(event);
+        onStyleGuideFiles={(event) => {
+          void studio.styleGuide.handleFiles(event);
         }}
       />
 
       <ToastStack toasts={shell.toasts} onDismiss={shell.dismissToast} />
+      <StudioDialog dialogs={shell.dialogs} />
     </>
   );
 }

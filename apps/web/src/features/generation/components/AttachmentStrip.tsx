@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import { formatBytes } from '../../../shared/format.js';
-import type { Attachment } from '../../../shared/types/attachments.js';
+import type { UploadAttachment } from '../../../shared/types/attachments.js';
 import type { Capability } from '../../../shared/types/domain.js';
 import { attachmentRole } from '../model-presentation.js';
 
@@ -9,7 +9,7 @@ export function AttachmentStrip({
   capability,
   onRemove,
 }: {
-  attachments: readonly Attachment[];
+  attachments: readonly UploadAttachment[];
   capability: Capability;
   onRemove: (id: string) => void;
 }) {

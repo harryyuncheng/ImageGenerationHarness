@@ -9,13 +9,13 @@ flowchart LR
     Fastify <--> Preferences[Local application preferences]
 ```
 
-Amazon Bedrock is the only cloud boundary. The selected local folder is the sole source of truth for repositories, projects, nested assets, references, generated images, sidecars, and retained run/job state. Failed attempts are discarded after a minimal error is queued transiently in server memory. Application preferences outside the selected folder contain only active and recent canonical repository paths.
+Amazon Bedrock is the only cloud boundary. The selected local folder is the sole source of truth for repositories, projects, nested assets, style guide folders, generated images, sidecars, and retained run/job state. Failed attempts are discarded after a minimal error is queued transiently in server memory. Application preferences outside the selected folder contain only active and recent canonical repository paths.
 
 ## Boundaries
 
 ### Source organization
 
-Both applications are organized by feature rather than by a single horizontal component or service layer. The web `app/` directory composes browser features and shared browser-only infrastructure. The server `app/` directory composes Fastify plugins; repository, project, reference, run, image, and provider behavior stays in its owning feature directory.
+Both applications are organized by feature rather than by a single horizontal component or service layer. The web `app/` directory composes browser features and shared browser-only infrastructure. The server `app/` directory composes Fastify plugins; repository, project, style guide, run, image, and provider behavior stays in its owning feature directory.
 
 Fastify route modules validate public contracts, call an injected service, and map domain records to path-safe DTOs. They do not perform filesystem or provider work. The run facade coordinates dedicated input-staging, durable-record, bounded-queue, generation-worker, and generated-image collaborators while retaining startup-recovery orchestration.
 
@@ -31,7 +31,7 @@ Addressable state lives in the URL: the visible view is a route, the selected pr
 
 ### Loopback server
 
-Fastify binds to loopback and validates Host and Origin headers. It owns repository selection, manifest validation, project/reference APIs, durable run creation, local queueing, input hydration, Bedrock invocation, output persistence, and ID-resolved content delivery.
+Fastify binds to loopback and validates Host and Origin headers. It owns repository selection, manifest validation, project and style guide APIs, durable run creation, local queueing, input hydration, Bedrock invocation, output persistence, and ID-resolved content delivery.
 
 The macOS directory selector is an injectable adapter. Production uses `/usr/bin/osascript` through `execFile`.
 
@@ -41,12 +41,12 @@ The macOS directory selector is an injectable adapter. Production uses `/usr/bin
 
 JSON and preferences use same-directory temporary files, file synchronization, rename, and directory synchronization. Immutable image bytes use an exclusive temporary file and hard-link publication, preventing overwrite. Abandoned temporary files are removed during repository reopening.
 
-Stable UUIDs define identity. Slugs are display-derived directory components only; renaming a project, project asset, reference folder, or reference image updates its manifest without changing identity.
+Stable UUIDs define identity. Slugs are display-derived directory components only; renaming a project, project asset, style guide folder, or style guide image updates its manifest without changing identity.
 
 ## Generation lifecycle
 
 1. `POST /api/runs` validates the target, normalized request, seed plan, and destination.
-2. Local uploads and references are inspected, hashed, and snapshotted as immutable repository inputs. Durable run and job JSON records are committed before queueing.
+2. Local uploads and style guide images are inspected, hashed, and snapshotted as immutable repository inputs. Durable run and job JSON records are committed before queueing.
 3. The bounded queue processes conservatively at concurrency one by default. Queue items retain their originating repository instance and resolved destination even if the user switches repositories.
 4. Immediately before invocation, the worker re-reads every input, verifies its SHA-256, and replaces opaque image IDs with base64 in memory.
 5. The direct Bedrock adapter sends the exact capability payload with SDK retries disabled. The strict capability response schema validates the response.
@@ -64,6 +64,6 @@ Cancellation removes queued jobs honestly. Once an invocation is active, cancell
 
 ## Content access
 
-Generated and reference content routes accept UUIDs only. Services locate and validate the corresponding manifest, verify hashes before reads where applicable, and then serve private loopback content. Gallery/history DTOs omit repository paths, and the strict sidecar stays on disk as the authoritative provenance record.
+Generated and style guide content routes accept UUIDs only. Services locate and validate the corresponding manifest, verify hashes before reads where applicable, and then serve private loopback content. Gallery/history DTOs omit repository paths, and the strict sidecar stays on disk as the authoritative provenance record.
 
 Polling remains the authoritative browser update mechanism. The browser turns transient generation failures into pop-up errors, removes discarded optimistic runs from recents and history, and returns a loaded failed run to the unchanged prompt and settings.

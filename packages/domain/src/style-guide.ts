@@ -10,7 +10,7 @@ import {
 } from '@harness/contracts';
 import { z } from 'zod';
 
-export const referenceFolderSchema = z
+export const styleGuideFolderSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
     folderId: uuidSchema,
@@ -21,7 +21,7 @@ export const referenceFolderSchema = z
   })
   .strict();
 
-export const referenceImageSchema = z
+export const styleGuideImageSchema = z
   .object({
     schemaVersion: z.literal(SCHEMA_VERSION),
     folderId: uuidSchema,
@@ -38,5 +38,5 @@ export const referenceImageSchema = z
   })
   .strict();
 
-export type ReferenceFolder = z.infer<typeof referenceFolderSchema>;
-export type ReferenceImage = z.infer<typeof referenceImageSchema>;
+export type StyleGuideFolder = z.infer<typeof styleGuideFolderSchema>;
+export type StyleGuideImage = z.infer<typeof styleGuideImageSchema>;

@@ -76,21 +76,21 @@ export type {
   ProjectsResponse,
 } from './projects.js';
 export {
-  createReferenceImageRequestSchema,
+  createStyleGuideImageRequestSchema,
   folderParamsSchema,
-  referenceFolderDtoSchema,
-  referenceFolderNameRequestSchema,
-  referenceImageDtoSchema,
-  referenceImageNameRequestSchema,
-  referenceImageParamsSchema,
-  referenceLibraryResponseSchema,
-} from './references.js';
+  styleGuideFolderDtoSchema,
+  styleGuideFolderNameRequestSchema,
+  styleGuideImageDtoSchema,
+  styleGuideImageNameRequestSchema,
+  styleGuideImageParamsSchema,
+  styleGuideResponseSchema,
+} from './style-guide.js';
 export type {
-  CreateReferenceImageRequest,
-  ReferenceFolderDto,
-  ReferenceImageDto,
-  ReferenceLibraryResponse,
-} from './references.js';
+  CreateStyleGuideImageRequest,
+  StyleGuideFolderDto,
+  StyleGuideImageDto,
+  StyleGuideResponse,
+} from './style-guide.js';
 export {
   galleryResponseSchema,
   generatedImageInputSchema,

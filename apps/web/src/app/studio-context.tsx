@@ -8,20 +8,27 @@ import { useDraftActions } from '../features/generation/use-draft-actions.js';
 import { useGeneration } from '../features/generation/use-generation.js';
 import { useGenerationSettings } from '../features/generation/use-generation-settings.js';
 import { usePromptDraft } from '../features/generation/use-prompt-draft.js';
-import { useReferenceAttachment } from '../features/generation/use-reference-attachment.js';
 import { runDestinationLabel } from '../features/history/run-presentation.js';
 import { useFavorites } from '../features/history/use-favorites.js';
 import { useRuns } from '../features/history/use-runs.js';
 import { useSavedPrompts } from '../features/presets/use-saved-prompts.js';
-import { useReferenceLibrary } from '../features/references/use-reference-library.js';
+import { useStyleGuide } from '../features/style-guide/use-style-guide.js';
 import { useRepository, type RepositoryController } from '../features/repository/use-repository.js';
 import { useTheme, type ThemeController } from '../features/theme/use-theme.js';
+import {
+  useDialogs,
+  type Confirm,
+  type DialogController,
+  type Prompt,
+} from '../shared/hooks/use-dialogs.js';
 import { useToasts, type Notify, type Toast } from '../shared/hooks/use-toasts.js';
 import type { Capability, Destination } from '../shared/types/domain.js';
 import { useStudioNavigate } from './use-studio-navigate.js';
 
 interface ScopeProps {
   notify: Notify;
+  confirm: Confirm;
+  prompt: Prompt;
   repository: RepositoryController;
   capabilities: readonly Capability[];
   focusedImageId: string | undefined;
@@ -31,6 +38,8 @@ interface ScopeProps {
 
 function useStudioValue({
   notify,
+  confirm,
+  prompt,
   repository,
   capabilities,
   focusedImageId,
@@ -78,13 +87,18 @@ function useStudioValue({
     selectedProjectId,
     destination,
     notify,
+    confirm,
+    prompt,
     requireRepository: repository.requireRepository,
   });
-  const references = useReferenceLibrary({
+  const styleGuide = useStyleGuide({
     activeRepositoryId,
     notify,
+    confirm,
+    prompt,
     requireRepository: repository.requireRepository,
-    removeLibraryImages: attachments.removeLibraryImages,
+    attachments,
+    settings,
   });
   const viewer = useLoadedImage({
     activeRepositoryId,
@@ -99,7 +113,6 @@ function useStudioValue({
       void runs.cancel(run);
     },
   });
-  const attachReferenceImage = useReferenceAttachment({ attachments, settings, notify });
 
   const describeDestination = (value: Destination) =>
     runDestinationLabel(value, projects.projects, projects.selectedProjectQuery.data);
@@ -120,9 +133,8 @@ function useStudioValue({
     generation,
     draftActions,
     projects,
-    references,
+    styleGuide,
     viewer,
-    attachReferenceImage,
     describeDestination,
   };
 }
@@ -133,6 +145,7 @@ interface ShellValue {
   toasts: Toast[];
   dismissToast: (id: string) => void;
   theme: ThemeController;
+  dialogs: DialogController;
 }
 
 const StudioContext = createContext<StudioValue | undefined>(undefined);
@@ -168,15 +181,18 @@ interface StudioProviderProps {
  */
 export function StudioProvider({ children, ...scope }: StudioProviderProps) {
   const { toasts, notify, dismiss } = useToasts();
+  const dialogs = useDialogs();
   const theme = useTheme();
   const repository = useRepository(notify);
   const { capabilities } = useCapabilities();
 
   return (
-    <ShellContext value={{ toasts, dismissToast: dismiss, theme }}>
+    <ShellContext value={{ toasts, dismissToast: dismiss, theme, dialogs }}>
       <RepositoryScope
         key={repository.activeRepositoryId ?? 'none'}
         notify={notify}
+        confirm={dialogs.confirm}
+        prompt={dialogs.prompt}
         repository={repository}
         capabilities={capabilities}
         {...scope}

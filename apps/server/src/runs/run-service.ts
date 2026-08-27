@@ -12,9 +12,9 @@ import { GeneratedImageStore } from '../images/generated-image-store.js';
 import { StabilityBedrockAdapter, type BedrockInvoker } from '../providers/bedrock/adapter.js';
 import { LocalProjectService, type ProjectService } from '../projects/project-service.js';
 import {
-  LocalReferenceLibraryService,
-  type ReferenceLibraryService,
-} from '../references/reference-library-service.js';
+  LocalStyleGuideService,
+  type StyleGuideService,
+} from '../style-guide/style-guide-service.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { LocalRepositoryManager } from '../repository/repository-manager.js';
 import { GenerationQueue } from './generation-queue.js';
@@ -50,16 +50,15 @@ export class LocalRunService implements RunService {
   constructor(options: {
     manager: LocalRepositoryManager;
     projectService?: ProjectService;
-    referenceLibraryService?: ReferenceLibraryService;
+    styleGuideService?: StyleGuideService;
     bedrock?: BedrockInvoker;
     concurrency?: number;
     maxQueuedJobs?: number;
   }) {
     this.#manager = options.manager;
     this.#projects = options.projectService ?? new LocalProjectService(options.manager);
-    const references =
-      options.referenceLibraryService ?? new LocalReferenceLibraryService(options.manager);
-    this.#inputs = new InputStager(references);
+    const styleGuide = options.styleGuideService ?? new LocalStyleGuideService(options.manager);
+    this.#inputs = new InputStager(styleGuide);
     this.#images = new GeneratedImageStore(options.manager);
     this.#runs = new RunStore(this.#images);
     const worker = new GenerationWorker({

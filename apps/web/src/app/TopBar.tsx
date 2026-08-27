@@ -6,7 +6,6 @@ import { useStudio } from './studio-context.js';
 const libraryTitles: Record<string, string> = {
   '/gallery/history': 'Gallery',
   '/gallery/projects': 'Gallery',
-  '/references': 'Reference library',
   '/presets': 'Saved presets',
 };
 

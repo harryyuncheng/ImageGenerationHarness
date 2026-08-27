@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
+import type { Confirm, Prompt } from '../../shared/hooks/use-dialogs.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Project, ProjectAsset } from '../../shared/types/domain.js';
 import type { DestinationController } from '../generation/use-destination.js';
@@ -13,6 +14,8 @@ interface ProjectsOptions {
   selectedProjectId: string | undefined;
   destination: DestinationController;
   notify: Notify;
+  confirm: Confirm;
+  prompt: Prompt;
   requireRepository: (action: string) => boolean;
 }
 
@@ -21,6 +24,8 @@ export function useProjects({
   selectedProjectId,
   destination,
   notify,
+  confirm,
+  prompt,
   requireRepository,
 }: ProjectsOptions) {
   const queryClient = useQueryClient();
@@ -86,9 +91,13 @@ export function useProjects({
   }
 
   async function deleteProject(project: Project) {
-    if (!window.confirm(`Delete “${project.name}”, its nested assets, and all of its images?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: `Delete “${project.name}”?`,
+      body: 'This permanently deletes the project, its nested assets, and every image inside them. This cannot be undone.',
+      confirmLabel: 'Delete project',
+      danger: true,
+    });
+    if (!confirmed) return;
     const result = await runMutation(
       () => api.deleteProject(project.projectId),
       'Could not delete the project.',
@@ -116,14 +125,26 @@ export function useProjects({
   }
 
   async function editProjectAsset(asset: ProjectAsset) {
-    const name = window.prompt('Asset name', asset.name);
-    if (!name?.trim()) return;
-    const description = window.prompt('Asset description', asset.description);
+    const name = await prompt({
+      title: 'Edit asset',
+      label: 'Name',
+      initialValue: asset.name,
+      confirmLabel: 'Next',
+    });
+    if (!name) return;
+    const description = await prompt({
+      title: 'Edit asset',
+      body: 'Descriptions are organizational only and never change a provider prompt.',
+      label: 'Description',
+      initialValue: asset.description,
+      allowEmpty: true,
+      confirmLabel: 'Save',
+    });
     if (description === null) return;
     const result = await runMutation(
       () =>
         api.updateProjectAsset(asset.projectId, asset.assetId, {
-          name: name.trim(),
+          name,
           description,
         }),
       'Could not update the asset.',
@@ -135,7 +156,13 @@ export function useProjects({
   }
 
   async function deleteProjectAsset(asset: ProjectAsset) {
-    if (!window.confirm(`Delete “${asset.name}” and all images generated in it?`)) return;
+    const confirmed = await confirm({
+      title: `Delete “${asset.name}”?`,
+      body: 'This permanently deletes the asset and every image generated in it. This cannot be undone.',
+      confirmLabel: 'Delete asset',
+      danger: true,
+    });
+    if (!confirmed) return;
     const result = await runMutation(
       () => api.deleteProjectAsset(asset.projectId, asset.assetId),
       'Could not delete the asset.',

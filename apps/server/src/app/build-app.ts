@@ -9,8 +9,8 @@ import {
 } from '../repository/repository-manager.js';
 import { LocalProjectService } from '../projects/project-service.js';
 import { registerProjectRoutes } from '../projects/routes.js';
-import { LocalReferenceLibraryService } from '../references/reference-library-service.js';
-import { registerReferenceRoutes } from '../references/routes.js';
+import { LocalStyleGuideService } from '../style-guide/style-guide-service.js';
+import { registerStyleGuideRoutes } from '../style-guide/routes.js';
 import { registerRepositoryRoutes } from '../repository/routes.js';
 import type { RunService } from '../runs/run-types.js';
 import { registerRunRoutes } from '../runs/routes.js';
@@ -26,10 +26,10 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     options.projectService === undefined
       ? new LocalProjectService(localManager)
       : options.projectService;
-  const referenceLibraryService =
-    options.referenceLibraryService === undefined
-      ? new LocalReferenceLibraryService(localManager)
-      : options.referenceLibraryService;
+  const styleGuideService =
+    options.styleGuideService === undefined
+      ? new LocalStyleGuideService(localManager)
+      : options.styleGuideService;
   const ownsRunService = options.runService === undefined;
   let runService: RunService | null;
   if (options.runService === undefined) {
@@ -37,7 +37,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     runService = new LocalRunService({
       manager: localManager,
       ...(projectService ? { projectService } : {}),
-      ...(referenceLibraryService ? { referenceLibraryService } : {}),
+      ...(styleGuideService ? { styleGuideService } : {}),
     });
   } else {
     runService = options.runService;
@@ -70,7 +70,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   registerCapabilityRoutes(app);
   registerRepositoryRoutes(app, { repositoryManager, recoverSelectedRepository });
   registerProjectRoutes(app, projectService);
-  registerReferenceRoutes(app, referenceLibraryService);
+  registerStyleGuideRoutes(app, styleGuideService);
   registerRunRoutes(app, runService);
   registerImageRoutes(app, runService);
   return app;

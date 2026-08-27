@@ -120,7 +120,7 @@ export const capabilityCatalog = [
   ),
   imageService(
     'style-guide',
-    'Style Guide',
+    'Style Match',
     'control',
     'us.stability.stable-image-style-guide-v1:0',
     [

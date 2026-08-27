@@ -25,5 +25,5 @@ export function attachmentRole(capability: Capability, index: number): string {
   }
   if (index === 1 && capability.canonicalId === 'service/style-transfer') return 'Style reference';
   if (index === 1 && hasParameter(capability, 'mask')) return 'Mask';
-  return `Reference ${String(index)}`;
+  return `Image ${String(index + 1)}`;
 }

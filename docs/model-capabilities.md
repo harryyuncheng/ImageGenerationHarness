@@ -24,7 +24,7 @@ All three generation models are available only through the `us-west-2` Bedrock R
 | --- | --- | --- |
 | Control Sketch | Prompt, image | Control strength, negative prompt, seed, output format, style preset |
 | Control Structure | Prompt, image | Control strength, negative prompt, seed, output format, style preset |
-| Style Guide | Prompt, image | Aspect ratio, fidelity, negative prompt, seed, output format, style preset |
+| Style Match | Prompt, image | Aspect ratio, fidelity, negative prompt, seed, output format, style preset |
 | Style Transfer | Content image, style image | Prompt, negative prompt, seed, output format, composition fidelity, style strength, change strength |
 | Creative Upscale | Prompt, image | Creativity, negative prompt, seed, output format, style preset |
 | Conservative Upscale | Prompt, image | Creativity, negative prompt, seed, output format |

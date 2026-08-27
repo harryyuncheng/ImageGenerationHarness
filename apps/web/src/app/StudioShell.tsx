@@ -1,8 +1,13 @@
-import { Bookmark, FolderOpen } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Outlet, useParams, useRouterState, useSearch } from '@tanstack/react-router';
 import { usesToolbarSettings } from '../features/generation/capabilities.js';
 import { SettingsPanel } from '../features/generation/components/SettingsPanel.js';
+import { StyleGuideModal } from '../features/style-guide/components/StyleGuideModal.js';
+import {
+  StyleGuideStack,
+  type FanOrigin,
+} from '../features/style-guide/components/StyleGuideStack.js';
 import { AppSettings } from './AppSettings.js';
 import { StudioOverlays } from './StudioOverlays.js';
 import { StudioProvider, useStudio } from './studio-context.js';
@@ -13,12 +18,20 @@ function StudioLayout() {
   const studio = useStudio();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
+  const [fanOrigins, setFanOrigins] = useState<readonly FanOrigin[]>([]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
   const panelCapable = !usesToolbarSettings(studio.settings.selectedCapability);
-  const showCreateWorkspace = pathname === '/';
+  // The style guide opens over the create screen, so that workspace stays mounted behind it.
+  const styleGuideOpen = pathname === '/style-guide';
+  const showCreateWorkspace = pathname === '/' || styleGuideOpen;
   const showSettings = showCreateWorkspace && panelCapable && settingsOpen;
   const isGallery = pathname.startsWith('/gallery');
+  // Only Create-tab models accept a style guide image, so the stack stays out of the way elsewhere.
+  const showStyleGuideStack =
+    showCreateWorkspace &&
+    !styleGuideOpen &&
+    studio.settings.selectedCapability.category === 'generation';
 
   // Selecting a toolbar-only tool retires the panel, so it must not reappear on the way back.
   useEffect(() => {
@@ -58,17 +71,17 @@ function StudioLayout() {
           </main>
         </div>
 
+        {showStyleGuideStack && (
+          <StyleGuideStack
+            activeFolder={studio.styleGuide.activeFolder}
+            onOpen={(origins) => {
+              setFanOrigins(origins);
+              studio.navigate.goToStyleGuide();
+            }}
+          />
+        )}
+
         <nav className="library-shortcuts" aria-label="Library shortcuts">
-          <button
-            type="button"
-            className={`icon-button studio-corner-icon ${pathname === '/references' ? 'active' : ''}`}
-            aria-label="Reference library"
-            aria-pressed={pathname === '/references'}
-            title="Reference library"
-            onClick={studio.navigate.goToReferences}
-          >
-            <FolderOpen size={18} />
-          </button>
           <button
             type="button"
             className={`icon-button studio-corner-icon ${pathname === '/presets' ? 'active' : ''}`}
@@ -107,6 +120,40 @@ function StudioLayout() {
       )}
 
       <StudioOverlays />
+
+      {styleGuideOpen && (
+        <StyleGuideModal
+          folders={studio.styleGuide.folders}
+          activeFolderId={studio.styleGuide.activeFolderId}
+          origins={fanOrigins}
+          isLoading={studio.styleGuide.styleGuideQuery.isLoading}
+          isMutating={studio.styleGuide.isMutating}
+          {...(studio.styleGuide.styleGuideQuery.error instanceof Error
+            ? { error: studio.styleGuide.styleGuideQuery.error.message }
+            : {})}
+          onClose={studio.navigate.goToCreate}
+          onCreateFolder={() => {
+            void studio.styleGuide.createFolder();
+          }}
+          onRenameFolder={(folder, name) => {
+            void studio.styleGuide.renameFolder(folder, name);
+          }}
+          onDeleteFolder={(folder) => {
+            void studio.styleGuide.deleteFolder(folder);
+          }}
+          onAddImages={studio.styleGuide.chooseUploads}
+          onToggleActive={studio.styleGuide.toggleActiveFolder}
+          onRenameImage={(image) => {
+            void studio.styleGuide.renameImage(image);
+          }}
+          onDeleteImage={(image) => {
+            void studio.styleGuide.deleteImage(image);
+          }}
+          onRetry={() => {
+            void studio.styleGuide.refresh();
+          }}
+        />
+      )}
     </div>
   );
 }
