@@ -23,12 +23,6 @@
 }
 
 @media (max-width: 1000px) {
-  .studio-shell--panel-capable.studio-shell--panel-open {
-    grid-template-columns: minmax(0, 1fr) 306px;
-  }
-  .settings-panel {
-    width: 306px;
-  }
   .repository-button {
     min-width: 0;
     width: var(--studio-corner-control-size);
@@ -53,13 +47,6 @@
   }
   .workspace {
     display: block;
-  }
-  .settings-panel {
-    z-index: 50;
-    top: 64px;
-    width: min(326px, 92vw);
-    border-left: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
   }
   .library-page {
     width: min(100% - 28px, 900px);
@@ -128,10 +115,6 @@
   .studio-main {
     --top-bar-height: 58px;
   }
-  .settings-panel {
-    top: 58px;
-    width: 100%;
-  }
   .prompt-stage {
     padding: calc(44px + var(--top-bar-height)) 14px 158px;
   }
@@ -145,8 +128,17 @@
     --toolbar-edge-gap: 14px;
     --toolbar-inline-inset: 28px;
 
+    flex-wrap: wrap;
     border-radius: 14px;
     padding: 3px;
+  }
+  /* Too narrow to keep the action beside the controls, so it wraps below them. */
+  .generation-toolbar-controls {
+    flex-basis: 100%;
+    overflow: visible;
+  }
+  .generate-button {
+    margin-left: auto;
   }
   .studio-main--create .generation-toolbar {
     bottom: 62px;

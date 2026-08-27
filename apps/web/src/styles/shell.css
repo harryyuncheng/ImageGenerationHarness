@@ -7,15 +7,6 @@
   background: var(--bg);
 }
 
-.studio-shell--panel-capable {
-  grid-template-columns: minmax(0, 1fr) 0;
-  transition: grid-template-columns 180ms ease;
-}
-
-.studio-shell--panel-capable.studio-shell--panel-open {
-  grid-template-columns: minmax(0, 1fr) 326px;
-}
-
 .icon-button {
   display: inline-flex;
   width: var(--studio-corner-control-size);

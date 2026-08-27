@@ -1,8 +1,6 @@
 import { Bookmark } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Outlet, useParams, useRouterState, useSearch } from '@tanstack/react-router';
-import { usesToolbarSettings } from '../features/generation/capabilities.js';
-import { SettingsPanel } from '../features/generation/components/SettingsPanel.js';
 import { StyleGuideModal } from '../features/style-guide/components/StyleGuideModal.js';
 import {
   StyleGuideStack,
@@ -16,27 +14,19 @@ import { useGlobalShortcuts } from './use-global-shortcuts.js';
 
 function StudioLayout() {
   const studio = useStudio();
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [appSettingsOpen, setAppSettingsOpen] = useState(false);
   const [fanOrigins, setFanOrigins] = useState<readonly FanOrigin[]>([]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  const panelCapable = !usesToolbarSettings(studio.settings.selectedCapability);
   // The style guide opens over the create screen, so that workspace stays mounted behind it.
   const styleGuideOpen = pathname === '/style-guide';
   const showCreateWorkspace = pathname === '/' || styleGuideOpen;
-  const showSettings = showCreateWorkspace && panelCapable && settingsOpen;
   const isGallery = pathname.startsWith('/gallery');
   // Only Create-tab models accept a style guide image, so the stack stays out of the way elsewhere.
   const showStyleGuideStack =
     showCreateWorkspace &&
     !styleGuideOpen &&
     studio.settings.selectedCapability.category === 'generation';
-
-  // Selecting a toolbar-only tool retires the panel, so it must not reappear on the way back.
-  useEffect(() => {
-    if (!panelCapable) setSettingsOpen(false);
-  }, [panelCapable]);
 
   useGlobalShortcuts({
     closeOverlays: () => {
@@ -51,19 +41,11 @@ function StudioLayout() {
   });
 
   return (
-    <div
-      className={`studio-shell ${showCreateWorkspace ? 'studio-shell--panel-capable' : ''} ${showSettings ? 'studio-shell--panel-open' : ''}`}
-    >
+    <div className="studio-shell">
       <AppSettings open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
 
       <div className={`studio-main ${showCreateWorkspace ? 'studio-main--create' : ''}`}>
-        <TopBar
-          settingsOpen={settingsOpen}
-          showSettingsButton={showCreateWorkspace && panelCapable}
-          onOpenSettings={() => {
-            setSettingsOpen(true);
-          }}
-        />
+        <TopBar />
 
         <div className="workspace">
           <main className="canvas">
@@ -105,19 +87,6 @@ function StudioLayout() {
           </button>
         )}
       </div>
-
-      {showCreateWorkspace && panelCapable && (
-        <SettingsPanel
-          open={showSettings}
-          capability={studio.settings.selectedCapability}
-          settings={studio.settings.settings}
-          updateSettings={studio.settings.updateSettings}
-          onRandomSeed={studio.settings.chooseRandomSeed}
-          onClose={() => {
-            setSettingsOpen(false);
-          }}
-        />
-      )}
 
       <StudioOverlays />
 

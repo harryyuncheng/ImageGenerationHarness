@@ -1,13 +1,8 @@
 import { Dice5 } from 'lucide-react';
-import type { ReactNode } from 'react';
 
-export function SettingGroup({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="setting-group">
-      <label>{label}</label>
-      {children}
-    </div>
-  );
+/** Integer-stepped settings read as counts, so only fractional steps show decimals. */
+export function formatRangeValue(value: number, step: number): string {
+  return step < 1 ? value.toFixed(2) : String(value);
 }
 
 export function RangeSetting({
@@ -28,13 +23,16 @@ export function RangeSetting({
   onChange: (value: number) => void;
 }) {
   return (
-    <div className={`setting-group range-setting${disabled ? ' range-setting--disabled' : ''}`}>
+    <div
+      className={`composer-setting-field range-setting${disabled ? ' range-setting--disabled' : ''}`}
+    >
       <label>
         <span>{label}</span>
-        <output>{value.toFixed(2)}</output>
+        <output>{formatRangeValue(value, step)}</output>
       </label>
       <input
         type="range"
+        aria-label={label}
         value={value}
         min={min}
         max={max}

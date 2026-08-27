@@ -160,7 +160,7 @@
 .generation-toolbar {
   --toolbar-edge-gap: 24px;
   --toolbar-inline-inset: 48px;
-  --toolbar-width: 900px;
+  --toolbar-width: 1120px;
 
   position: absolute;
   z-index: 20;

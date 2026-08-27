@@ -2,8 +2,19 @@ import { Check } from 'lucide-react';
 import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import type { GenerationSettingsController } from '../use-generation-settings.js';
 
-type ComposerSettingVariant = 'count' | 'dimensions' | 'format' | 'seed' | 'strength';
+/** Identifies the single open chip menu; keys match the setting each chip edits. */
+export type ComposerSettingMenu = string | null;
+
+export interface ComposerSettingGroupProps {
+  settings: GenerationSettingsController;
+  settingMenu: ComposerSettingMenu;
+  onSettingMenuChange: (menu: Exclude<ComposerSettingMenu, null>, open: boolean) => void;
+}
+
+type ComposerSettingVariant =
+  'canvas' | 'count' | 'dimensions' | 'format' | 'range' | 'seed' | 'style' | 'text';
 
 interface ComposerSettingPickerProps {
   menuId: string;
@@ -130,6 +141,7 @@ export function ComposerSettingPicker({
         type="button"
         className={`composer-setting composer-setting--${variant} ${open ? 'is-open' : ''}`}
         aria-label={label}
+        title={label}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -174,7 +186,7 @@ export function ComposerSettingPicker({
 interface ComposerSettingOption<Value extends string> {
   value: Value;
   label: string;
-  description: string;
+  description?: string;
   preview?: ReactNode;
   disabled?: boolean;
 }
@@ -237,9 +249,11 @@ export function ComposerSettingOptions<Value extends string>({
             className={`composer-setting-option composer-setting-option--${variant} ${selected ? 'selected' : ''}`}
             role="option"
             aria-label={
-              variant === 'count'
-                ? `${option.label} ${option.description}`
-                : `${option.label}, ${option.description}`
+              option.description === undefined
+                ? option.label
+                : variant === 'count'
+                  ? `${option.label} ${option.description}`
+                  : `${option.label}, ${option.description}`
             }
             aria-selected={selected}
             disabled={option.disabled}
@@ -251,7 +265,7 @@ export function ComposerSettingOptions<Value extends string>({
             <span className="composer-setting-option-preview">{option.preview}</span>
             <span className="composer-setting-option-copy">
               <strong>{option.label}</strong>
-              <small>{option.description}</small>
+              {option.description !== undefined && <small>{option.description}</small>}
             </span>
             {selected && variant !== 'count' && (
               <Check className="composer-setting-option-check" size={14} />

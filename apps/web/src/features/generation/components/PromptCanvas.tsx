@@ -2,7 +2,7 @@ import { Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEventHandler, RefObject } from 'react';
 import type { Capability } from '../../../shared/types/domain.js';
-import { supportsPrompt, usesToolbarSettings } from '../capabilities.js';
+import { hasParameter, supportsPrompt } from '../capabilities.js';
 import { selectCreateGreeting } from '../greeting.js';
 
 export function PromptCanvas({
@@ -30,7 +30,7 @@ export function PromptCanvas({
   const placeholder = supportsPrompt(capability)
     ? greeting
     : 'This tool only needs a source image.';
-  const offersNegativePrompt = usesToolbarSettings(capability);
+  const offersNegativePrompt = hasParameter(capability, 'negative_prompt');
   const showNegativePrompt = negativeRequested || negativePrompt.length > 0;
 
   // Expanding and collapsing swaps the focused control, so focus has to follow it.

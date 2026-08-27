@@ -1,7 +1,6 @@
 import { capabilityCatalog } from '@harness/capabilities/catalog';
 import type { RequestParameter } from '@harness/contracts';
 import type { Capability } from '../../shared/types/domain.js';
-import type { GenerationSettings } from './settings.js';
 
 export const defaultCapabilities: readonly Capability[] = capabilityCatalog;
 
@@ -52,11 +51,6 @@ export function needsImage(capability: Capability): boolean {
   return capability.modes.includes('image-service');
 }
 
-/** Generation targets carry every setting in the toolbar; image services still use the advanced panel. */
-export function usesToolbarSettings(capability: Capability): boolean {
-  return capability.category === 'generation';
-}
-
 export function hasParameter(capability: Capability, parameter: RequestParameter): boolean {
   return capability.parameters.includes(parameter);
 }
@@ -70,12 +64,6 @@ export function requiresPrompt(capability: Capability): boolean {
     supportsPrompt(capability) &&
     !['service/style-transfer', 'service/outpaint'].includes(capability.canonicalId)
   );
-}
-
-export function supportedOutputFormats(
-  capability: Capability,
-): readonly GenerationSettings['outputFormat'][] {
-  return capability.outputFormats;
 }
 
 export function maximumSeed(capability: Capability): number | undefined {

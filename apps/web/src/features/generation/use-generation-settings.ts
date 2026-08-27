@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { usePersistentState } from '../../shared/hooks/use-persistent-state.js';
 import type { Capability } from '../../shared/types/domain.js';
-import { maximumSeed, resolveCapability, supportedOutputFormats } from './capabilities.js';
+import { maximumSeed, resolveCapability } from './capabilities.js';
 import { defaultSettings, type GenerationSettings, type UpdateSettings } from './settings.js';
 
 /**
@@ -20,7 +20,7 @@ export function useGenerationSettings(capabilities: readonly Capability[]) {
   const selectedCapability = resolveCapability(capabilities, settings.targetId);
 
   useEffect(() => {
-    const formats = supportedOutputFormats(selectedCapability);
+    const formats = selectedCapability.outputFormats;
     const seedMaximum = maximumSeed(selectedCapability);
     setSettings((current) => {
       const outputFormat = formats.includes(current.outputFormat)

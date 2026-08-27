@@ -10,7 +10,8 @@ import type { GenerationController } from '../use-generation.js';
 import type { GenerationSettingsController } from '../use-generation-settings.js';
 import type { PromptDraftController } from '../use-prompt-draft.js';
 import { AttachmentStrip } from './AttachmentStrip.js';
-import { ComposerTools, type ComposerSettingMenu } from './ComposerTools.js';
+import type { ComposerSettingMenu } from './ComposerSettingPicker.js';
+import { ComposerTools } from './ComposerTools.js';
 import { DestinationPill } from './DestinationPill.js';
 import { PromptCanvas } from './PromptCanvas.js';
 import { SubmitButton } from './SubmitButton.js';
@@ -211,14 +212,14 @@ export function CreateView({
                 onSettingMenuChange={updateSettingMenu}
                 onSavePrompt={onSavePrompt}
               />
-
-              <span className="toolbar-divider" aria-hidden="true" />
-              <SubmitButton
-                isSubmitting={generation.isSubmitting}
-                {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
-              />
             </div>
           </div>
+
+          <span className="toolbar-divider" aria-hidden="true" />
+          <SubmitButton
+            isSubmitting={generation.isSubmitting}
+            {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
+          />
         </div>
       </form>
     </div>
