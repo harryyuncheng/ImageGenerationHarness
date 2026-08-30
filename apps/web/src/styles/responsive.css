@@ -128,17 +128,8 @@
     --toolbar-edge-gap: 14px;
     --toolbar-inline-inset: 28px;
 
-    flex-wrap: wrap;
     border-radius: 14px;
     padding: 3px;
-  }
-  /* Too narrow to keep the action beside the controls, so it wraps below them. */
-  .generation-toolbar-controls {
-    flex-basis: 100%;
-    overflow: visible;
-  }
-  .generate-button {
-    margin-left: auto;
   }
   .studio-main--create .generation-toolbar {
     bottom: 62px;

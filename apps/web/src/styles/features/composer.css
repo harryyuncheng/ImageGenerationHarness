@@ -170,8 +170,7 @@
   display: flex;
   width: min(var(--toolbar-width), calc(100% - var(--toolbar-inline-inset)));
   margin: 0 auto;
-  align-items: center;
-  gap: 5px;
+  flex-direction: column-reverse;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   border-radius: 15px;
   background: var(--surface-raised);
@@ -196,24 +195,19 @@
 
 .generation-toolbar-controls {
   min-width: 0;
-  flex: 1 1 auto;
-  flex-direction: column-reverse;
-  overflow: hidden;
-}
-
-.toolbar-tab-row,
-.toolbar-tool-row {
-  width: 100%;
-  min-width: 0;
+  gap: 5px;
 }
 
 .toolbar-tab-row {
+  min-width: 0;
   justify-content: center;
   overflow-x: auto;
   padding: 1px 0;
 }
 
 .toolbar-tool-row {
+  min-width: 0;
+  flex: 1 1 auto;
   gap: 5px;
   overflow-x: auto;
   padding: 1px 0;

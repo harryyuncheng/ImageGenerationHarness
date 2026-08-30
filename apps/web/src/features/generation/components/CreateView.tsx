@@ -159,13 +159,13 @@ export function CreateView({
         )}
 
         <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
-          <div className="generation-toolbar-controls">
-            <ToolbarTabs
-              capabilities={capabilities}
-              activeCategory={activeTab.category}
-              onSelect={selectTab}
-            />
+          <ToolbarTabs
+            capabilities={capabilities}
+            activeCategory={activeTab.category}
+            onSelect={selectTab}
+          />
 
+          <div className="generation-toolbar-controls">
             <div className="toolbar-tool-row">
               <div
                 className="toolbar-tool-options"
@@ -213,13 +213,13 @@ export function CreateView({
                 onSavePrompt={onSavePrompt}
               />
             </div>
-          </div>
 
-          <span className="toolbar-divider" aria-hidden="true" />
-          <SubmitButton
-            isSubmitting={generation.isSubmitting}
-            {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
-          />
+            <span className="toolbar-divider" aria-hidden="true" />
+            <SubmitButton
+              isSubmitting={generation.isSubmitting}
+              {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
+            />
+          </div>
         </div>
       </form>
     </div>
