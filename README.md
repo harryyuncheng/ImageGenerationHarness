@@ -1,29 +1,32 @@
-# Local Stability Bedrock Image Harness
+# Local Bedrock and Foundry Image Harness
 
-A local-first, single-user image-generation workbench for Stability AI models on Amazon Bedrock. The browser communicates only with a Fastify server bound to loopback. Image-domain data belongs to a user-selected folder on this Mac; Amazon Bedrock is the only required cloud service.
+A local-first, single-user image-generation workbench for Stability AI models on Amazon Bedrock and OpenAI GPT Image deployments on Azure AI Foundry. The browser communicates only with a Fastify server bound to loopback. Image-domain data belongs to a user-selected folder on this Mac; the configured model providers are the only required cloud services.
 
 ## Baroque
 
 The browser workbench provides:
 
-- Stable Image Core, Stable Image Ultra, Stable Diffusion 3.5 Large, and the registered Stability Image Services.
-- Model-aware controls for documented prompts, source images, styles, masks, strengths, output formats, aspect ratios, and seed ranges.
+- Stable Image Core, Stable Image Ultra, Stable Diffusion 3.5 Large, and the registered Stability Image Services on Amazon Bedrock.
+- GPT Image 2 generation and editing on Azure AI Foundry.
+- A provider selector in Settings. The create toolbar shows the models of the selected provider, and a provider without server-side credentials is shown with its setup requirement instead of being offered.
+- Model-aware controls for documented prompts, source images, styles, masks, strengths, quality, backgrounds, output formats, aspect ratios, and seed ranges.
 - A prominent local image-repository selector with native macOS folder selection, New Folder support, recent repositories, and automatic reopening of the last valid repository.
 - Projects with editable organizational descriptions, generated images, and nested project assets.
 - An explicit generation destination: the main repository, a project, or a nested project asset.
 - A fully local style guide of reusable image folders. Applying one folder attaches its images to Create-tab generations through opaque `repo-image://<image-id>` browser references.
+- A mask editor for the targets that accept one, with box, pen, and eraser tools plus undo. It exports the encoding the selected provider expects, so the same drawing works on Stability and GPT Image.
 - Durable server-backed history and gallery views for retained work, polling-based status, and cancellation of queued work. Selecting a saved image or run loads it into the main area beside the prompt it was made from. Failed attempts surface as pop-up errors and are discarded.
 - Adjacent, strict JSON sidecars containing the exact prompt, normalized settings, seed provenance, dimensions, hashes, invocation target, inputs, and non-secret provider metadata.
 
-Project and project-asset descriptions are organizational notes only. They are never included in a Bedrock request.
+Project and project-asset descriptions are organizational notes only. They are never included in a provider request.
 
 ## Prerequisites
 
-- macOS, Node.js 22, and pnpm 11
-- Bedrock model access in US West (Oregon), `us-west-2`
-- Credentials available through the standard AWS SDK credential chain, such as an AWS profile or an active IAM Identity Center session
+- macOS, Node.js 22.9 or newer, and pnpm 11
+- For Amazon Bedrock: model access in US West (Oregon), `us-west-2`, with credentials available through the standard AWS SDK credential chain, such as an AWS profile or an active IAM Identity Center session
+- For Azure AI Foundry: a `gpt-image-2` deployment on an Azure OpenAI resource
 
-No deployment or infrastructure provisioning is required.
+At least one provider must be reachable. No deployment or infrastructure provisioning is required.
 
 ## Development
 
@@ -32,7 +35,11 @@ No deployment or infrastructure provisioning is required.
 3. Open `http://127.0.0.1:5173`.
 4. Choose an image repository from the Studio header, creating a new folder in the native picker if needed.
 
-The API server listens on `127.0.0.1:4173` by default. `HARNESS_PORT` may select another loopback port. The server pins its Bedrock Runtime client to `us-west-2`, the only endpoint that supports all three registered generation models; Image Services use their US Geo inference profiles from that supported source region. AWS credentials remain in the server process and must never be placed in Vite variables or browser storage.
+The API server listens on `127.0.0.1:4173` by default. `HARNESS_PORT` may select another loopback port. The server pins its Bedrock Runtime client to `us-west-2`, the only endpoint that supports all three registered generation models; Image Services use their US Geo inference profiles from that supported source region.
+
+Azure AI Foundry is enabled by setting `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`; the provider reports itself unconfigured until both are present. Copy `.env.example` to `.env` in the repository root and fill it in — the server loads that file at startup, so the values survive closing the terminal. `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_IMAGE_DEPLOYMENT` override the pinned API version and the `gpt-image-2` deployment name from the registry. A variable already exported in the shell takes precedence over the file, which keeps one-off overrides working.
+
+`.env` is gitignored and only ever read by the server process. It cannot reach the browser: Vite inlines only `VITE_`-prefixed variables, and its dev server refuses to serve `.env` files. Provider credentials must never be given a `VITE_` prefix or placed in browser DTOs, sidecars, or browser storage. The browser learns only whether a provider is configured, never any credential value.
 
 The native folder chooser is implemented with `/usr/bin/osascript` through `execFile`; no shell command string is used. Application preferences store only active and recent canonical repository paths in `~/Library/Application Support/ImageGenerationHarness/config.json`. Repository-domain records remain inside the selected repository.
 
@@ -54,7 +61,7 @@ apps/
     style-guide/  # local style guide behavior
     runs/         # durable run orchestration, queueing, workers, and recovery
     images/       # generated-image lookup, integrity checks, and HTTP routes
-    providers/    # server-only Bedrock adapter
+    providers/    # server-only provider adapters and the shared invocation interface
 packages/
   capabilities/   # model catalog and strict provider schemas
   contracts/      # browser/server API schemas grouped by resource
@@ -92,7 +99,7 @@ Generated image bytes are immutable and byte-exact. Each image has an adjacent `
 
 ## Local processing and recovery
 
-`POST /api/runs` validates and durably writes local run/job records before placing jobs on a bounded in-process queue. Concurrency defaults to one. The server verifies local input hashes, converts only the trusted bytes to base64 for the model request, invokes Bedrock directly with SDK retries disabled, validates the response, and writes outputs to the selected destination.
+`POST /api/runs` validates and durably writes local run/job records before placing jobs on a bounded in-process queue. Concurrency defaults to one. The server verifies local input hashes, converts only the trusted bytes to base64 for the model request, invokes the target's provider directly with retries disabled, validates the response, and writes outputs to the selected destination.
 
 If an invocation fails, polling delivers a minimal one-shot error notification from memory. The failed job and attempt records, partial outputs, and any now-unreferenced staged inputs are removed instead of entering recents or history. The browser leaves the current prompt, attachments, and generation settings intact so the request can be corrected or rerun.
 
@@ -110,9 +117,9 @@ Switching repositories does not redirect already queued work: every in-memory qu
 - Sidecars contain no credentials, authorization data, or base64 image bodies.
 - Style guide bytes selected for a run are snapshotted under the repository control directory so later edits do not invalidate queued work.
 
-## Bedrock prompt caching
+## Prompt caching
 
-Prompt caching remains unsupported by the registered Stability image targets. Their strict request schemas contain no cache-checkpoint field, so the harness sends no undocumented cache controls.
+Prompt caching remains unsupported by the registered image targets. Their strict request schemas contain no cache-checkpoint field, so the harness sends no undocumented cache controls.
 
 ## Verification
 

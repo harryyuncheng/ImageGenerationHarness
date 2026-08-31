@@ -8,6 +8,8 @@ import type {
   ProjectDetailResponse,
   ProjectDto,
   ProjectsResponse,
+  ProviderDescriptor,
+  ProviderId,
   StyleGuideFolderDto,
   StyleGuideImageDto,
   StyleGuideResponse,
@@ -27,6 +29,8 @@ export type {
   GalleryResponse,
   ProjectDetailResponse,
   ProjectsResponse,
+  ProviderDescriptor,
+  ProviderId,
   StyleGuideResponse,
   RepositoryStatus,
 };

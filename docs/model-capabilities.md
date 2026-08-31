@@ -1,10 +1,10 @@
-# Bedrock image capability coverage
+# Image capability coverage
 
-Registry version: `2026-08-06.1`
+Registry version: `2026-08-29.1`
 
-The capability registry and Baroque controls cover every request parameter documented by Amazon Bedrock for the Stability AI targets below. Unsupported fields are intentionally rejected per target rather than being forwarded to Bedrock.
+The capability registry and Baroque controls cover every request parameter documented for the targets below. Unsupported fields are intentionally rejected per target rather than being forwarded to a provider.
 
-## Generation models
+## Amazon Bedrock generation models
 
 <!-- prettier-ignore -->
 | Target | Modes | Parameters | Output | Seed range |
@@ -17,7 +17,19 @@ All nine documented aspect ratios are available: 16:9, 1:1, 21:9, 2:3, 3:2, 4:5,
 
 All three generation models are available only through the `us-west-2` Bedrock Runtime endpoint. The server pins its Bedrock client to that region so ambient AWS profile or environment region settings cannot produce an invalid-model error.
 
-## Image Services
+## Azure AI Foundry targets
+
+<!-- prettier-ignore -->
+| Target | Modes | Parameters | Output | Seed range |
+| --- | --- | --- | --- | --- |
+| GPT Image 2 | Text to image | `prompt`, `size`, `quality`, `background`, `output_format`, `n` | JPEG, PNG | Not supported |
+| GPT Image 2 Edit | Image and optional mask | `prompt`, `image`, `mask`, `size`, `quality`, `background`, `input_fidelity`, `output_format`, `n` | JPEG, PNG | Not supported |
+
+GPT Image takes explicit pixel dimensions rather than a named ratio, so the shared aspect-ratio picker maps each of the nine ratios to a size that keeps both edges on a multiple of 16 and stays inside the documented pixel-count and 3:1 limits. Quality is `low`, `medium`, or `high`. A transparent background requires PNG output and is rejected with any other format. Editing takes PNG or JPEG source bytes and a PNG mask; WebP is not accepted by either target.
+
+Neither target accepts a seed, so the harness uses provider-random planning without injecting a seed field. Requesting several images sends one call with `n` set to the run's output count, which charges the prompt and any source image once instead of once per image. Both targets are reached through the `images/generations` and `images/edits` endpoints of a single deployment on the configured Azure OpenAI resource.
+
+## Image Services on Amazon Bedrock
 
 <!-- prettier-ignore -->
 | Target | Required inputs | Optional controls |
@@ -45,11 +57,11 @@ The complete style preset set is available where supported: 3D model, analog fil
 ## Provider constraints
 
 - Prompts and negative prompts are limited to 10,000 characters.
-- Generation and service images accept JPEG, PNG, and WebP source bytes. Individual services impose documented pixel-count, minimum-side, and aspect-ratio constraints; Bedrock remains authoritative for these image-content constraints.
-- Mask-capable tools accept a separate black-and-white mask. When omitted, Inpaint and Erase derive the mask from the source image alpha channel.
+- Generation and service images accept JPEG, PNG, and WebP source bytes, except GPT Image editing, which accepts PNG or JPEG. Individual services impose documented pixel-count, minimum-side, and aspect-ratio constraints; the provider remains authoritative for these image-content constraints.
+- Mask-capable tools accept a separate black-and-white mask, where white marks the area to change. When omitted, Inpaint and Erase derive the mask from the source image alpha channel. GPT Image masks invert that convention: they are PNG files whose fully transparent pixels mark the area to change. The studio's mask editor draws once and exports whichever encoding the selected target expects.
 - Outpaint directions are integers from 0 through 2,000, with at least one non-zero direction.
 - Mask growth is an integer from 0 through 20.
-- The studio performs one invocation per requested output so each output has an independently planned seed and durable job record.
+- Stability targets perform one invocation per requested output so each output has an independently planned seed and durable job record. GPT Image targets accept `n` and return a whole run from a single billed call, so one job holds every output of that run.
 
 ## Sources
 
@@ -57,3 +69,4 @@ The complete style preset set is available where supported: 3D model, analog fil
 - [Stable Image Ultra request and response](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-diffusion-stable-ultra-text-image-request-response.html)
 - [Stable Diffusion 3.5 Large](https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-diffusion-3-5-large.html)
 - [Stability AI Image Services](https://docs.aws.amazon.com/bedrock/latest/userguide/stable-image-services.html)
+- [Azure OpenAI image generation](https://learn.microsoft.com/en-us/azure/ai-foundry/openai/how-to/dall-e)

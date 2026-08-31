@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ImageViewer } from '../../editor/components/ImageViewer.js';
 import type { LoadedImage } from '../../editor/use-loaded-image.js';
 import type { Capability } from '../../../shared/types/domain.js';
+import { capabilitiesForProvider } from '../capabilities.js';
 import { toolbarTabs } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
 import type { DraftActionsController } from '../use-draft-actions.js';
@@ -42,9 +43,11 @@ export function CreateView({
   onSavePrompt,
 }: CreateViewProps) {
   const selectedCapability = settings.selectedCapability;
+  // The toolbar only ever offers the selected target's own provider.
+  const providerCapabilities = capabilitiesForProvider(capabilities, selectedCapability.providerId);
   const activeTab =
     toolbarTabs.find((tab) => tab.category === selectedCapability.category) ?? toolbarTabs[0];
-  const visibleTools = capabilities.filter(
+  const visibleTools = providerCapabilities.filter(
     (capability) => capability.category === activeTab.category,
   );
   const lastToolByCategory = useRef<Partial<Record<Capability['category'], string>>>({
@@ -76,11 +79,11 @@ export function CreateView({
     const rememberedToolId = lastToolByCategory.current[category];
     const nextTool =
       (rememberedToolId
-        ? capabilities.find(
+        ? providerCapabilities.find(
             (capability) =>
               capability.category === category && capability.canonicalId === rememberedToolId,
           )
-        : undefined) ?? capabilities.find((capability) => capability.category === category);
+        : undefined) ?? providerCapabilities.find((capability) => capability.category === category);
     if (nextTool) selectTool(nextTool);
   }
 
@@ -160,7 +163,7 @@ export function CreateView({
 
         <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
           <ToolbarTabs
-            capabilities={capabilities}
+            capabilities={providerCapabilities}
             activeCategory={activeTab.category}
             onSelect={selectTab}
           />
@@ -210,6 +213,9 @@ export function CreateView({
                 settings={settings}
                 settingMenu={settingMenu}
                 onSettingMenuChange={updateSettingMenu}
+                maskSource={uploads.at(0)}
+                hasMask={uploads.length > 1}
+                onMaskChange={attachments.setMaskUpload}
                 onSavePrompt={onSavePrompt}
               />
             </div>

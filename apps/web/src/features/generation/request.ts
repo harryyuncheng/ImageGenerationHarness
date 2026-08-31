@@ -1,5 +1,9 @@
 import { isCanonicalCapabilityId, type CanonicalCapabilityId } from '@harness/capabilities/catalog';
-import type { CreateRunRequest, Destination } from '@harness/contracts';
+import {
+  IMAGE_SIZE_BY_ASPECT_RATIO,
+  type CreateRunRequest,
+  type Destination,
+} from '@harness/contracts';
 import type { Attachment } from '../../shared/types/attachments.js';
 import type { Capability } from '../../shared/types/domain.js';
 import { effectiveSeed, hasParameter } from './capabilities.js';
@@ -43,6 +47,13 @@ function buildGenerationRequest(
       ? { style_preset: settings.stylePreset }
       : {}),
   };
+  // GPT Image rejects a transparent background unless PNG bytes are requested.
+  const gptImageShared = {
+    size: IMAGE_SIZE_BY_ASPECT_RATIO[settings.aspectRatio],
+    quality: settings.quality,
+    background:
+      settings.background === 'transparent' && output_format === 'png' ? 'transparent' : 'auto',
+  };
 
   if (!isCanonicalCapabilityId(capability.canonicalId)) {
     throw new Error(`Unsupported capability: ${capability.canonicalId}`);
@@ -50,6 +61,9 @@ function buildGenerationRequest(
   const canonicalId: CanonicalCapabilityId = capability.canonicalId;
   if (canonicalId === 'generation/core') {
     return { prompt, aspect_ratio: settings.aspectRatio, ...optional };
+  }
+  if (canonicalId === 'generation/gpt-image-2') {
+    return { prompt, ...gptImageShared, ...optional };
   }
   if (canonicalId === 'generation/ultra' || canonicalId === 'generation/sd3.5-large') {
     return image
@@ -59,6 +73,15 @@ function buildGenerationRequest(
   if (!image) return {};
 
   switch (canonicalId) {
+    case 'edit/gpt-image-2':
+      return {
+        prompt,
+        image,
+        ...(secondImage ? { mask: secondImage } : {}),
+        ...gptImageShared,
+        input_fidelity: settings.inputFidelity,
+        ...optional,
+      };
     case 'service/control-sketch':
     case 'service/control-structure':
       return { prompt, image, control_strength: settings.controlStrength, ...serviceOptional };

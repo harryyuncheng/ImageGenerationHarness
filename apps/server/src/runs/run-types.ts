@@ -1,4 +1,9 @@
-import type { CreateRunRequest, GalleryImageDto, GenerationFailure } from '@harness/contracts';
+import type {
+  CreateRunRequest,
+  GalleryImageDto,
+  GenerationFailure,
+  ProviderId,
+} from '@harness/contracts';
 import type {
   Destination,
   GeneratedImageSidecar,
@@ -26,6 +31,7 @@ export interface GeneratedImageRecord {
 export type GalleryImage = GalleryImageDto;
 
 export interface RunService {
+  isProviderConfigured(providerId: ProviderId): boolean;
   submit(input: RunSubmission): Promise<{ runId: string }>;
   getSnapshot(runId: string): Promise<RunSnapshot | undefined>;
   listRuns(destination?: Destination): Promise<RunSnapshot[]>;

@@ -14,7 +14,7 @@ export interface ComposerSettingGroupProps {
 }
 
 type ComposerSettingVariant =
-  'canvas' | 'count' | 'dimensions' | 'format' | 'range' | 'seed' | 'style' | 'text';
+  'canvas' | 'count' | 'dimensions' | 'format' | 'model' | 'range' | 'seed' | 'style' | 'text';
 
 interface ComposerSettingPickerProps {
   menuId: string;

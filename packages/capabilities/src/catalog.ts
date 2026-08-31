@@ -3,10 +3,28 @@ import {
   UINT32_MAX,
   type CapabilityCategory,
   type CapabilityDescriptor,
+  type ProviderDescriptor,
   type RequestParameter,
 } from '@harness/contracts';
 
-export const CAPABILITY_REGISTRY_VERSION = '2026-08-06.1' as const;
+export const CAPABILITY_REGISTRY_VERSION = '2026-08-29.1' as const;
+
+export const providerCatalog = [
+  {
+    providerId: 'bedrock',
+    name: 'AWS Bedrock',
+    description: 'Stability AI generation models and Image Services, invoked in us-west-2.',
+    setupHint:
+      'Uses the standard AWS credential chain, such as an AWS profile or IAM Identity Center session.',
+  },
+  {
+    providerId: 'azure-foundry',
+    name: 'Azure AI Foundry',
+    description: 'OpenAI GPT Image deployments on your Azure OpenAI resource.',
+    setupHint:
+      'Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY for the server process, then restart it.',
+  },
+] as const satisfies readonly Omit<ProviderDescriptor, 'configured'>[];
 
 function imageService<const Id extends string>(
   id: Id,
@@ -19,6 +37,7 @@ function imageService<const Id extends string>(
   return {
     canonicalId: `service/${id}` as const,
     name,
+    providerId: 'bedrock' as const,
     category,
     invocation: { kind: 'geo-inference-profile' as const, profileId },
     modes: ['image-service'] as const,
@@ -32,6 +51,7 @@ export const capabilityCatalog = [
   {
     canonicalId: 'generation/core',
     name: 'Stable Image Core',
+    providerId: 'bedrock',
     category: 'generation',
     invocation: {
       kind: 'foundation-model',
@@ -45,6 +65,7 @@ export const capabilityCatalog = [
   {
     canonicalId: 'generation/ultra',
     name: 'Stable Image Ultra',
+    providerId: 'bedrock',
     category: 'generation',
     invocation: {
       kind: 'foundation-model',
@@ -67,6 +88,7 @@ export const capabilityCatalog = [
   {
     canonicalId: 'generation/sd3.5-large',
     name: 'Stable Diffusion 3.5 Large',
+    providerId: 'bedrock',
     category: 'generation',
     invocation: {
       kind: 'foundation-model',
@@ -85,6 +107,44 @@ export const capabilityCatalog = [
     ],
     outputFormats: ['jpeg', 'png', 'webp'],
     seedMaximum: STABILITY_STANDARD_SEED_MAX,
+  },
+  {
+    canonicalId: 'generation/gpt-image-2',
+    name: 'GPT Image 2',
+    providerId: 'azure-foundry',
+    category: 'generation',
+    invocation: {
+      kind: 'azure-openai-deployment',
+      deploymentName: 'gpt-image-2',
+      operation: 'generations',
+    },
+    modes: ['text-to-image'],
+    parameters: ['prompt', 'size', 'quality', 'background', 'output_format', 'n'],
+    outputFormats: ['jpeg', 'png'],
+  },
+  {
+    canonicalId: 'edit/gpt-image-2',
+    name: 'GPT Image 2 Edit',
+    providerId: 'azure-foundry',
+    category: 'edit',
+    invocation: {
+      kind: 'azure-openai-deployment',
+      deploymentName: 'gpt-image-2',
+      operation: 'edits',
+    },
+    modes: ['image-service'],
+    parameters: [
+      'prompt',
+      'image',
+      'mask',
+      'size',
+      'quality',
+      'background',
+      'input_fidelity',
+      'output_format',
+      'n',
+    ],
+    outputFormats: ['jpeg', 'png'],
   },
   imageService(
     'control-sketch',

@@ -21,7 +21,7 @@ async function inspectImage(bytes: Uint8Array) {
 function decodeCanonicalBase64(
   value: string,
   options: { maxBytes?: number; label?: string } = {},
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const maxBytes = options.maxBytes ?? MAX_IMAGE_BYTES;
   const label = options.label ?? 'Image data';
   if (value.length === 0 || value.length > Math.ceil(maxBytes / 3) * 4 || value.length % 4 !== 0) {
@@ -61,7 +61,7 @@ export function outputFileForMediaType(mediaType: MediaType): {
 }
 
 export interface CharacterizedImage {
-  bytes: Uint8Array;
+  bytes: Uint8Array<ArrayBuffer>;
   width: number;
   height: number;
   mediaType: MediaType;

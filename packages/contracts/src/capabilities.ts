@@ -9,6 +9,11 @@ const REQUEST_PARAMETERS = [
   'prompt',
   'negative_prompt',
   'aspect_ratio',
+  'size',
+  'quality',
+  'background',
+  'input_fidelity',
+  'n',
   'mode',
   'image',
   'strength',
@@ -33,6 +38,7 @@ const REQUEST_PARAMETERS = [
   'search_prompt',
 ] as const;
 const requestParameterSchema = z.enum(REQUEST_PARAMETERS);
+const providerIdSchema = z.enum(['bedrock', 'azure-foundry']);
 const capabilityCategorySchema = z.enum(['generation', 'control', 'upscale', 'edit']);
 const capabilityModeSchema = z.enum(['text-to-image', 'image-to-image', 'image-service']);
 const capabilityInvocationSchema = z.discriminatedUnion('kind', [
@@ -48,11 +54,19 @@ const capabilityInvocationSchema = z.discriminatedUnion('kind', [
       profileId: nonEmptyStringSchema,
     })
     .strict(),
+  z
+    .object({
+      kind: z.literal('azure-openai-deployment'),
+      deploymentName: nonEmptyStringSchema,
+      operation: z.enum(['generations', 'edits']),
+    })
+    .strict(),
 ]);
 const capabilityDescriptorSchema = z
   .object({
     canonicalId: nonEmptyStringSchema,
     name: nonEmptyStringSchema,
+    providerId: providerIdSchema,
     category: capabilityCategorySchema,
     invocation: capabilityInvocationSchema,
     modes: z.array(capabilityModeSchema).min(1),
@@ -62,15 +76,28 @@ const capabilityDescriptorSchema = z
   })
   .strict();
 
+/** `configured` reports only whether server-side credentials resolved, never their values. */
+const providerDescriptorSchema = z
+  .object({
+    providerId: providerIdSchema,
+    name: nonEmptyStringSchema,
+    description: nonEmptyStringSchema,
+    setupHint: nonEmptyStringSchema,
+    configured: z.boolean(),
+  })
+  .strict();
+
 export const capabilitiesResponseSchema = z
   .object({
     registryVersion: nonEmptyStringSchema,
+    providers: z.array(providerDescriptorSchema).min(1),
     targets: z.array(capabilityDescriptorSchema).min(1),
   })
   .strict();
 
 type ParsedCapabilityDescriptor = z.infer<typeof capabilityDescriptorSchema>;
 export type RequestParameter = z.infer<typeof requestParameterSchema>;
+export type ProviderId = z.infer<typeof providerIdSchema>;
 export type CapabilityCategory = z.infer<typeof capabilityCategorySchema>;
 type CapabilityMode = z.infer<typeof capabilityModeSchema>;
 export type CapabilityDescriptor = Readonly<
@@ -80,4 +107,5 @@ export type CapabilityDescriptor = Readonly<
     outputFormats: readonly OutputFormat[];
   }
 >;
+export type ProviderDescriptor = z.infer<typeof providerDescriptorSchema>;
 export type CapabilitiesResponse = z.infer<typeof capabilitiesResponseSchema>;

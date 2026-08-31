@@ -80,6 +80,17 @@ export function useAttachments(notify: Notify) {
     });
   }
 
+  /** Mask-capable targets read the second upload, so a drawn mask replaces that slot. */
+  function setMaskUpload(mask: UploadAttachment) {
+    setUploads((current) => {
+      const next = [...current];
+      const previous = next[1];
+      if (previous) URL.revokeObjectURL(previous.previewUrl);
+      next[1] = mask;
+      return next.slice(0, MAX_REQUEST_IMAGES);
+    });
+  }
+
   return {
     attachments,
     dragActive,
@@ -89,6 +100,7 @@ export function useAttachments(notify: Notify) {
     handleFiles,
     handleDrop,
     removeUpload,
+    setMaskUpload,
     isFull: uploads.length >= MAX_REQUEST_IMAGES,
     setStyleGuideImages,
   };

@@ -28,6 +28,8 @@ const toolbarToolLabels: Record<string, string> = {
   'generation/core': 'Core',
   'generation/ultra': 'Ultra',
   'generation/sd3.5-large': '3.5 Large',
+  'generation/gpt-image-2': 'GPT Image 2',
+  'edit/gpt-image-2': 'GPT Edit',
   'service/erase': 'Erase',
   'service/remove-background': 'Remove BG',
   'service/search-recolor': 'Recolor',
@@ -56,25 +58,20 @@ interface ToolbarRangeSetting {
   min: number;
   max: number;
   step: number;
-  disabled?: boolean;
 }
 
 /** Continuous controls the capability accepts, in the order their chips appear in the toolbar. */
 export function toolbarRangeSettings(capability: Capability): readonly ToolbarRangeSetting[] {
   const ranges: ToolbarRangeSetting[] = [];
-  if (capability.category === 'generation') {
-    const supportsSourceImage = capability.modes.includes('image-to-image');
+  if (capability.modes.includes('image-to-image')) {
     ranges.push({
       key: 'strength',
       label: 'Image strength',
-      description: supportsSourceImage
-        ? 'How far results may move from a source image'
-        : `${capability.name} generates from text only`,
+      description: 'How far results may move from a source image',
       icon: Blend,
       min: 0,
       max: 1,
       step: 0.05,
-      disabled: !supportsSourceImage,
     });
   }
   if (hasParameter(capability, 'control_strength')) {

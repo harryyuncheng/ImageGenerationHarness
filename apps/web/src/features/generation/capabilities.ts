@@ -1,8 +1,12 @@
-import { capabilityCatalog } from '@harness/capabilities/catalog';
-import type { RequestParameter } from '@harness/contracts';
-import type { Capability } from '../../shared/types/domain.js';
+import { capabilityCatalog, providerCatalog } from '@harness/capabilities/catalog';
+import type { ProviderId, RequestParameter } from '@harness/contracts';
+import type { Capability, ProviderDescriptor } from '../../shared/types/domain.js';
 
 export const defaultCapabilities: readonly Capability[] = capabilityCatalog;
+export const defaultProviders: readonly ProviderDescriptor[] = providerCatalog.map((provider) => ({
+  ...provider,
+  configured: false,
+}));
 
 export function capabilityLabel(capability: Capability): string {
   return capability.name;
@@ -16,6 +20,10 @@ export function capabilityDescription(capability: Capability): string {
       return 'Create a high-quality image from text or a source image.';
     case 'generation/sd3.5-large':
       return 'Follow detailed prompts with optional source-image guidance.';
+    case 'generation/gpt-image-2':
+      return 'Create a high-resolution image from text, with strong prompt following.';
+    case 'edit/gpt-image-2':
+      return 'Edit an image from a description, optionally limited to a masked area.';
     case 'service/control-sketch':
       return 'Turn a sketch into a finished image while preserving its lines.';
     case 'service/control-structure':
@@ -42,8 +50,10 @@ export function capabilityDescription(capability: Capability): string {
       return 'Remove a selected object or region.';
     case 'service/remove-background':
       return 'Isolate the subject on a transparent background.';
-    default:
-      return `Use ${capability.name} with Stability AI on Bedrock.`;
+    default: {
+      const provider = providerCatalog.find((entry) => entry.providerId === capability.providerId);
+      return `Use ${capability.name}${provider ? ` on ${provider.name}` : ''}.`;
+    }
   }
 }
 
@@ -53,6 +63,27 @@ export function needsImage(capability: Capability): boolean {
 
 export function hasParameter(capability: Capability, parameter: RequestParameter): boolean {
   return capability.parameters.includes(parameter);
+}
+
+/** Targets take either a named ratio or explicit pixel dimensions, but share one shape picker. */
+export function supportsImageShape(capability: Capability): boolean {
+  return hasParameter(capability, 'aspect_ratio') || hasParameter(capability, 'size');
+}
+
+export function capabilitiesForProvider(
+  capabilities: readonly Capability[],
+  providerId: ProviderId,
+): readonly Capability[] {
+  return capabilities.filter((capability) => capability.providerId === providerId);
+}
+
+/** The target a provider opens on, preferring text-to-image over its editing tools. */
+export function defaultTargetForProvider(
+  capabilities: readonly Capability[],
+  providerId: ProviderId,
+): Capability | undefined {
+  const owned = capabilitiesForProvider(capabilities, providerId);
+  return owned.find((capability) => capability.category === 'generation') ?? owned.at(0);
 }
 
 export function supportsPrompt(capability: Capability): boolean {

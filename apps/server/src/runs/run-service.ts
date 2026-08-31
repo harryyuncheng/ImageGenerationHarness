@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilities';
-import type { GenerationFailure } from '@harness/contracts';
+import type { GenerationFailure, ProviderId } from '@harness/contracts';
 import {
   localJobSchema,
   localRunSchema,
@@ -9,7 +9,9 @@ import {
   type LocalJob,
 } from '@harness/domain';
 import { GeneratedImageStore } from '../images/generated-image-store.js';
-import { StabilityBedrockAdapter, type BedrockInvoker } from '../providers/bedrock/adapter.js';
+import { StabilityBedrockAdapter } from '../providers/bedrock/adapter.js';
+import { AzureFoundryAdapter } from '../providers/foundry/adapter.js';
+import type { ImageProviders } from '../providers/image-provider.js';
 import { LocalProjectService, type ProjectService } from '../projects/project-service.js';
 import {
   LocalStyleGuideService,
@@ -45,13 +47,14 @@ export class LocalRunService implements RunService {
   readonly #runs: RunStore;
   readonly #images: GeneratedImageStore;
   readonly #queue: GenerationQueue;
+  readonly #providers: ImageProviders;
   readonly #failuresByRepository = new Map<string, PendingGenerationFailure[]>();
 
   constructor(options: {
     manager: LocalRepositoryManager;
     projectService?: ProjectService;
     styleGuideService?: StyleGuideService;
-    bedrock?: BedrockInvoker;
+    providers?: ImageProviders;
     concurrency?: number;
     maxQueuedJobs?: number;
   }) {
@@ -61,8 +64,12 @@ export class LocalRunService implements RunService {
     this.#inputs = new InputStager(styleGuide);
     this.#images = new GeneratedImageStore(options.manager);
     this.#runs = new RunStore(this.#images);
+    this.#providers = options.providers ?? {
+      bedrock: new StabilityBedrockAdapter(),
+      'azure-foundry': new AzureFoundryAdapter(),
+    };
     const worker = new GenerationWorker({
-      bedrock: options.bedrock ?? new StabilityBedrockAdapter(),
+      providers: this.#providers,
       runStore: this.#runs,
       recordFailure: (repository, failure) => {
         this.#recordFailure(repository, failure);
@@ -75,14 +82,24 @@ export class LocalRunService implements RunService {
     });
   }
 
+  isProviderConfigured(providerId: ProviderId): boolean {
+    return this.#providers[providerId].configured;
+  }
+
   async submit(input: RunSubmission): Promise<{ runId: string }> {
     const repository = this.#manager.getActiveRepository();
     const capability = getCapability(input.targetId);
+    if (!this.#providers[capability.providerId].configured) {
+      throw new Error(`${capability.name} is unavailable because its provider is not configured.`);
+    }
     validateSeedPlan(input.seedPlan, capability.seedMaximum);
     const destinationDirectory = await this.#projects.resolveDestinationDirectory(
       input.destination,
     );
-    this.#queue.assertCapacity(input.requestedJobCount);
+    // Targets that accept `n` return the whole run from one billed call, so they use one job.
+    const batches = capability.parameters.includes('n');
+    const jobCount = batches ? 1 : input.requestedJobCount;
+    this.#queue.assertCapacity(jobCount);
     const validatedRequest = capability.requestSchema.parse(input.request) as Record<
       string,
       unknown
@@ -92,12 +109,15 @@ export class LocalRunService implements RunService {
     const jobs: LocalJob[] = [];
     await repository.withMutation(async () => {
       const staged = await this.#inputs.stage(repository, validatedRequest);
+      const stagedRequest = batches
+        ? { ...staged.request, n: input.requestedJobCount }
+        : staged.request;
       try {
         jobs.push(
-          ...Array.from({ length: input.requestedJobCount }, (_, index) => {
+          ...Array.from({ length: jobCount }, (_, index) => {
             const seed = plannedSeed(input.seedPlan, index, capability.seedMaximum);
             const request = capability.requestSchema.parse(
-              seed === null ? staged.request : { ...staged.request, seed },
+              seed === null ? stagedRequest : { ...stagedRequest, seed },
             ) as Record<string, unknown>;
             return localJobSchema.parse({
               schemaVersion: SCHEMA_VERSION,
@@ -261,7 +281,7 @@ export class LocalRunService implements RunService {
                 finishedAt: now,
                 errorCode: 'Interrupted',
                 errorMessage:
-                  'The server stopped during an active Bedrock invocation. The outcome and billing are ambiguous.',
+                  'The server stopped during an active provider invocation. The outcome and billing are ambiguous.',
               }
             : attempt,
         );
@@ -270,7 +290,8 @@ export class LocalRunService implements RunService {
           status: 'interrupted',
           attempts,
           errorCode: 'Interrupted',
-          errorMessage: 'The server stopped during an active Bedrock invocation. Retry explicitly.',
+          errorMessage:
+            'The server stopped during an active provider invocation. Retry explicitly.',
           updatedAt: now,
         });
         await repository.writeJson(path, interrupted, localJobSchema);

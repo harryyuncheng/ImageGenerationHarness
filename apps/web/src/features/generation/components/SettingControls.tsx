@@ -11,7 +11,6 @@ export function RangeSetting({
   min,
   max,
   step,
-  disabled = false,
   onChange,
 }: {
   label: string;
@@ -19,13 +18,10 @@ export function RangeSetting({
   min: number;
   max: number;
   step: number;
-  disabled?: boolean;
   onChange: (value: number) => void;
 }) {
   return (
-    <div
-      className={`composer-setting-field range-setting${disabled ? ' range-setting--disabled' : ''}`}
-    >
+    <div className="composer-setting-field range-setting">
       <label>
         <span>{label}</span>
         <output>{formatRangeValue(value, step)}</output>
@@ -37,7 +33,6 @@ export function RangeSetting({
         min={min}
         max={max}
         step={step}
-        disabled={disabled}
         onChange={(event) => {
           onChange(Number(event.target.value));
         }}

@@ -16,6 +16,7 @@
 @import './features/composer.css';
 @import './features/composer-menus.css';
 @import './features/composer-submit.css';
+@import './features/mask-editor.css';
 @import './features/greeting.css';
 @import './shared/section-heading.css';
 @import './shared/library-chrome.css';

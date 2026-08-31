@@ -1,7 +1,10 @@
 import {
+  MAX_REQUEST_IMAGES,
   STABILITY_STANDARD_SEED_MAX,
   UINT32_MAX,
   aspectRatioSchema,
+  imageQualitySchema,
+  imageSizeSchema,
   outputFormatSchema,
   stylePresetSchema,
   type CapabilityDescriptor,
@@ -13,9 +16,9 @@ import {
   type CanonicalCapabilityId,
 } from './catalog.js';
 
-export { CAPABILITY_REGISTRY_VERSION, capabilityCatalog } from './catalog.js';
+export { CAPABILITY_REGISTRY_VERSION, capabilityCatalog, providerCatalog } from './catalog.js';
 
-const foundationOutputFormatSchema = z.enum(['jpeg', 'png']);
+const pngOrJpegFormatSchema = z.enum(['jpeg', 'png']);
 const generationSeedSchema = z.number().int().min(0).max(UINT32_MAX);
 const standardSeedSchema = z.number().int().min(0).max(STABILITY_STANDARD_SEED_MAX);
 const promptSchema = z.string().max(10_000);
@@ -24,7 +27,7 @@ const image = z.string().min(1);
 const fullRangeGenerationOptional = {
   negative_prompt: promptSchema.optional(),
   seed: generationSeedSchema.default(0),
-  output_format: foundationOutputFormatSchema.default('png'),
+  output_format: pngOrJpegFormatSchema.default('png'),
 };
 const standardGenerationOptional = {
   negative_prompt: promptSchema.optional(),
@@ -100,6 +103,44 @@ export const stabilityResponseSchema = z
     }
   });
 
+/**
+ * Azure owns this response shape and adds fields such as token usage over time, so unknown
+ * keys are stripped rather than rejected. Only the fields the harness persists are validated.
+ */
+export const gptImageResponseSchema = z.object({
+  data: z.array(z.object({ b64_json: z.string().min(1) })).min(1),
+});
+export const gptImageErrorSchema = z.object({
+  error: z.object({ code: z.string().optional(), message: z.string().optional() }),
+});
+
+/** GPT Image rejects a transparent background unless the output is PNG. */
+const gptImageShared = {
+  size: imageSizeSchema.default('1024x1024'),
+  quality: imageQualitySchema.default('high'),
+  background: z.enum(['auto', 'transparent']).default('auto'),
+  output_format: pngOrJpegFormatSchema.default('png'),
+  // GPT Image accepts 1-10; the harness never asks for more than one run's worth.
+  n: z.number().int().min(1).max(MAX_REQUEST_IMAGES).default(1),
+};
+function opaqueUnlessPng(value: { background: string; output_format: string }): boolean {
+  return value.background !== 'transparent' || value.output_format === 'png';
+}
+const gptImageGenerationSchema = z
+  .object({ prompt: promptSchema.min(1), ...gptImageShared })
+  .strict()
+  .refine(opaqueUnlessPng, 'A transparent background requires PNG output');
+const gptImageEditSchema = z
+  .object({
+    prompt: promptSchema.min(1),
+    image,
+    mask: image.optional(),
+    input_fidelity: z.enum(['low', 'high']).default('low'),
+    ...gptImageShared,
+  })
+  .strict()
+  .refine(opaqueUnlessPng, 'A transparent background requires PNG output');
+
 const commonImage = { image };
 const commonOptional = {
   negative_prompt: promptSchema.optional(),
@@ -122,6 +163,8 @@ const requestSchemas = {
   'generation/core': coreRequestSchema,
   'generation/ultra': ultraRequestSchema,
   'generation/sd3.5-large': sd35RequestSchema,
+  'generation/gpt-image-2': gptImageGenerationSchema,
+  'edit/gpt-image-2': gptImageEditSchema,
   'service/control-sketch': control,
   'service/control-structure': control,
   'service/style-guide': styledPromptImage
@@ -196,13 +239,11 @@ const requestSchemas = {
 
 export type Capability = CapabilityDescriptor & {
   readonly requestSchema: z.ZodType;
-  readonly responseSchema: typeof stabilityResponseSchema;
 };
 
 export const capabilities: readonly Capability[] = capabilityCatalog.map((descriptor) => ({
   ...descriptor,
   requestSchema: requestSchemas[descriptor.canonicalId],
-  responseSchema: stabilityResponseSchema,
 }));
 
 export function getCapability(canonicalId: string): Capability {

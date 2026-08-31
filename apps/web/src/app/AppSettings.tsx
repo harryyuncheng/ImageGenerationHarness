@@ -1,17 +1,13 @@
-import { Keyboard, Palette, Settings, X } from 'lucide-react';
+import { Settings, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { ThemeSelector } from '../features/theme/components/ThemeSelector.js';
-import { ShortcutList } from '../shared/components/ShortcutList.js';
-import { useStudioShell } from './studio-context.js';
-
-const dialogId = 'app-settings-dialog';
-const settingsTabs = [
-  { id: 'appearance', label: 'Appearance', Icon: Palette },
-  { id: 'shortcuts', label: 'Keyboard', Icon: Keyboard },
-] as const;
-type SettingsTab = (typeof settingsTabs)[number]['id'];
+import {
+  SETTINGS_DIALOG_ID as dialogId,
+  SettingsPanels,
+  settingsTabs,
+  type SettingsTab,
+} from './SettingsPanels.js';
 
 const focusableSelector = [
   'button:not([disabled]):not([tabindex="-1"])',
@@ -29,7 +25,6 @@ export function AppSettings({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const { theme } = useStudioShell();
   const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -171,47 +166,7 @@ export function AppSettings({
                 </div>
 
                 <div className="settings-dialog__content">
-                  {activeTab === 'appearance' ? (
-                    <section
-                      id={`${dialogId}-appearance-panel`}
-                      className="settings-tab-panel"
-                      role="tabpanel"
-                      aria-labelledby={`${dialogId}-appearance-tab`}
-                    >
-                      <header className="settings-tab-panel__header">
-                        <h3>Appearance</h3>
-                        <p>Personalize how Baroque looks on this device.</p>
-                      </header>
-
-                      <div className="settings-card">
-                        <div className="settings-card__heading">
-                          <h4>Theme</h4>
-                          <p>Use your system setting or choose a theme.</p>
-                        </div>
-                        <ThemeSelector
-                          theme={theme.theme}
-                          selectedThemeIndex={theme.selectedThemeIndex}
-                          onSelect={theme.changeTheme}
-                        />
-                      </div>
-                    </section>
-                  ) : (
-                    <section
-                      id={`${dialogId}-shortcuts-panel`}
-                      className="settings-tab-panel"
-                      role="tabpanel"
-                      aria-labelledby={`${dialogId}-shortcuts-tab`}
-                    >
-                      <header className="settings-tab-panel__header">
-                        <h3>Keyboard shortcuts</h3>
-                        <p>Navigate the studio and create without leaving the keyboard.</p>
-                      </header>
-
-                      <div className="settings-card settings-card--shortcuts">
-                        <ShortcutList />
-                      </div>
-                    </section>
-                  )}
+                  <SettingsPanels activeTab={activeTab} />
                 </div>
               </div>
             </section>

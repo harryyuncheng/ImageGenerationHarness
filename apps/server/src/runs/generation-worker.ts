@@ -3,14 +3,14 @@ import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilitie
 import { outputFormatSchema } from '@harness/contracts';
 import { generatedImageSidecarSchema, localJobSchema } from '@harness/domain';
 import { characterizeImageData, imageSidecarPath, mediaTypeForOutputFormat } from '@harness/image';
-import type { BedrockInvoker } from '../providers/bedrock/adapter.js';
+import type { ImageProviders } from '../providers/image-provider.js';
 import { hydrateInputs } from './input-stager.js';
 import { jobRecordPath, promptSlug } from './run-helpers.js';
 import type { RunStore } from './run-store.js';
 import type { PendingGenerationFailure, PublishedOutput, RunQueueItem } from './run-types.js';
 
 export class GenerationWorker {
-  readonly #bedrock: BedrockInvoker;
+  readonly #providers: ImageProviders;
   readonly #runs: RunStore;
   readonly #recordFailure: (
     repository: RunQueueItem['repository'],
@@ -18,14 +18,14 @@ export class GenerationWorker {
   ) => void;
 
   constructor(options: {
-    bedrock: BedrockInvoker;
+    providers: ImageProviders;
     runStore: RunStore;
     recordFailure: (
       repository: RunQueueItem['repository'],
       failure: PendingGenerationFailure,
     ) => void;
   }) {
-    this.#bedrock = options.bedrock;
+    this.#providers = options.providers;
     this.#runs = options.runStore;
     this.#recordFailure = options.recordFailure;
   }
@@ -58,28 +58,18 @@ export class GenerationWorker {
     try {
       const capability = getCapability(job.targetId);
       const payload = await hydrateInputs(repository, job.request, job.inputs);
-      const validatedPayload = capability.requestSchema.parse(payload);
-      const invocationId =
-        capability.invocation.kind === 'foundation-model'
-          ? capability.invocation.modelId
-          : capability.invocation.profileId;
-      const result = await this.#bedrock.invoke(invocationId, validatedPayload);
-      const response = capability.responseSchema.parse(
-        JSON.parse(new TextDecoder().decode(result.body)),
+      const validatedPayload = capability.requestSchema.parse(payload) as Record<string, unknown>;
+      const result = await this.#providers[capability.providerId].invoke(
+        capability,
+        validatedPayload,
       );
       const outputImageIds: string[] = [];
-      const finishReasons = response.finish_reasons;
-      const images = response.images ?? [];
-      if (finishReasons.some((reason) => reason !== null)) {
-        throw new Error(
-          finishReasons.find((reason) => reason !== null) ?? 'Provider filtered output',
-        );
-      }
-      if (images.length === 0) throw new Error('Provider response contained no image output');
       const snapshot = await this.#runs.getSnapshot(repository, job.runId);
       if (!snapshot) throw new Error('Run disappeared while processing');
-      for (const [index, encoded] of images.entries()) {
-        const imageData = await characterizeImageData(encoded, { label: 'Provider image data' });
+      for (const output of result.images) {
+        const imageData = await characterizeImageData(output.base64, {
+          label: 'Provider image data',
+        });
         const requestedMediaType = mediaTypeForOutputFormat(
           outputFormatSchema.parse(job.request['output_format']),
         );
@@ -88,7 +78,6 @@ export class GenerationWorker {
         }
         const imageId = randomUUID();
         const imagePath = `${item.destinationDirectory}/${new Date().toISOString().slice(0, 10)}--${promptSlug(job.request)}--${imageId}.${imageData.extension}`;
-        const providerSeed = response.seeds?.[index] ?? response.seeds?.[0] ?? null;
         const sidecar = generatedImageSidecarSchema.parse({
           schemaVersion: 1,
           imageId,
@@ -103,7 +92,7 @@ export class GenerationWorker {
           attemptId,
           capabilityRegistryVersion: CAPABILITY_REGISTRY_VERSION,
           canonicalTargetId: job.targetId,
-          invocationId,
+          invocationId: result.invocationId,
           ...(typeof job.request['prompt'] === 'string' ? { prompt: job.request['prompt'] } : {}),
           ...(typeof job.request['negative_prompt'] === 'string'
             ? { negativePrompt: job.request['negative_prompt'] }
@@ -112,7 +101,7 @@ export class GenerationWorker {
           seed: {
             strategy: snapshot.run.seedPlan.strategy,
             planned: job.plannedSeed,
-            provider: providerSeed,
+            provider: output.seed,
           },
           output: {
             format: imageData.format,
@@ -130,7 +119,7 @@ export class GenerationWorker {
             mediaType: input.mediaType,
           })),
           provider: {
-            finishReason: finishReasons[index] ?? null,
+            finishReason: output.finishReason,
             ...(result.requestId ? { requestId: result.requestId } : {}),
             metadata: result.metadata,
           },
@@ -150,7 +139,7 @@ export class GenerationWorker {
       job = localJobSchema.parse({
         ...job,
         status: 'completed',
-        providerSeed: response.seeds?.[0] ?? null,
+        providerSeed: result.images[0]?.seed ?? null,
         outputImageIds,
         attempts: job.attempts.map((attempt) =>
           attempt.attemptId === attemptId

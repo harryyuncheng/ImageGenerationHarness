@@ -1,5 +1,6 @@
 import { Bookmark, Image as ImageIcon } from 'lucide-react';
-import { hasParameter } from '../capabilities.js';
+import type { UploadAttachment } from '../../../shared/types/attachments.js';
+import { supportsImageShape } from '../capabilities.js';
 import { aspectRatios, outputCounts } from '../settings.js';
 import { CapabilitySettings } from './CapabilitySettings.js';
 import {
@@ -7,9 +8,13 @@ import {
   ComposerSettingPicker,
   type ComposerSettingGroupProps,
 } from './ComposerSettingPicker.js';
+import { MaskChip } from './MaskChip.js';
 import { OutputSettings } from './OutputSettings.js';
 
 interface ComposerToolsProps extends ComposerSettingGroupProps {
+  maskSource: UploadAttachment | undefined;
+  hasMask: boolean;
+  onMaskChange: (mask: UploadAttachment) => void;
   onSavePrompt: () => void;
 }
 
@@ -17,6 +22,9 @@ export function ComposerTools({
   settings,
   settingMenu,
   onSettingMenuChange,
+  maskSource,
+  hasMask,
+  onMaskChange,
   onSavePrompt,
 }: ComposerToolsProps) {
   const capability = settings.selectedCapability;
@@ -25,7 +33,7 @@ export function ComposerTools({
   return (
     <div className="composer-tools">
       <div className="toolbar-control-group" role="group" aria-label="Output setup">
-        {hasParameter(capability, 'aspect_ratio') && (
+        {supportsImageShape(capability) && (
           <ComposerSettingPicker
             menuId="image-dimensions-menu"
             label="Aspect ratio"
@@ -104,6 +112,12 @@ export function ComposerTools({
         </ComposerSettingPicker>
       </div>
       <div className="toolbar-control-group" role="group" aria-label="Model settings">
+        <MaskChip
+          capability={capability}
+          source={maskSource}
+          hasMask={hasMask}
+          onMaskChange={onMaskChange}
+        />
         <CapabilitySettings
           settings={settings}
           settingMenu={settingMenu}

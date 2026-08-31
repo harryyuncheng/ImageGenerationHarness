@@ -1,12 +1,15 @@
-import { Brush, Crosshair, Frame, Replace } from 'lucide-react';
+import { Brush, Crosshair, Gauge, Layers, Replace, ScanFace } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import type { RequestParameter } from '@harness/contracts';
 import { hasParameter } from '../capabilities.js';
 import { toolbarRangeSettings } from '../model-presentation.js';
-import { outpaintDirections, stylePresets } from '../settings.js';
+import { stylePresets, type GenerationSettings } from '../settings.js';
 import {
   ComposerSettingOptions,
   ComposerSettingPicker,
   type ComposerSettingGroupProps,
 } from './ComposerSettingPicker.js';
+import { OutpaintSettings } from './OutpaintSettings.js';
 import { formatRangeValue, RangeSetting } from './SettingControls.js';
 
 const textSettings = [
@@ -27,6 +30,50 @@ const textSettings = [
     icon: Replace,
   },
 ] as const;
+
+const choiceSettings = [
+  {
+    parameter: 'quality',
+    key: 'quality',
+    label: 'Quality',
+    description: 'Trade rendering time and cost against detail',
+    icon: Gauge,
+    options: [
+      { value: 'low', label: 'Low', description: 'Fastest and least expensive' },
+      { value: 'medium', label: 'Medium', description: 'Balanced detail and cost' },
+      { value: 'high', label: 'High', description: 'The most detail' },
+    ],
+  },
+  {
+    parameter: 'background',
+    key: 'background',
+    label: 'Background',
+    description: 'Fill the background or leave it transparent',
+    icon: Layers,
+    options: [
+      { value: 'auto', label: 'Auto', description: 'Let the model decide' },
+      { value: 'transparent', label: 'Transparent', description: 'Requires PNG output' },
+    ],
+  },
+  {
+    parameter: 'input_fidelity',
+    key: 'inputFidelity',
+    label: 'Input fidelity',
+    description: 'How closely the edit preserves the source image',
+    icon: ScanFace,
+    options: [
+      { value: 'low', label: 'Low', description: 'Reinterpret freely' },
+      { value: 'high', label: 'High', description: 'Preserve style and faces' },
+    ],
+  },
+] as const satisfies readonly {
+  parameter: RequestParameter;
+  key: keyof GenerationSettings;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  options: readonly { value: string; label: string; description: string }[];
+}[];
 
 /** The chips a capability adds beyond the shape, count, format and seed every target shares. */
 export function CapabilitySettings({
@@ -81,43 +128,57 @@ export function CapabilitySettings({
             </ComposerSettingPicker>
           );
         })}
+      {choiceSettings
+        .filter((setting) => hasParameter(capability, setting.parameter))
+        .map((setting) => {
+          const Icon = setting.icon;
+          const value = current[setting.key];
+          const selectedLabel =
+            setting.options.find((option) => option.value === value)?.label ?? value;
+          return (
+            <ComposerSettingPicker
+              key={setting.key}
+              menuId={`${setting.key}-menu`}
+              label={setting.label}
+              menuLabel={setting.label}
+              menuDescription={setting.description}
+              value={selectedLabel}
+              open={settingMenu === setting.key}
+              variant="format"
+              triggerContent={
+                <>
+                  <Icon size={14} />
+                  <span className="composer-setting-value">{selectedLabel}</span>
+                </>
+              }
+              onOpenChange={(open) => {
+                onSettingMenuChange(setting.key, open);
+              }}
+            >
+              {(close) => (
+                <ComposerSettingOptions
+                  label={setting.label}
+                  variant="format"
+                  value={value}
+                  options={setting.options.map((option) => ({
+                    ...option,
+                    disabled: option.value === 'transparent' && current.outputFormat !== 'png',
+                  }))}
+                  onSelect={(next) => {
+                    settings.updateSettings(setting.key, next);
+                    close();
+                  }}
+                />
+              )}
+            </ComposerSettingPicker>
+          );
+        })}
       {hasParameter(capability, 'left') && (
-        <ComposerSettingPicker
-          menuId="expand-canvas-menu"
-          label="Expand canvas"
-          menuLabel="Expand canvas (px)"
-          menuDescription="Choose how far each edge grows before painting"
-          value={outpaintDirections
-            .map(({ label, key }) => `${label} ${String(current[key])}`)
-            .join(', ')}
-          open={settingMenu === 'canvas'}
-          variant="canvas"
-          triggerContent={<Frame size={14} />}
-          onOpenChange={(open) => {
-            onSettingMenuChange('canvas', open);
-          }}
-        >
-          {() => (
-            <div className="composer-setting-field">
-              <div className="number-grid">
-                {outpaintDirections.map(({ label, key }) => (
-                  <label key={key}>
-                    <span>{label}</span>
-                    <input
-                      type="number"
-                      min="0"
-                      max="2000"
-                      value={current[key]}
-                      onChange={(event) => {
-                        settings.updateSettings(key, Number(event.target.value));
-                      }}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
-        </ComposerSettingPicker>
+        <OutpaintSettings
+          settings={settings}
+          settingMenu={settingMenu}
+          onSettingMenuChange={onSettingMenuChange}
+        />
       )}
       {toolbarRangeSettings(capability).map((range) => {
         const Icon = range.icon;
@@ -149,7 +210,6 @@ export function CapabilitySettings({
                 min={range.min}
                 max={range.max}
                 step={range.step}
-                disabled={range.disabled ?? false}
                 onChange={(next) => {
                   settings.updateSettings(range.key, next);
                 }}

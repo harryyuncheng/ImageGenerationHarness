@@ -67,7 +67,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     if (ownsRunService && runService && status.active) await runService.recover();
   };
 
-  registerCapabilityRoutes(app);
+  registerCapabilityRoutes(app, runService);
   registerRepositoryRoutes(app, { repositoryManager, recoverSelectedRepository });
   registerProjectRoutes(app, projectService);
   registerStyleGuideRoutes(app, styleGuideService);

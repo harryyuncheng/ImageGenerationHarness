@@ -1,14 +1,17 @@
-import { STYLE_PRESETS } from '@harness/contracts';
+import { STYLE_PRESETS, type AspectRatio, type ImageQuality } from '@harness/contracts';
 
 export interface GenerationSettings {
   targetId: string;
-  aspectRatio: string;
+  aspectRatio: AspectRatio;
   outputFormat: 'png' | 'jpeg' | 'webp';
   outputCount: number;
   negativePrompt: string;
   searchPrompt: string;
   selectPrompt: string;
   stylePreset: string;
+  quality: ImageQuality;
+  background: 'auto' | 'transparent';
+  inputFidelity: 'low' | 'high';
   seedMode: 'random' | 'fixed' | 'sequential';
   seed: number;
   strength: number;
@@ -31,7 +34,7 @@ export type UpdateSettings = <K extends keyof GenerationSettings>(
 ) => void;
 
 export const defaultSettings: GenerationSettings = {
-  targetId: 'generation/sd3.5-large',
+  targetId: 'generation/gpt-image-2',
   aspectRatio: '1:1',
   outputFormat: 'png',
   outputCount: 1,
@@ -39,6 +42,9 @@ export const defaultSettings: GenerationSettings = {
   searchPrompt: '',
   selectPrompt: '',
   stylePreset: '',
+  quality: 'high',
+  background: 'auto',
+  inputFidelity: 'low',
   seedMode: 'random',
   seed: 0,
   strength: 0.65,
@@ -65,7 +71,7 @@ export const aspectRatios = [
   { value: '4:5', label: 'Social', shape: 'social' },
   { value: '5:4', label: 'Classic', shape: 'classic' },
   { value: '9:21', label: 'Story', shape: 'story' },
-] as const;
+] as const satisfies readonly { value: AspectRatio; label: string; shape: string }[];
 
 const stylePresetLabels = {
   '3d-model': '3D model',

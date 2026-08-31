@@ -22,7 +22,7 @@ import {
   type Prompt,
 } from '../shared/hooks/use-dialogs.js';
 import { useToasts, type Notify, type Toast } from '../shared/hooks/use-toasts.js';
-import type { Capability, Destination } from '../shared/types/domain.js';
+import type { Capability, Destination, ProviderDescriptor } from '../shared/types/domain.js';
 import { useStudioNavigate } from './use-studio-navigate.js';
 
 interface ScopeProps {
@@ -31,6 +31,7 @@ interface ScopeProps {
   prompt: Prompt;
   repository: RepositoryController;
   capabilities: readonly Capability[];
+  providers: readonly ProviderDescriptor[];
   focusedImageId: string | undefined;
   focusedRunId: string | undefined;
   selectedProjectId: string | undefined;
@@ -42,6 +43,7 @@ function useStudioValue({
   prompt,
   repository,
   capabilities,
+  providers,
   focusedImageId,
   focusedRunId,
   selectedProjectId,
@@ -123,6 +125,7 @@ function useStudioValue({
     activeRepositoryId,
     repository,
     capabilities,
+    providers,
     promptDraft,
     settings,
     attachments,
@@ -184,7 +187,7 @@ export function StudioProvider({ children, ...scope }: StudioProviderProps) {
   const dialogs = useDialogs();
   const theme = useTheme();
   const repository = useRepository(notify);
-  const { capabilities } = useCapabilities();
+  const { capabilities, providers } = useCapabilities();
 
   return (
     <ShellContext value={{ toasts, dismissToast: dismiss, theme, dialogs }}>
@@ -195,6 +198,7 @@ export function StudioProvider({ children, ...scope }: StudioProviderProps) {
         prompt={dialogs.prompt}
         repository={repository}
         capabilities={capabilities}
+        providers={providers}
         {...scope}
       >
         {children}

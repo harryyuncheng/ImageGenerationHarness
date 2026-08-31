@@ -13,14 +13,17 @@ export {
 } from './common.js';
 export {
   MEDIA_TYPES,
+  IMAGE_SIZE_BY_ASPECT_RATIO,
   STYLE_PRESETS,
   aspectRatioSchema,
+  imageQualitySchema,
+  imageSizeSchema,
   isMediaType,
   mediaTypeSchema,
   outputFormatSchema,
   stylePresetSchema,
 } from './media.js';
-export type { MediaType, OutputFormat } from './media.js';
+export type { AspectRatio, ImageQuality, MediaType, OutputFormat } from './media.js';
 export {
   attemptStatusSchema,
   createRunRequestSchema,
@@ -51,6 +54,8 @@ export type {
   CapabilitiesResponse,
   CapabilityCategory,
   CapabilityDescriptor,
+  ProviderDescriptor,
+  ProviderId,
   RequestParameter,
 } from './capabilities.js';
 export { repositoryParamsSchema, repositoryStatusSchema } from './repository.js';
