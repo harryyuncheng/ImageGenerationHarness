@@ -1,26 +1,51 @@
-import { Monitor, Moon, Sun, type LucideIcon } from 'lucide-react';
+import { Hammer, Monitor, Moon, Scissors, Sun, type LucideIcon } from 'lucide-react';
 
-export type ThemePreference = 'light' | 'dark' | 'system';
-type ResolvedTheme = Exclude<ThemePreference, 'system'>;
+type MatTheme = 'mat-light' | 'mat-dark' | 'mat-build' | 'mat-craft';
+type ResolvedTheme = 'light' | 'dark' | MatTheme;
+export type ThemePreference = ResolvedTheme | 'system';
 
-export const themeOptions: readonly {
-  value: ThemePreference;
+export const themeGroups: readonly {
+  id: string;
   label: string;
-  Icon: LucideIcon;
+  hint: string;
+  options: readonly { value: ThemePreference; label: string; Icon: LucideIcon }[];
 }[] = [
-  { value: 'light', label: 'Light', Icon: Sun },
-  { value: 'dark', label: 'Dark', Icon: Moon },
-  { value: 'system', label: 'System', Icon: Monitor },
+  {
+    id: 'basic',
+    label: 'Basic',
+    hint: 'A flat background across the whole studio.',
+    options: [
+      { value: 'light', label: 'Light', Icon: Sun },
+      { value: 'dark', label: 'Dark', Icon: Moon },
+      { value: 'system', label: 'System', Icon: Monitor },
+    ],
+  },
+  {
+    id: 'cutting-mat',
+    label: 'Cutting mat',
+    hint: 'A ruled mat behind the create canvas.',
+    options: [
+      { value: 'mat-light', label: 'Light', Icon: Sun },
+      { value: 'mat-dark', label: 'Dark', Icon: Moon },
+      { value: 'mat-build', label: 'Build', Icon: Hammer },
+      { value: 'mat-craft', label: 'Craft', Icon: Scissors },
+    ],
+  },
 ];
 
 export function resolveTheme(theme: ThemePreference, systemIsDark: boolean): ResolvedTheme {
   return theme === 'system' ? (systemIsDark ? 'dark' : 'light') : theme;
 }
 
+/** The two palettes a preview swatch is split between; only System shows a seam. */
+export function previewFaces(theme: ThemePreference): readonly [ResolvedTheme, ResolvedTheme] {
+  return theme === 'system' ? ['light', 'dark'] : [theme, theme];
+}
+
 export function applyResolvedTheme(theme: ResolvedTheme) {
-  document.documentElement.dataset['theme'] = theme;
-  document.documentElement.style.colorScheme = theme;
+  const root = document.documentElement;
+  root.dataset['theme'] = theme;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute('content', theme === 'dark' ? '#101010' : '#f7f7f7');
+    ?.setAttribute('content', getComputedStyle(root).getPropertyValue('--bg').trim());
 }

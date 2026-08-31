@@ -232,68 +232,124 @@
 }
 
 .theme-selector {
-  position: relative;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 4px;
+  gap: 17px;
+}
+
+.theme-group__header {
+  display: grid;
+  gap: 2px;
+  margin-bottom: 9px;
+}
+
+.theme-group__header strong {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.theme-group__header small {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.theme-group__tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+  gap: 8px;
+}
+
+.theme-tile {
+  display: grid;
+  gap: 7px;
   border: 1px solid var(--border-soft);
   border-radius: 12px;
-  background: var(--surface-soft);
-}
-
-.theme-selector__indicator {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: calc((100% - 8px) / 3);
-  height: 38px;
-  border-radius: 8px;
   background: var(--surface-raised);
-  box-shadow: var(--shadow-sm);
-  pointer-events: none;
-  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
-  view-transition-name: theme-indicator;
-  will-change: transform;
-}
-
-.theme-selector button {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  width: 100%;
-  height: 38px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: transparent;
-  padding: 0 8px;
+  padding: 7px 7px 8px;
   color: var(--text-secondary);
-  text-align: center;
-  font-size: 12px;
-  transition: color 160ms ease;
+  transition:
+    border-color 160ms ease,
+    color 160ms ease;
 }
 
-.theme-selector button.is-pointer-hover:not(.selected) {
-  background: color-mix(in srgb, var(--surface-hover) 72%, transparent);
-}
-
-.theme-selector button.is-pointer-hover,
-.theme-selector button.selected {
+.theme-tile.is-pointer-hover {
+  border-color: var(--border);
   color: var(--text);
 }
 
-.theme-selector__label {
+.theme-tile.selected {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.theme-tile__preview {
+  position: relative;
+  display: block;
+  height: 46px;
+  overflow: hidden;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+}
+
+.theme-tile__face {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+}
+
+/* System is the only preference with two palettes, so only it shows a seam. */
+.theme-tile__face--back {
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.theme-tile__face[data-theme^='mat-'] {
+  background-color: var(--mat-bg);
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--mat-ink) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--mat-ink) 22%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg)) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg)) 1px,
+      transparent 1px
+    );
+  background-size:
+    25px 25px,
+    25px 25px,
+    5px 5px,
+    5px 5px;
+}
+
+.theme-tile__check {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  padding: 2px;
+  color: var(--surface-raised);
+}
+
+.theme-tile__label {
   display: flex;
   min-width: 0;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  text-align: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.theme-selector__check {
-  margin-left: 6px;
-  color: var(--accent);
+.theme-tile__label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 780px) {
@@ -352,10 +408,6 @@
 
   .settings-card--shortcuts {
     padding-block: 2px;
-  }
-
-  .theme-selector__check {
-    display: none;
   }
 }
 

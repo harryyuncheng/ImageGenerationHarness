@@ -41,6 +41,8 @@
   min-width: 0;
   min-height: 0;
   flex-direction: column;
+  /* Contains the mat sheet, which paints beneath this element's own content. */
+  isolation: isolate;
   background:
     radial-gradient(
       circle at 50% calc(var(--top-bar-height) + 3%),
@@ -48,6 +50,75 @@
       transparent 34%
     ),
     var(--bg);
+}
+
+/* Cutting-mat themes trade the accent wash for the ruled sheet on the create canvas. */
+[data-theme^='mat-'] .studio-main--create {
+  background: var(--bg);
+}
+
+.cutting-mat {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-sans);
+  pointer-events: none;
+}
+
+[data-theme^='mat-'] .studio-main--create > .cutting-mat {
+  display: block;
+}
+
+.cutting-mat__sheet {
+  fill: var(--mat-bg);
+}
+
+.cutting-mat__cell,
+.cutting-mat__major,
+.cutting-mat__bias,
+.cutting-mat__tick,
+.cutting-mat__band-edge,
+.cutting-mat__guide {
+  fill: none;
+  stroke-width: 1;
+}
+
+.cutting-mat__cell {
+  stroke: color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg));
+}
+
+.cutting-mat__major {
+  stroke: color-mix(in srgb, var(--mat-ink) 22%, transparent);
+}
+
+.cutting-mat__bias {
+  stroke: color-mix(in srgb, var(--mat-ink) 7%, transparent);
+}
+
+.cutting-mat__guide {
+  stroke: color-mix(in srgb, var(--mat-ink) 13%, transparent);
+}
+
+.cutting-mat__band {
+  fill: color-mix(in srgb, var(--mat-alt) 42%, var(--mat-bg));
+}
+
+.cutting-mat__band-edge {
+  stroke: color-mix(in srgb, var(--mat-ink) 24%, transparent);
+}
+
+.cutting-mat__tick {
+  stroke: color-mix(in srgb, var(--mat-ink) 30%, transparent);
+}
+
+.cutting-mat__measure {
+  fill: color-mix(in srgb, var(--mat-ink) 42%, transparent);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
 }
 
 .top-controls {

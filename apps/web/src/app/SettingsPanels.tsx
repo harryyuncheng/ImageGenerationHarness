@@ -63,11 +63,7 @@ export function SettingsPanels({ activeTab }: { activeTab: SettingsTab }) {
             <h4>Theme</h4>
             <p>Use your system setting or choose a theme.</p>
           </div>
-          <ThemeSelector
-            theme={theme.theme}
-            selectedThemeIndex={theme.selectedThemeIndex}
-            onSelect={theme.changeTheme}
-          />
+          <ThemeSelector theme={theme.theme} onSelect={theme.changeTheme} />
         </div>
       </SettingsPanel>
     );

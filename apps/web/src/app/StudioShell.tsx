@@ -6,6 +6,7 @@ import {
   StyleGuideStack,
   type FanOrigin,
 } from '../features/style-guide/components/StyleGuideStack.js';
+import { CuttingMat } from '../features/theme/components/CuttingMat.js';
 import { AppSettings } from './AppSettings.js';
 import { StudioOverlays } from './StudioOverlays.js';
 import { StudioProvider, useStudio } from './studio-context.js';
@@ -45,6 +46,7 @@ function StudioLayout() {
       <AppSettings open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
 
       <div className={`studio-main ${showCreateWorkspace ? 'studio-main--create' : ''}`}>
+        <CuttingMat />
         <TopBar />
 
         <div className="workspace">

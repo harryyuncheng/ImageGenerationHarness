@@ -1,11 +1,10 @@
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { usePersistentState } from '../../shared/hooks/use-persistent-state.js';
-import { applyResolvedTheme, resolveTheme, themeOptions, type ThemePreference } from './theme.js';
+import { applyResolvedTheme, resolveTheme, type ThemePreference } from './theme.js';
 
 export interface ThemeController {
   theme: ThemePreference;
-  selectedThemeIndex: number;
   changeTheme: (value: ThemePreference) => void;
 }
 
@@ -15,10 +14,6 @@ export interface ThemeController {
  */
 export function useTheme(): ThemeController {
   const [theme, setTheme] = usePersistentState<ThemePreference>('harness-theme', 'system');
-  const selectedThemeIndex = Math.max(
-    themeOptions.findIndex(({ value }) => value === theme),
-    0,
-  );
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -55,5 +50,5 @@ export function useTheme(): ThemeController {
     document.startViewTransition(updateTheme);
   };
 
-  return { theme, selectedThemeIndex, changeTheme };
+  return { theme, changeTheme };
 }
