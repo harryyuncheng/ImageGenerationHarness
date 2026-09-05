@@ -39,6 +39,8 @@ The API server listens on `127.0.0.1:4173` by default. `HARNESS_PORT` may select
 
 Azure AI Foundry is enabled by setting `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`; the provider reports itself unconfigured until both are present. Copy `.env.example` to `.env` in the repository root and fill it in — the server loads that file at startup, so the values survive closing the terminal. `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_IMAGE_DEPLOYMENT` override the pinned API version and the `gpt-image-2` deployment name from the registry. A variable already exported in the shell takes precedence over the file, which keeps one-off overrides working.
 
+`AZURE_OPENAI_ENDPOINT` accepts the resource root, an `/openai/v1/` base URL, or a full `/openai/v1/images/generations` or `/openai/v1/images/edits` URL copied from Azure. The server removes that API suffix before constructing the deployment-specific request URL. Restart the API server after changing `.env`, and restrict the file to your account with `chmod 600 .env`.
+
 `.env` is gitignored and only ever read by the server process. It cannot reach the browser: Vite inlines only `VITE_`-prefixed variables, and its dev server refuses to serve `.env` files. Provider credentials must never be given a `VITE_` prefix or placed in browser DTOs, sidecars, or browser storage. The browser learns only whether a provider is configured, never any credential value.
 
 The native folder chooser is implemented with `/usr/bin/osascript` through `execFile`; no shell command string is used. Application preferences store only active and recent canonical repository paths in `~/Library/Application Support/ImageGenerationHarness/config.json`. Repository-domain records remain inside the selected repository.

@@ -25,9 +25,8 @@ function environmentValue(name: string): string | undefined {
 }
 
 /**
- * The Foundry portal shows endpoints that already carry an API path, such as
- * `https://<resource>.openai.azure.com/openai/v1`, while the harness appends its own
- * deployment path. Trimming that suffix keeps a pasted portal value working.
+ * The portal may copy an API base or a full images URL. Strip either suffix before
+ * appending the deployment path so the same endpoint works for generation and editing.
  */
 function normalizeEndpoint(value: string): string | undefined {
   let url;
@@ -36,7 +35,10 @@ function normalizeEndpoint(value: string): string | undefined {
   } catch {
     return undefined;
   }
-  const path = url.pathname.replace(/\/openai(?:\/v\d+)?\/?$/u, '/');
+  const path = url.pathname.replace(
+    /\/openai(?:\/v\d+)?(?:\/images\/(?:generations|edits))?\/?$/u,
+    '/',
+  );
   return `${url.origin}${path.endsWith('/') ? path : `${path}/`}`;
 }
 
