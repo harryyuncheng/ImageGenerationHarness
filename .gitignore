@@ -11,3 +11,5 @@ dist/
 # Local AI assistant instructions
 AGENTS.md
 CLAUDE.md
+
+my-rlai-experiment/
