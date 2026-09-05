@@ -290,6 +290,18 @@
   color: var(--text);
 }
 
+.generation-toolbar .tool-chip.is-pointer-hover:not(:disabled),
+.composer-tools .composer-setting.is-pointer-hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.generation-toolbar .toolbar-tab:focus-visible,
+.generation-toolbar .tool-chip:focus-visible,
+.generation-toolbar .composer-setting:focus-visible {
+  outline-offset: -3px;
+}
+
 .composer-setting-picker {
   display: inline-flex;
 }

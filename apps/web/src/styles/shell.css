@@ -130,25 +130,16 @@
   display: flex;
   height: var(--studio-corner-control-size);
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   background: transparent;
   pointer-events: none;
 }
 
-.top-bar-left,
 .top-actions {
   display: flex;
   align-items: center;
-  pointer-events: auto;
-}
-
-.top-bar-left {
-  min-width: 0;
-  gap: 10px;
-}
-
-.top-actions {
   gap: 5px;
+  pointer-events: auto;
 }
 
 /* Stacks above the bottom-left settings control as one left-edge column. */

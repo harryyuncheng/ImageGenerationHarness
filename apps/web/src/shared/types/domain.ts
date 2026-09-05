@@ -9,7 +9,6 @@ import type {
   ProjectDto,
   ProjectsResponse,
   ProviderDescriptor,
-  ProviderId,
   StyleGuideFolderDto,
   StyleGuideImageDto,
   StyleGuideResponse,
@@ -30,7 +29,6 @@ export type {
   ProjectDetailResponse,
   ProjectsResponse,
   ProviderDescriptor,
-  ProviderId,
   StyleGuideResponse,
   RepositoryStatus,
 };

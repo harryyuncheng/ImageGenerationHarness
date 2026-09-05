@@ -1,16 +1,14 @@
-import { Keyboard, Palette, Plug } from 'lucide-react';
+import { HardDrive, Keyboard, Palette } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { defaultTargetForProvider } from '../features/generation/capabilities.js';
-import { ProviderSelector } from '../features/generation/components/ProviderSelector.js';
+import { RepositorySelector } from '../features/repository/components/RepositorySelector.js';
 import { ThemeSelector } from '../features/theme/components/ThemeSelector.js';
 import { ShortcutList } from '../shared/components/ShortcutList.js';
-import type { ProviderId } from '../shared/types/domain.js';
 import { useStudio, useStudioShell } from './studio-context.js';
 
 export const SETTINGS_DIALOG_ID = 'app-settings-dialog';
 export const settingsTabs = [
+  { id: 'repository', label: 'Repository', Icon: HardDrive },
   { id: 'appearance', label: 'Appearance', Icon: Palette },
-  { id: 'provider', label: 'Provider', Icon: Plug },
   { id: 'shortcuts', label: 'Keyboard', Icon: Keyboard },
 ] as const;
 export type SettingsTab = (typeof settingsTabs)[number]['id'];
@@ -44,11 +42,27 @@ function SettingsPanel({
 
 export function SettingsPanels({ activeTab }: { activeTab: SettingsTab }) {
   const { theme } = useStudioShell();
-  const { capabilities, providers, settings } = useStudio();
+  const { repository } = useStudio();
 
-  function selectProvider(providerId: ProviderId) {
-    const target = defaultTargetForProvider(capabilities, providerId);
-    if (target) settings.updateSettings('targetId', target.canonicalId);
+  if (activeTab === 'repository') {
+    return (
+      <SettingsPanel
+        id="repository"
+        title="Image repository"
+        description="Point Baroque at the local folder that holds your work."
+      >
+        <div className="settings-card">
+          <div className="settings-card__heading">
+            <h4>Active folder</h4>
+            <p>
+              Images, projects, style guides, and history live inside this folder, so it travels
+              with you. Queued work stays with the folder that started it.
+            </p>
+          </div>
+          <RepositorySelector repository={repository} />
+        </div>
+      </SettingsPanel>
+    );
   }
 
   if (activeTab === 'appearance') {
@@ -64,28 +78,6 @@ export function SettingsPanels({ activeTab }: { activeTab: SettingsTab }) {
             <p>Use your system setting or choose a theme.</p>
           </div>
           <ThemeSelector theme={theme.theme} onSelect={theme.changeTheme} />
-        </div>
-      </SettingsPanel>
-    );
-  }
-
-  if (activeTab === 'provider') {
-    return (
-      <SettingsPanel
-        id="provider"
-        title="Provider"
-        description="Choose which service generates new images."
-      >
-        <div className="settings-card">
-          <div className="settings-card__heading">
-            <h4>Image provider</h4>
-            <p>The create toolbar shows the models of the provider you pick.</p>
-          </div>
-          <ProviderSelector
-            providers={providers}
-            activeProviderId={settings.selectedCapability.providerId}
-            onSelect={selectProvider}
-          />
         </div>
       </SettingsPanel>
     );

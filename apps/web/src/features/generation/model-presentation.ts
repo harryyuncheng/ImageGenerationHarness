@@ -23,23 +23,6 @@ export const toolbarTabs = [
   category: Capability['category'];
 }[];
 
-/** Toolbar chips leave little room, so long capability names shorten; tooltips keep the full name. */
-const toolbarToolLabels: Record<string, string> = {
-  'generation/core': 'Core',
-  'generation/ultra': 'Ultra',
-  'generation/sd3.5-large': '3.5 Large',
-  'generation/gpt-image-2': 'GPT Image 2',
-  'edit/gpt-image-2': 'GPT Edit',
-  'service/erase': 'Erase',
-  'service/remove-background': 'Remove BG',
-  'service/search-recolor': 'Recolor',
-  'service/search-replace': 'Replace',
-};
-
-export function toolbarToolLabel(capability: Capability): string {
-  return toolbarToolLabels[capability.canonicalId] ?? capability.name;
-}
-
 type RangeSettingKey =
   | 'changeStrength'
   | 'compositionFidelity'

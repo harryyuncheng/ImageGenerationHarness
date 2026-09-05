@@ -37,16 +37,15 @@
   background: var(--accent-hover);
 }
 
-.popover-anchor {
-  position: relative;
-}
-
 .popover {
   --surface-enter-offset-y: -6px;
   --surface-enter-origin: top right;
 
   position: absolute;
   z-index: 60;
+  width: min(var(--popover-width), calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-raised);

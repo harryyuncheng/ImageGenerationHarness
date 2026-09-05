@@ -17,21 +17,9 @@
   .project-gallery {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .repository-button {
-    min-width: 180px;
-  }
 }
 
 @media (max-width: 1000px) {
-  .repository-button {
-    min-width: 0;
-    width: var(--studio-corner-control-size);
-    justify-content: center;
-  }
-  .repository-button > span,
-  .repository-button > svg:last-child {
-    display: none;
-  }
   .composer-tools .tool-chip {
     width: 34px;
     padding: 0;
@@ -146,7 +134,8 @@
   .toolbar-tool-row {
     overflow-x: visible;
   }
-  .toolbar-tool-options {
+  .toolbar-model-picker {
+    min-width: 0;
     flex-basis: 100%;
   }
   .composer-tools {
@@ -165,7 +154,7 @@
     min-width: 58px;
     padding-inline: 9px;
   }
-  .toolbar-tool-option {
+  .toolbar-model-picker .composer-setting {
     padding-inline: 8px;
   }
   .library-page {

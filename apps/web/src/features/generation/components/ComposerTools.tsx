@@ -101,7 +101,6 @@ export function ComposerTools({
               options={outputCounts.map((count) => ({
                 value: String(count),
                 label: String(count),
-                description: count === 1 ? 'image' : 'images',
               }))}
               onSelect={(value) => {
                 settings.updateSettings('outputCount', Number(value));

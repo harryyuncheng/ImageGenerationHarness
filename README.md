@@ -8,9 +8,9 @@ The browser workbench provides:
 
 - Stable Image Core, Stable Image Ultra, Stable Diffusion 3.5 Large, and the registered Stability Image Services on Amazon Bedrock.
 - GPT Image 2 generation and editing on Azure AI Foundry.
-- A provider selector in Settings. The create toolbar shows the models of the selected provider, and a provider without server-side credentials is shown with its setup requirement instead of being offered.
+- One upward-opening model dropdown per workflow, with Stability and GPT Image models available together. Models without server-side provider credentials remain visible but disabled, with their setup requirements.
 - Model-aware controls for documented prompts, source images, styles, masks, strengths, quality, backgrounds, output formats, aspect ratios, and seed ranges.
-- A prominent local image-repository selector with native macOS folder selection, New Folder support, recent repositories, and automatic reopening of the last valid repository.
+- A local image-repository selector in Settings with native macOS folder selection, New Folder support, recent folders, and automatic reopening of the last valid repository.
 - Projects with editable organizational descriptions, generated images, and nested project assets.
 - An explicit generation destination: the main repository, a project, or a nested project asset.
 - A fully local style guide of reusable image folders. Applying one folder attaches its images to Create-tab generations through opaque `repo-image://<image-id>` browser references.
@@ -33,7 +33,7 @@ At least one provider must be reachable. No deployment or infrastructure provisi
 1. Install dependencies with `pnpm install`.
 2. Run `pnpm dev`.
 3. Open `http://127.0.0.1:5173`.
-4. Choose an image repository from the Studio header, creating a new folder in the native picker if needed.
+4. Choose an image repository from Settings → Repository, creating a new folder in the native picker if needed.
 
 The API server listens on `127.0.0.1:4173` by default. `HARNESS_PORT` may select another loopback port. The server pins its Bedrock Runtime client to `us-west-2`, the only endpoint that supports all three registered generation models; Image Services use their US Geo inference profiles from that supported source region.
 

@@ -1,5 +1,5 @@
 import { Settings, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
@@ -8,6 +8,7 @@ import {
   settingsTabs,
   type SettingsTab,
 } from './SettingsPanels.js';
+import { useStudioShell } from './studio-context.js';
 
 const focusableSelector = [
   'button:not([disabled]):not([tabindex="-1"])',
@@ -18,19 +19,45 @@ const focusableSelector = [
   '[tabindex]:not([tabindex="-1"])',
 ].join(',');
 
-export function AppSettings({
-  open,
-  onOpenChange,
+export function AppSettings() {
+  const { settingsTab, setSettingsTab } = useStudioShell();
+
+  return (
+    <div className="app-settings">
+      <button
+        type="button"
+        className="icon-button studio-corner-icon app-settings__trigger"
+        aria-label="Settings"
+        aria-haspopup="dialog"
+        aria-expanded={settingsTab !== null}
+        aria-controls={settingsTab ? dialogId : undefined}
+        title="Settings"
+        onClick={() => {
+          setSettingsTab(settingsTab ? null : 'repository');
+        }}
+      >
+        <Settings size={18} />
+      </button>
+
+      {settingsTab &&
+        createPortal(
+          <SettingsDialog activeTab={settingsTab} onTabChange={setSettingsTab} />,
+          document.body,
+        )}
+    </div>
+  );
+}
+
+function SettingsDialog({
+  activeTab,
+  onTabChange,
 }: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  activeTab: SettingsTab;
+  onTabChange: (tab: SettingsTab | null) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('appearance');
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!open) return;
     const previouslyFocused =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const focusFrame = window.requestAnimationFrame(() => {
@@ -43,7 +70,7 @@ export function AppSettings({
       window.cancelAnimationFrame(focusFrame);
       if (previouslyFocused?.isConnected) previouslyFocused.focus({ preventScroll: true });
     };
-  }, [open]);
+  }, []);
 
   function moveTabFocus(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (!['ArrowDown', 'ArrowRight', 'ArrowUp', 'ArrowLeft', 'Home', 'End'].includes(event.key)) {
@@ -64,7 +91,7 @@ export function AppSettings({
 
     const nextTab = settingsTabs[nextIndex];
     if (!nextTab) return;
-    setActiveTab(nextTab.id);
+    onTabChange(nextTab.id);
     event.currentTarget.querySelector<HTMLButtonElement>(`#${dialogId}-${nextTab.id}-tab`)?.focus();
   }
 
@@ -87,92 +114,70 @@ export function AppSettings({
   }
 
   return (
-    <div className="app-settings">
-      <button
-        ref={triggerRef}
-        type="button"
-        className="icon-button studio-corner-icon app-settings__trigger"
-        aria-label="Settings"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-        aria-controls={open ? dialogId : undefined}
-        title="Settings"
-        onClick={() => {
-          onOpenChange(!open);
-        }}
+    <div
+      className="settings-dialog-backdrop surface-enter"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onTabChange(null);
+      }}
+    >
+      <section
+        ref={dialogRef}
+        id={dialogId}
+        className="settings-dialog surface-enter"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${dialogId}-title`}
+        onKeyDown={trapDialogFocus}
       >
-        <Settings size={18} />
-      </button>
-
-      {open &&
-        createPortal(
-          <div
-            className="settings-dialog-backdrop surface-enter"
-            onMouseDown={(event) => {
-              if (event.target === event.currentTarget) onOpenChange(false);
+        <header className="settings-dialog__header">
+          <div>
+            <Settings size={18} aria-hidden="true" />
+            <h2 id={`${dialogId}-title`}>Settings</h2>
+          </div>
+          <button
+            type="button"
+            className="icon-button"
+            onClick={() => {
+              onTabChange(null);
             }}
+            aria-label="Close settings"
           >
-            <section
-              ref={dialogRef}
-              id={dialogId}
-              className="settings-dialog surface-enter"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby={`${dialogId}-title`}
-              onKeyDown={trapDialogFocus}
-            >
-              <header className="settings-dialog__header">
-                <div>
-                  <Settings size={18} aria-hidden="true" />
-                  <h2 id={`${dialogId}-title`}>Settings</h2>
-                </div>
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => {
-                    onOpenChange(false);
-                  }}
-                  aria-label="Close settings"
-                >
-                  <X size={18} />
-                </button>
-              </header>
+            <X size={18} />
+          </button>
+        </header>
 
-              <div className="settings-dialog__body">
-                <div
-                  className="settings-dialog__tabs"
-                  role="tablist"
-                  aria-label="Settings sections"
-                  onKeyDown={moveTabFocus}
-                >
-                  {settingsTabs.map(({ id, label, Icon }) => (
-                    <button
-                      key={id}
-                      id={`${dialogId}-${id}-tab`}
-                      type="button"
-                      role="tab"
-                      aria-selected={activeTab === id}
-                      aria-controls={`${dialogId}-${id}-panel`}
-                      tabIndex={activeTab === id ? 0 : -1}
-                      onClick={() => {
-                        setActiveTab(id);
-                      }}
-                    >
-                      <Icon size={17} aria-hidden="true" />
-                      <span>{label}</span>
-                    </button>
-                  ))}
-                  <p>Preferences are saved on this device.</p>
-                </div>
+        <div className="settings-dialog__body">
+          <div
+            className="settings-dialog__tabs"
+            role="tablist"
+            aria-label="Settings sections"
+            onKeyDown={moveTabFocus}
+          >
+            {settingsTabs.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                id={`${dialogId}-${id}-tab`}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === id}
+                aria-controls={`${dialogId}-${id}-panel`}
+                tabIndex={activeTab === id ? 0 : -1}
+                onClick={() => {
+                  onTabChange(id);
+                }}
+              >
+                <Icon size={17} aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            ))}
+            <p>Preferences are saved on this device.</p>
+          </div>
 
-                <div className="settings-dialog__content">
-                  <SettingsPanels activeTab={activeTab} />
-                </div>
-              </div>
-            </section>
-          </div>,
-          document.body,
-        )}
+          <div className="settings-dialog__content">
+            <SettingsPanels activeTab={activeTab} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

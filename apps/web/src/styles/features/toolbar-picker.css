@@ -1,13 +1,8 @@
-.toolbar-tabs,
-.toolbar-tool-options {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-}
-
 .toolbar-tabs {
+  display: flex;
   width: 100%;
   flex: 1 1 auto;
+  align-items: center;
   gap: 2px;
   border-radius: 8px;
   background: var(--surface-soft);
@@ -36,85 +31,54 @@
   box-shadow: var(--shadow-sm);
 }
 
-.toolbar-tool-options {
-  display: grid;
-  min-width: min-content;
+.toolbar-model-picker {
+  display: flex;
+  min-width: 176px;
   flex: 1 1 0;
-  gap: 2px;
   padding: 2px;
 }
 
-.toolbar-tool-option {
-  height: 34px;
+.toolbar-model-picker > .composer-setting-picker {
   min-width: 0;
-  overflow: hidden;
+  flex: 1 1 auto;
+}
+
+.toolbar-model-picker .composer-setting {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: 14px minmax(0, 1fr) 14px;
   border-radius: 9px;
-  background: transparent;
+  background: var(--accent-soft);
   padding: 0 10px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  color: var(--accent-text);
 }
 
-.toolbar-tool-option.is-pointer-hover {
-  background: var(--surface-soft);
-  color: var(--text);
-}
-
-.toolbar-tool-option.selected {
+.toolbar-model-picker .composer-setting.is-pointer-hover,
+.toolbar-model-picker .composer-setting.is-open {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
   background: var(--accent-soft);
   color: var(--accent-text);
 }
 
-.toolbar-tool-tooltip {
-  position: fixed;
-  z-index: 120;
-  transform: translateY(-100%);
-  transform-origin: bottom center;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  border-radius: 9px;
-  background: var(--surface-raised);
-  padding: 8px 10px;
-  color: var(--text-secondary);
-  font-size: 10px;
-  font-weight: 550;
-  line-height: 1.4;
+.toolbar-model-picker .composer-setting-value {
+  min-width: 0;
+  grid-column: 2;
+  overflow: hidden;
   text-align: center;
-  box-shadow: var(--shadow-lg);
-  animation: toolbar-tooltip-above 120ms ease-out;
-  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.toolbar-tool-tooltip strong,
-.toolbar-tool-tooltip span {
-  display: block;
+.toolbar-model-picker svg {
+  grid-column: 3;
+  color: var(--text-muted);
+  transition:
+    color 160ms ease,
+    transform 160ms ease;
 }
 
-.toolbar-tool-tooltip strong {
-  margin-bottom: 2px;
-  color: var(--text);
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.toolbar-tool-tooltip::after {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  width: 7px;
-  height: 7px;
-  border: solid var(--border);
-  border-width: 0 1px 1px 0;
-  background: var(--surface-raised);
-  content: '';
-  transform: translateX(-50%) rotate(45deg);
-}
-
-@keyframes toolbar-tooltip-above {
-  from {
-    opacity: 0;
-    transform: translateY(calc(-100% + 3px)) scale(0.98);
-  }
+.toolbar-model-picker .is-open svg {
+  color: var(--accent-text);
+  transform: rotate(180deg);
 }

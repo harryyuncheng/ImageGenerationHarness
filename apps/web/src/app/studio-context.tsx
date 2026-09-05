@@ -1,4 +1,4 @@
-import { createContext, use, type ReactNode } from 'react';
+import { createContext, use, useState, type ReactNode } from 'react';
 import { useLoadedImage } from '../features/editor/use-loaded-image.js';
 import { useProjects } from '../features/gallery/use-projects.js';
 import { useAttachments } from '../features/generation/use-attachments.js';
@@ -23,6 +23,7 @@ import {
 } from '../shared/hooks/use-dialogs.js';
 import { useToasts, type Notify, type Toast } from '../shared/hooks/use-toasts.js';
 import type { Capability, Destination, ProviderDescriptor } from '../shared/types/domain.js';
+import type { SettingsTab } from './SettingsPanels.js';
 import { useStudioNavigate } from './use-studio-navigate.js';
 
 interface ScopeProps {
@@ -149,6 +150,9 @@ interface ShellValue {
   dismissToast: (id: string) => void;
   theme: ThemeController;
   dialogs: DialogController;
+  /** The open settings tab, or null while the settings dialog is closed. */
+  settingsTab: SettingsTab | null;
+  setSettingsTab: (tab: SettingsTab | null) => void;
 }
 
 const StudioContext = createContext<StudioValue | undefined>(undefined);
@@ -186,11 +190,16 @@ export function StudioProvider({ children, ...scope }: StudioProviderProps) {
   const { toasts, notify, dismiss } = useToasts();
   const dialogs = useDialogs();
   const theme = useTheme();
-  const repository = useRepository(notify);
+  const [settingsTab, setSettingsTab] = useState<SettingsTab | null>(null);
+  const repository = useRepository(notify, (open) => {
+    setSettingsTab(open ? 'repository' : null);
+  });
   const { capabilities, providers } = useCapabilities();
 
   return (
-    <ShellContext value={{ toasts, dismissToast: dismiss, theme, dialogs }}>
+    <ShellContext
+      value={{ toasts, dismissToast: dismiss, theme, dialogs, settingsTab, setSettingsTab }}
+    >
       <RepositoryScope
         key={repository.activeRepositoryId ?? 'none'}
         notify={notify}

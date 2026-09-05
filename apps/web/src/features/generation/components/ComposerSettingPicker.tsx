@@ -30,8 +30,8 @@ interface ComposerSettingPickerProps {
 }
 
 /**
- * A composer chip whose menu is portalled to the body and kept inside the
- * visual viewport, above or below the trigger depending on available space.
+ * Menus are portalled to the body and kept inside the visual viewport.
+ * Model lists stay above the toolbar; other menus use the available space.
  */
 export function ComposerSettingPicker({
   menuId,
@@ -59,7 +59,6 @@ export function ComposerSettingPicker({
     const positionMenu = () => {
       const triggerBounds = trigger.getBoundingClientRect();
       const menuWidth = menu.offsetWidth;
-      const menuHeight = menu.offsetHeight;
       const visualViewport = window.visualViewport;
       const viewportLeft = visualViewport?.offsetLeft ?? 0;
       const viewportTop = visualViewport?.offsetTop ?? 0;
@@ -74,16 +73,31 @@ export function ComposerSettingPicker({
       );
       const spaceAbove = triggerBounds.top - viewportTop;
       const spaceBelow = viewportBottom - triggerBounds.bottom;
-      const openAbove = spaceAbove >= menuHeight + menuGap || spaceAbove >= spaceBelow;
-      const top = openAbove
-        ? Math.max(viewportTop + viewportMargin, triggerBounds.top - menuHeight - menuGap)
-        : Math.min(triggerBounds.bottom + menuGap, viewportBottom - menuHeight - viewportMargin);
+      const availableHeight =
+        (variant === 'model' ? spaceAbove : Math.max(spaceAbove, spaceBelow)) -
+        viewportMargin -
+        menuGap;
+      menu.style.setProperty(
+        '--popover-available-height',
+        `${String(Math.max(0, Math.min(availableHeight, viewportHeight - viewportMargin * 2)))}px`,
+      );
+      const menuHeight = menu.offsetHeight;
+      const openAbove =
+        variant === 'model' ||
+        spaceAbove >= menuHeight + menuGap + viewportMargin ||
+        spaceAbove >= spaceBelow;
+      const preferredTop = openAbove
+        ? triggerBounds.top - menuHeight - menuGap
+        : triggerBounds.bottom + menuGap;
+      const top = Math.min(
+        Math.max(preferredTop, viewportTop + viewportMargin),
+        viewportBottom - menuHeight - viewportMargin,
+      );
 
       menu.dataset['placement'] = openAbove ? 'above' : 'below';
       menu.dataset['positioned'] = 'true';
       Object.assign(menu.style, {
         left: `${String(left)}px`,
-        maxHeight: `${String(viewportHeight - viewportMargin * 2)}px`,
         top: `${String(top)}px`,
       });
     };
@@ -105,10 +119,11 @@ export function ComposerSettingPicker({
 
     positionMenu();
     const initialFocus =
-      menu.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
+      menu.querySelector<HTMLElement>('[role="option"][aria-selected="true"]:not([disabled])') ??
       menu.querySelector<HTMLElement>('input:not([disabled]), button:not([disabled])') ??
       menu;
     initialFocus.focus({ preventScroll: true });
+    if (initialFocus.matches('[role="option"]')) initialFocus.scrollIntoView({ block: 'nearest' });
     const resizeObserver = new ResizeObserver(positionMenu);
     resizeObserver.observe(trigger);
     resizeObserver.observe(menu);
@@ -127,7 +142,7 @@ export function ComposerSettingPicker({
       window.visualViewport?.removeEventListener('resize', positionMenu);
       window.visualViewport?.removeEventListener('scroll', positionMenu);
     };
-  }, [open]);
+  }, [open, variant]);
 
   function close() {
     onOpenChange(false);
@@ -251,9 +266,7 @@ export function ComposerSettingOptions<Value extends string>({
             aria-label={
               option.description === undefined
                 ? option.label
-                : variant === 'count'
-                  ? `${option.label} ${option.description}`
-                  : `${option.label}, ${option.description}`
+                : `${option.label}, ${option.description}`
             }
             aria-selected={selected}
             disabled={option.disabled}

@@ -16,6 +16,11 @@
   --studio-edge-block: 14px;
   --studio-corner-control-size: 36px;
   --studio-corner-control-gap: 8px;
+  /* Popovers share one width; toolbar menus fit content within these height limits. */
+  --popover-width: 330px;
+  --popover-height-sm: 160px;
+  --popover-height-md: 280px;
+  --popover-height-lg: 400px;
 }
 
 :root,

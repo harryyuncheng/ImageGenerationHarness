@@ -2,8 +2,7 @@ import { Download, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { ImageViewer } from '../../editor/components/ImageViewer.js';
 import type { LoadedImage } from '../../editor/use-loaded-image.js';
-import type { Capability } from '../../../shared/types/domain.js';
-import { capabilitiesForProvider } from '../capabilities.js';
+import type { Capability, ProviderDescriptor } from '../../../shared/types/domain.js';
 import { toolbarTabs } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
 import type { DraftActionsController } from '../use-draft-actions.js';
@@ -16,8 +15,8 @@ import { ComposerTools } from './ComposerTools.js';
 import { DestinationPill } from './DestinationPill.js';
 import { PromptCanvas } from './PromptCanvas.js';
 import { SubmitButton } from './SubmitButton.js';
+import { ToolbarModelPicker } from './ToolbarModelPicker.js';
 import { ToolbarTabs } from './ToolbarTabs.js';
-import { ToolbarToolButton } from './ToolbarToolButton.js';
 
 interface CreateViewProps {
   promptDraft: PromptDraftController;
@@ -26,6 +25,7 @@ interface CreateViewProps {
   draftActions: DraftActionsController;
   generation: GenerationController;
   capabilities: readonly Capability[];
+  providers: readonly ProviderDescriptor[];
   loaded?: LoadedImage;
   destinationLabel?: string;
   onSavePrompt: () => void;
@@ -38,16 +38,20 @@ export function CreateView({
   draftActions,
   generation,
   capabilities,
+  providers,
   loaded,
   destinationLabel,
   onSavePrompt,
 }: CreateViewProps) {
   const selectedCapability = settings.selectedCapability;
-  // The toolbar only ever offers the selected target's own provider.
-  const providerCapabilities = capabilitiesForProvider(capabilities, selectedCapability.providerId);
+  const availableCapabilities = capabilities.filter((capability) =>
+    providers.some(
+      (provider) => provider.providerId === capability.providerId && provider.configured,
+    ),
+  );
   const activeTab =
     toolbarTabs.find((tab) => tab.category === selectedCapability.category) ?? toolbarTabs[0];
-  const visibleTools = providerCapabilities.filter(
+  const visibleTools = capabilities.filter(
     (capability) => capability.category === activeTab.category,
   );
   const lastToolByCategory = useRef<Partial<Record<Capability['category'], string>>>({
@@ -66,25 +70,22 @@ export function CreateView({
     setSettingMenu((current) => (open ? menu : current === menu ? null : current));
   }
 
-  function selectTool(capability: Capability) {
+  function selectTool(targetId: string) {
     setSettingMenu(null);
-    lastToolByCategory.current[capability.category] = capability.canonicalId;
-    if (capability.canonicalId !== selectedCapability.canonicalId) {
-      draftActions.selectTool(capability);
-    }
+    settings.updateSettings('targetId', targetId);
   }
 
   function selectTab(category: Capability['category']) {
     if (category === selectedCapability.category) return;
     const rememberedToolId = lastToolByCategory.current[category];
+    const categoryTools = availableCapabilities.filter(
+      (capability) => capability.category === category,
+    );
     const nextTool =
-      (rememberedToolId
-        ? providerCapabilities.find(
-            (capability) =>
-              capability.category === category && capability.canonicalId === rememberedToolId,
-          )
-        : undefined) ?? providerCapabilities.find((capability) => capability.category === category);
-    if (nextTool) selectTool(nextTool);
+      categoryTools.find((capability) => capability.canonicalId === rememberedToolId) ??
+      categoryTools.find((capability) => capability.providerId === selectedCapability.providerId) ??
+      categoryTools.at(0);
+    if (nextTool) selectTool(nextTool.canonicalId);
   }
 
   return (
@@ -163,35 +164,23 @@ export function CreateView({
 
         <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
           <ToolbarTabs
-            capabilities={providerCapabilities}
+            capabilities={availableCapabilities}
             activeCategory={activeTab.category}
             onSelect={selectTab}
           />
 
           <div className="generation-toolbar-controls">
             <div className="toolbar-tool-row">
-              <div
-                className="toolbar-tool-options"
-                role="group"
-                aria-label={`${activeTab.label} tools`}
-                style={{
-                  gridTemplateColumns: `repeat(${String(visibleTools.length)}, minmax(56px, 1fr))`,
+              <ToolbarModelPicker
+                capabilities={visibleTools}
+                providers={providers}
+                selectedCapability={selectedCapability}
+                open={settingMenu === 'model'}
+                onOpenChange={(open) => {
+                  updateSettingMenu('model', open);
                 }}
-              >
-                {visibleTools.map((capability) => {
-                  const selected = capability.canonicalId === selectedCapability.canonicalId;
-                  return (
-                    <ToolbarToolButton
-                      key={capability.canonicalId}
-                      capability={capability}
-                      selected={selected}
-                      onSelect={() => {
-                        selectTool(capability);
-                      }}
-                    />
-                  );
-                })}
-              </div>
+                onSelect={selectTool}
+              />
 
               {activeTab.id === 'export' && loaded?.selectedOutput && (
                 <div className="toolbar-control-group" role="group" aria-label="Export actions">

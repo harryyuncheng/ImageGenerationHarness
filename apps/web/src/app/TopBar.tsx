@@ -1,6 +1,5 @@
 import { X } from 'lucide-react';
 import { useRouterState } from '@tanstack/react-router';
-import { RepositoryPicker } from '../features/repository/components/RepositoryPicker.js';
 import { useStudio } from './studio-context.js';
 
 const libraryTitles: Record<string, string> = {
@@ -18,9 +17,6 @@ export function TopBar() {
 
   return (
     <header className="top-controls">
-      <div className="top-bar-left">
-        <RepositoryPicker repository={studio.repository} />
-      </div>
       <div className="top-actions">
         {openLibrary && (
           <button

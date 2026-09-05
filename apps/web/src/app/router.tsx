@@ -25,6 +25,7 @@ function CreateRoute() {
       draftActions={studio.draftActions}
       generation={studio.generation}
       capabilities={studio.capabilities}
+      providers={studio.providers}
       {...(studio.viewer === undefined ? {} : { loaded: studio.viewer })}
       {...(destinationLabel === undefined ? {} : { destinationLabel })}
       onSavePrompt={() => {

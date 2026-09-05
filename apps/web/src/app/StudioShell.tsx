@@ -9,13 +9,13 @@ import {
 import { CuttingMat } from '../features/theme/components/CuttingMat.js';
 import { AppSettings } from './AppSettings.js';
 import { StudioOverlays } from './StudioOverlays.js';
-import { StudioProvider, useStudio } from './studio-context.js';
+import { StudioProvider, useStudio, useStudioShell } from './studio-context.js';
 import { TopBar } from './TopBar.js';
 import { useGlobalShortcuts } from './use-global-shortcuts.js';
 
 function StudioLayout() {
   const studio = useStudio();
-  const [appSettingsOpen, setAppSettingsOpen] = useState(false);
+  const { setSettingsTab } = useStudioShell();
   const [fanOrigins, setFanOrigins] = useState<readonly FanOrigin[]>([]);
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
@@ -31,11 +31,10 @@ function StudioLayout() {
 
   useGlobalShortcuts({
     closeOverlays: () => {
-      setAppSettingsOpen(false);
-      studio.repository.setMenuOpen(false);
+      setSettingsTab(null);
     },
     openSettings: () => {
-      setAppSettingsOpen(true);
+      setSettingsTab('repository');
     },
     fileInput: studio.attachments.fileInput,
     promptInput: studio.promptDraft.promptInput,
@@ -43,7 +42,7 @@ function StudioLayout() {
 
   return (
     <div className="studio-shell">
-      <AppSettings open={appSettingsOpen} onOpenChange={setAppSettingsOpen} />
+      <AppSettings />
 
       <div className={`studio-main ${showCreateWorkspace ? 'studio-main--create' : ''}`}>
         <CuttingMat />

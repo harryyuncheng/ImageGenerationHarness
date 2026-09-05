@@ -1,5 +1,5 @@
 import { capabilityCatalog, providerCatalog } from '@harness/capabilities/catalog';
-import type { ProviderId, RequestParameter } from '@harness/contracts';
+import type { RequestParameter } from '@harness/contracts';
 import type { Capability, ProviderDescriptor } from '../../shared/types/domain.js';
 
 export const defaultCapabilities: readonly Capability[] = capabilityCatalog;
@@ -68,22 +68,6 @@ export function hasParameter(capability: Capability, parameter: RequestParameter
 /** Targets take either a named ratio or explicit pixel dimensions, but share one shape picker. */
 export function supportsImageShape(capability: Capability): boolean {
   return hasParameter(capability, 'aspect_ratio') || hasParameter(capability, 'size');
-}
-
-export function capabilitiesForProvider(
-  capabilities: readonly Capability[],
-  providerId: ProviderId,
-): readonly Capability[] {
-  return capabilities.filter((capability) => capability.providerId === providerId);
-}
-
-/** The target a provider opens on, preferring text-to-image over its editing tools. */
-export function defaultTargetForProvider(
-  capabilities: readonly Capability[],
-  providerId: ProviderId,
-): Capability | undefined {
-  const owned = capabilitiesForProvider(capabilities, providerId);
-  return owned.find((capability) => capability.category === 'generation') ?? owned.at(0);
 }
 
 export function supportsPrompt(capability: Capability): boolean {

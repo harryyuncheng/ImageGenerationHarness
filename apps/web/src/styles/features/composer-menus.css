@@ -1,6 +1,6 @@
 .composer-setting.is-open {
   border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
-  background: transparent;
+  background: var(--surface-soft);
   color: var(--text);
 }
 
@@ -58,30 +58,39 @@
 .composer-setting-menu {
   position: fixed;
   z-index: 100;
-  width: min(330px, calc(100vw - 24px));
-  overflow-x: hidden;
-  overflow-y: auto;
+  display: flex;
+  max-height: min(
+    var(--popover-height-limit),
+    var(--popover-available-height, calc(100dvh - 24px))
+  );
+  flex-direction: column;
   padding: 8px;
-  overscroll-behavior: contain;
 }
 
-.composer-setting-menu--count {
-  width: min(280px, calc(100vw - 24px));
-}
-
-.composer-setting-menu--format,
-.composer-setting-menu--seed,
+.composer-setting-menu--count,
+.composer-setting-menu--range,
 .composer-setting-menu--text {
-  width: min(286px, calc(100vw - 24px));
+  --popover-height-limit: var(--popover-height-sm);
 }
 
 .composer-setting-menu--canvas,
-.composer-setting-menu--range {
-  width: min(262px, calc(100vw - 24px));
+.composer-setting-menu--format,
+.composer-setting-menu--seed {
+  --popover-height-limit: var(--popover-height-md);
+}
+
+.composer-setting-menu--dimensions,
+.composer-setting-menu--model,
+.composer-setting-menu--style {
+  --popover-height-limit: var(--popover-height-lg);
 }
 
 /* Sliders, text and number fields are panel-style controls, so the popover frames them itself. */
 .composer-setting-field {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
   border-top: 1px solid var(--border-soft);
   padding: 10px 9px 4px;
 }
@@ -188,6 +197,7 @@
 
 .composer-setting-menu-header {
   display: flex;
+  flex: 0 0 auto;
   flex-direction: column;
   padding: 8px 9px 10px;
 }
@@ -203,9 +213,18 @@
   font-size: 10px;
 }
 
+.composer-setting-menu--model .composer-setting-menu-header {
+  text-align: center;
+}
+
+/* Keep scrolling inside the list so headers and seed inputs stay visible. */
 .composer-setting-options {
   display: grid;
+  min-height: 0;
+  flex: 0 1 auto;
   gap: 5px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-top: 1px solid var(--border-soft);
   padding-top: 7px;
 }
@@ -219,9 +238,13 @@
   gap: 4px;
 }
 
+/* Row lists cap their growth so a two-option menu does not stretch into slabs. */
 .composer-setting-options--format,
+.composer-setting-options--model,
 .composer-setting-options--seed {
   grid-template-columns: minmax(0, 1fr);
+  grid-auto-rows: minmax(min-content, 64px);
+  align-content: start;
   gap: 4px;
 }
 
@@ -252,6 +275,10 @@
   color: var(--text);
 }
 
+.composer-setting-option:focus-visible {
+  outline-offset: -3px;
+}
+
 .composer-setting-option--dimensions {
   min-height: 88px;
   flex-direction: column;
@@ -269,19 +296,29 @@
 }
 
 .composer-setting-option--format,
-.composer-setting-option--seed {
+.composer-setting-option--model,
+.composer-setting-option--seed,
+.composer-setting-option--style {
   min-height: 42px;
   padding: 7px 28px 7px 10px;
   text-align: left;
 }
 
-.composer-setting-option--style {
-  min-height: 34px;
-  padding: 7px 24px 7px 10px;
-  text-align: left;
+.composer-setting-option--model {
+  padding-inline: 28px;
+  text-align: center;
+}
+
+.composer-setting-option--model .composer-setting-option-copy {
+  flex: 1;
+}
+
+.composer-setting-option--model .composer-setting-option-copy strong {
+  font-size: 12px;
 }
 
 .composer-setting-option--format .composer-setting-option-check,
+.composer-setting-option--model .composer-setting-option-check,
 .composer-setting-option--seed .composer-setting-option-check,
 .composer-setting-option--style .composer-setting-option-check {
   top: 50%;
@@ -289,7 +326,8 @@
   transform: translateY(-50%);
 }
 
-.composer-setting-option--count.selected {
+.composer-setting-option--count.selected,
+.composer-setting-option--model.selected {
   border-color: color-mix(in srgb, var(--accent) 42%, var(--border));
   background: var(--accent-soft);
 }

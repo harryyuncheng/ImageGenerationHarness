@@ -1,6 +1,6 @@
 import { useStudioNavigate } from '../../app/use-studio-navigate.js';
 import type { Notify } from '../../shared/hooks/use-toasts.js';
-import type { Capability, Destination, GalleryImage } from '../../shared/types/domain.js';
+import type { Destination, GalleryImage } from '../../shared/types/domain.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import { imageDestination } from './destination.js';
 import type { DestinationController } from './use-destination.js';
@@ -21,10 +21,6 @@ export function useDraftActions({
   notify,
 }: DraftActionsOptions) {
   const navigate = useStudioNavigate();
-
-  function selectTool(capability: Capability) {
-    settings.updateSettings('targetId', capability.canonicalId);
-  }
 
   function generateTo(nextDestination: Destination) {
     destination.setDestination(nextDestination);
@@ -59,7 +55,6 @@ export function useDraftActions({
   }
 
   return {
-    selectTool,
     generateTo,
     resetDestination,
     loadImageDraft,
