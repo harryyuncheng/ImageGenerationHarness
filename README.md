@@ -43,6 +43,18 @@ Azure AI Foundry is enabled by setting `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI
 
 The native folder chooser is implemented with `/usr/bin/osascript` through `execFile`; no shell command string is used. Application preferences store only active and recent canonical repository paths in `~/Library/Application Support/ImageGenerationHarness/config.json`. Repository-domain records remain inside the selected repository.
 
+### Untracked experiments and Copilot cloud
+
+Copilot cloud can create and run an experiment in an untracked or ignored folder **inside its cloud workspace**, subject to the tools, credentials, and network access available there. It cannot see an experiment that exists only on your computer: its repository checkout does not include local untracked or ignored files.
+
+This repository ignores `my-rlai-experiment/`, `AGENTS.md`, and `CLAUDE.md`. Those local files are not delivered through the checkout, so do not rely on them to supply cloud instructions. Put the experiment steps and necessary instructions in the issue or task prompt, or deliberately commit and push non-secret inputs and shared Copilot guidance (such as a root `AGENTS.md`, removing its ignore rule first).
+
+For a disposable experiment, ask Copilot to create the scratch folder in its workspace, run the experiment, leave its files out of the PR, and summarize the commands and results in its response. Ignored files can still be used by tools once they exist; `.gitignore` is not an execution restriction. Untracked files are not necessarily ignored, so explicitly request that scratch files remain uncommitted.
+
+The cloud workspace is ephemeral. To reproduce an experiment in another session, retain its recipe and inputs in Git or another explicitly accessible location. Preserve any needed outputs before the session ends; files left uncommitted in the workspace are not part of the PR. Never commit credentials or private datasets just to make them available to the agent.
+
+For this harness, local `.env` files and AWS sessions are not transferred either. Configure required credentials as secrets in the repository's `copilot` environment. The native macOS folder picker does not work on the default Linux cloud runner, so do not assume the complete desktop workflow will run unchanged. See GitHub's [cloud environment setup guidance](https://docs.github.com/en/copilot/customizing-copilot/customizing-the-development-environment-for-copilot-coding-agent).
+
 ## Source layout
 
 The monorepo keeps deployable applications separate from reusable boundaries:
