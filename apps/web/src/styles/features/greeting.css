@@ -28,7 +28,7 @@
   color: color-mix(in srgb, var(--text-muted) 78%, transparent);
   opacity: 0;
   pointer-events: none;
-  text-align: left;
+  text-align: center;
 }
 
 .prompt-canvas-field.is-empty .prompt-canvas-placeholder {
@@ -54,6 +54,12 @@
   line-height: inherit;
   text-align: left;
   caret-color: var(--text);
+}
+
+.prompt-canvas-field.is-empty .prompt-canvas-input {
+  /* Size the empty field from the greeting, not the browser's default textarea columns. */
+  width: 0;
+  min-width: 100%;
 }
 
 .prompt-canvas-input::placeholder {
