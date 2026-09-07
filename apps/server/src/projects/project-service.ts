@@ -54,7 +54,10 @@ export interface ProjectService {
   archiveProjectAsset(projectId: string, assetId: string): Promise<ProjectAsset>;
   unarchiveProjectAsset(projectId: string, assetId: string): Promise<ProjectAsset>;
   deleteProjectAsset(projectId: string, assetId: string): Promise<void>;
-  resolveDestinationDirectory(destination: Destination): Promise<string>;
+  resolveDestinationDirectory(
+    repository: LocalImageRepository,
+    destination: Destination,
+  ): Promise<string>;
 }
 
 export class LocalProjectService implements ProjectService {
@@ -254,26 +257,27 @@ export class LocalProjectService implements ProjectService {
     );
   }
 
-  async resolveDestinationDirectory(destination: Destination): Promise<string> {
+  async resolveDestinationDirectory(
+    repository: LocalImageRepository,
+    destination: Destination,
+  ): Promise<string> {
     let validated: Destination;
     try {
       validated = destinationSchema.parse(destination);
     } catch (error) {
       badInput(error, 'Invalid image destination.');
     }
-    return this.manager.withRepository(async (repository) => {
-      if (validated.kind === 'main') return 'images';
-      const project = await this.#requireProject(repository, validated.projectId);
-      if (project.archivedAt) {
-        throw new ProjectServiceError('The destination project is archived.', 409);
-      }
-      if (validated.kind === 'project') return `${project.directory}/images`;
-      const asset = await this.#requireProjectAsset(repository, project, validated.projectAssetId);
-      if (asset.archivedAt) {
-        throw new ProjectServiceError('The destination project asset is archived.', 409);
-      }
-      return `${asset.directory}/images`;
-    });
+    if (validated.kind === 'main') return 'images';
+    const project = await this.#requireProject(repository, validated.projectId);
+    if (project.archivedAt) {
+      throw new ProjectServiceError('The destination project is archived.', 409);
+    }
+    if (validated.kind === 'project') return `${project.directory}/images`;
+    const asset = await this.#requireProjectAsset(repository, project, validated.projectAssetId);
+    if (asset.archivedAt) {
+      throw new ProjectServiceError('The destination project asset is archived.', 409);
+    }
+    return `${asset.directory}/images`;
   }
 
   async #setProjectArchived(projectId: string, archived: boolean): Promise<Project> {

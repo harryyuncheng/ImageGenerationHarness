@@ -1,4 +1,4 @@
-import { createContext, use, useState, type ReactNode } from 'react';
+import { createContext, use, useLayoutEffect, useState, type ReactNode } from 'react';
 import { useLoadedImage } from '../features/editor/use-loaded-image.js';
 import { useProjects } from '../features/gallery/use-projects.js';
 import { useAttachments } from '../features/generation/use-attachments.js';
@@ -54,7 +54,7 @@ function useStudioValue({
 
   const promptDraft = usePromptDraft();
   const settings = useGenerationSettings(capabilities);
-  const attachments = useAttachments(notify);
+  const attachments = useAttachments(settings.selectedCapability, notify);
   const destination = useDestination();
   const favorites = useFavorites();
   const savedPrompts = useSavedPrompts(notify);
@@ -83,6 +83,7 @@ function useStudioValue({
     promptDraft,
     settings,
     destination,
+    attachments,
     notify,
   });
   const projects = useProjects({
@@ -116,6 +117,27 @@ function useStudioValue({
       void runs.cancel(run);
     },
   });
+  const output = viewer?.selectedOutput;
+  const { setSource } = attachments;
+  useLayoutEffect(() => {
+    if (!output) return;
+    setSource({
+      source: 'repository',
+      id: output.imageId,
+      imageId: output.imageId,
+      name: output.name,
+      previewUrl: output.url,
+      mediaType: output.mediaType,
+      byteLength: output.byteLength,
+    });
+  }, [
+    output?.imageId,
+    output?.url,
+    output?.name,
+    output?.mediaType,
+    output?.byteLength,
+    setSource,
+  ]);
 
   const describeDestination = (value: Destination) =>
     runDestinationLabel(value, projects.projects, projects.selectedProjectQuery.data);

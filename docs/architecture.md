@@ -30,6 +30,8 @@ The browser owns presentation state and non-authoritative preferences. It receiv
 
 The toolbar's model dropdown combines both providers within each workflow; there is no separate provider setting. The provider is derived from the selected target, so loading a saved image also restores the provider that produced it. Models whose provider is unconfigured remain visible but disabled with setup guidance. The capability response reports only whether each provider resolved server-side credentials, never any credential value.
 
+GPT Image 2 exposes a 16-image input limit in its capability metadata. Create keeps optional reference images separate from the output preview; Edit uses a source followed by up to 15 references, with its optional mask bound only to the source. Applying a style guide does not switch GPT Create into Edit or alter the prompt. Uploaded references are numbered in request order; style-guide previews stay in the left stack and can be excluded through the guide panel. Empty inputs never reserve a main image area, and excess or unsupported inputs block submission.
+
 Addressable state lives in the URL: the visible view is a route, the selected project is a route parameter, and the loaded image or run is a Zod-validated search parameter holding an identifier only. Identifiers are resolved against cached query data at render time, so a link that no longer resolves degrades to its underlying view. Loading a saved image also restores the prompt, tool, and destination it was produced with, so viewing and remixing are the same gesture and generating from the restored draft simply creates a new image. Repository-scoped state is mounted under a key derived from the active repository, which is what prevents drafts, destinations, and optimistic runs from crossing a repository switch.
 
 ### Loopback server
@@ -37,6 +39,8 @@ Addressable state lives in the URL: the visible view is a route, the selected pr
 Fastify binds to loopback and validates Host and Origin headers. It owns repository selection, manifest validation, project and style guide APIs, durable run creation, local queueing, input hydration, provider invocation, output persistence, and ID-resolved content delivery.
 
 Each provider adapter owns its own wire format: it builds the request payload from the validated normalized request, decodes and validates the response, and raises provider-side filtering or refusal as an error. Callers receive only decoded image data and non-secret provenance, so adding a provider does not change the run pipeline.
+
+The Foundry adapter chooses `images/edits` whenever the request contains images, including reference-assisted Create requests; otherwise Create uses `images/generations`. Image arrays become ordered multipart `image[]` parts. The effective operation is recorded in non-secret provenance. Only the run-upload route increases its bounded body limit to accommodate sixteen 10 MiB base64 images plus a mask and JSON overhead.
 
 The macOS directory selector is an injectable adapter. Production uses `/usr/bin/osascript` through `execFile`.
 
@@ -51,9 +55,9 @@ Stable UUIDs define identity. Slugs are display-derived directory components onl
 ## Generation lifecycle
 
 1. `POST /api/runs` validates the target, normalized request, seed plan, and destination. A run becomes one job per requested output, or a single job carrying the run's output count in `n` when the target batches images into one call.
-2. Local uploads and style guide images are inspected, hashed, and snapshotted as immutable repository inputs. Durable run and job JSON records are committed before queueing.
+2. Local uploads and style guide images are inspected, hashed, and snapshotted as immutable repository inputs. Array order and scalar compatibility are preserved, with one input record per occurrence even when a snapshot is shared. Reference lookups and destination resolution use the captured repository. Durable run and job JSON records are committed before queueing.
 3. The bounded queue processes conservatively at concurrency one by default. Queue items retain their originating repository instance and resolved destination even if the user switches repositories.
-4. Immediately before invocation, the worker re-reads every input, verifies its SHA-256, and replaces opaque image IDs with base64 in memory.
+4. Immediately before invocation, the worker validates the saved request, checks each opaque reference against its ordered input record, re-reads every input, verifies its SHA-256, and replaces image IDs with base64 in fresh in-memory arrays. Stored request arrays remain unchanged for sidecars and recovery.
 5. The target's provider adapter sends the capability payload with retries disabled and validates the response against that provider's strict schema.
 6. Provider output is strictly decoded, inspected, hash-calculated, and written byte-exact to `images/`, a project `images/`, or a nested asset `images/`.
 7. A strict adjacent `.image.json` sidecar records reproducibility and provenance without base64 data, credentials, or unrestricted absolute paths.

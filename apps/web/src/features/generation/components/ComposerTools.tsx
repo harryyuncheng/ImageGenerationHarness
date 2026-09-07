@@ -1,7 +1,8 @@
-import { Bookmark, Image as ImageIcon } from 'lucide-react';
-import type { UploadAttachment } from '../../../shared/types/attachments.js';
-import { supportsImageShape } from '../capabilities.js';
+import { Bookmark, Image as ImageIcon, ImagePlus } from 'lucide-react';
+import { hasParameter, supportsImageShape } from '../capabilities.js';
+import { mainImageInputs } from '../model-presentation.js';
 import { aspectRatios, outputCounts } from '../settings.js';
+import type { AttachmentsController } from '../use-attachments.js';
 import { CapabilitySettings } from './CapabilitySettings.js';
 import {
   ComposerSettingOptions,
@@ -12,9 +13,8 @@ import { MaskChip } from './MaskChip.js';
 import { OutputSettings } from './OutputSettings.js';
 
 interface ComposerToolsProps extends ComposerSettingGroupProps {
-  maskSource: UploadAttachment | undefined;
-  hasMask: boolean;
-  onMaskChange: (mask: UploadAttachment) => void;
+  attachments: AttachmentsController;
+  maskImage: HTMLImageElement | null;
   onSavePrompt: () => void;
 }
 
@@ -22,9 +22,8 @@ export function ComposerTools({
   settings,
   settingMenu,
   onSettingMenuChange,
-  maskSource,
-  hasMask,
-  onMaskChange,
+  attachments,
+  maskImage,
   onSavePrompt,
 }: ComposerToolsProps) {
   const capability = settings.selectedCapability;
@@ -111,12 +110,18 @@ export function ComposerTools({
         </ComposerSettingPicker>
       </div>
       <div className="toolbar-control-group" role="group" aria-label="Model settings">
-        <MaskChip
-          capability={capability}
-          source={maskSource}
-          hasMask={hasMask}
-          onMaskChange={onMaskChange}
-        />
+        {hasParameter(capability, 'mask') &&
+          (!attachments.inputs.source ||
+            mainImageInputs(attachments.inputs).some((input) => input.role === 'source')) && (
+            <MaskChip
+              key={`${capability.canonicalId}:${attachments.inputs.source?.id ?? ''}`}
+              capability={capability}
+              attachments={attachments}
+              image={maskImage}
+              settingMenu={settingMenu}
+              onSettingMenuChange={onSettingMenuChange}
+            />
+          )}
         <CapabilitySettings
           settings={settings}
           settingMenu={settingMenu}
@@ -129,6 +134,19 @@ export function ComposerTools({
         />
       </div>
       <div className="toolbar-control-group" role="group" aria-label="Prompt resources">
+        {attachments.roles.length > 0 && (
+          <button
+            type="button"
+            className="tool-chip"
+            onClick={() => {
+              attachments.chooseFiles();
+            }}
+            title="Add images"
+            aria-label="Add images"
+          >
+            <ImagePlus size={16} />
+          </button>
+        )}
         <button
           type="button"
           className="tool-chip"

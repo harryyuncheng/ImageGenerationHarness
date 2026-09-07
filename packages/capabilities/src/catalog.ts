@@ -1,4 +1,5 @@
 import {
+  MAX_GPT_IMAGE_INPUTS,
   STABILITY_STANDARD_SEED_MAX,
   UINT32_MAX,
   type CapabilityCategory,
@@ -7,7 +8,7 @@ import {
   type RequestParameter,
 } from '@harness/contracts';
 
-export const CAPABILITY_REGISTRY_VERSION = '2026-08-29.1' as const;
+export const CAPABILITY_REGISTRY_VERSION = '2026-09-07.1' as const;
 
 export const providerCatalog = [
   {
@@ -118,9 +119,10 @@ export const capabilityCatalog = [
       deploymentName: 'gpt-image-2',
       operation: 'generations',
     },
-    modes: ['text-to-image'],
-    parameters: ['prompt', 'size', 'quality', 'background', 'output_format', 'n'],
+    modes: ['text-to-image', 'image-to-image'],
+    parameters: ['prompt', 'image', 'size', 'quality', 'background', 'output_format', 'n'],
     outputFormats: ['jpeg', 'png'],
+    maxInputImages: MAX_GPT_IMAGE_INPUTS,
   },
   {
     canonicalId: 'edit/gpt-image-2',
@@ -145,6 +147,7 @@ export const capabilityCatalog = [
       'n',
     ],
     outputFormats: ['jpeg', 'png'],
+    maxInputImages: MAX_GPT_IMAGE_INPUTS,
   },
   imageService(
     'control-sketch',

@@ -1,6 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useRef } from 'react';
-import type { StyleGuideFolder } from '../../../shared/types/domain.js';
+import type { StyleGuideFolder, StyleGuideImage } from '../../../shared/types/domain.js';
 import { styleGuideImageContentUrl } from '../api.js';
 
 const PREVIEW_SLOTS = [0, 1, 2];
@@ -29,14 +29,17 @@ function readOrigin(tile: Element): FanOrigin {
 
 export function StyleGuideStack({
   activeFolder,
+  appliedImages,
   onOpen,
 }: {
   activeFolder: StyleGuideFolder | undefined;
+  appliedImages: readonly StyleGuideImage[];
   onOpen: (origins: FanOrigin[]) => void;
 }) {
   const fan = useRef<HTMLSpanElement>(null);
-  const images = activeFolder?.images ?? [];
-  const label = activeFolder ? `Style guide: ${activeFolder.name}` : 'Style guide';
+  const label = activeFolder
+    ? `Style guide: ${activeFolder.name} · ${String(appliedImages.length)} images selected`
+    : 'Style guide';
 
   return (
     <button
@@ -52,7 +55,7 @@ export function StyleGuideStack({
     >
       <span className="style-guide-stack-fan" ref={fan} aria-hidden="true">
         {PREVIEW_SLOTS.map((slot) => {
-          const image = images[slot];
+          const image = appliedImages[slot];
           return (
             <span
               className={`style-guide-tile ${image ? '' : 'style-guide-tile--empty'}`}

@@ -1,57 +1,75 @@
 import { SquareDashedMousePointer } from 'lucide-react';
-import { useState } from 'react';
-import type { UploadAttachment } from '../../../shared/types/attachments.js';
 import type { Capability } from '../../../shared/types/domain.js';
-import { hasParameter } from '../capabilities.js';
-import { maskAttachment } from '../mask.js';
+import { maskTools } from '../mask.js';
+import type { AttachmentsController } from '../use-attachments.js';
+import { useMaskEditor } from '../use-mask-editor.js';
+import { ComposerSettingPicker, type ComposerSettingGroupProps } from './ComposerSettingPicker.js';
 import { MaskEditor } from './MaskEditor.js';
+import { MaskToolbar } from './MaskToolbar.js';
 
-/** Stays visible but disabled without a source image, so the capability is discoverable early. */
 export function MaskChip({
   capability,
-  source,
-  hasMask,
-  onMaskChange,
+  attachments,
+  image,
+  settingMenu,
+  onSettingMenuChange,
 }: {
   capability: Capability;
-  source: UploadAttachment | undefined;
-  hasMask: boolean;
-  onMaskChange: (mask: UploadAttachment) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  if (!hasParameter(capability, 'mask')) return null;
+  attachments: AttachmentsController;
+  image: HTMLImageElement | null;
+} & Pick<ComposerSettingGroupProps, 'settingMenu' | 'onSettingMenuChange'>) {
+  const { source, mask } = attachments.inputs;
+  const displayedImage = image?.getAttribute('src') === source?.previewUrl ? image : null;
+  const editor = useMaskEditor(
+    displayedImage,
+    source,
+    mask,
+    capability,
+    attachments.setMask,
+    attachments.reportMaskStatus,
+  );
+  const open = settingMenu === 'mask' && source !== undefined;
+  const label = open ? 'Mask tools' : mask ? 'Edit mask' : 'Draw mask';
+  const activeTool = maskTools.find((entry) => entry.id === editor.tool) ?? maskTools[0];
 
   return (
     <>
-      <button
-        type="button"
-        className={`tool-chip tool-chip--mask ${hasMask ? 'selected' : ''}`}
+      <ComposerSettingPicker
+        menuId="mask-tools-menu"
+        label={source ? label : 'Open an image or attach a source image to draw a mask'}
+        menuLabel="Mask tools"
+        value={activeTool.label}
+        open={open}
+        variant="mask"
         disabled={source === undefined}
-        title={
-          source === undefined
-            ? 'Attach a source image to draw a mask'
-            : 'Draw the area this tool should change'
+        triggerContent={
+          <>
+            <SquareDashedMousePointer size={16} className={open || mask ? 'is-active' : ''} />
+            <span className="composer-setting-value">{label}</span>
+          </>
         }
-        onClick={() => {
-          setOpen(true);
+        onOpenChange={(nextOpen) => {
+          onSettingMenuChange('mask', nextOpen);
         }}
       >
-        <SquareDashedMousePointer size={16} />
-        <span>{hasMask ? 'Edit mask' : 'Draw mask'}</span>
-      </button>
-      {open && source && (
-        <MaskEditor
-          source={source}
-          capability={capability}
-          onCancel={() => {
-            setOpen(false);
-          }}
-          onSave={(encoded) => {
-            onMaskChange(maskAttachment(encoded));
-            setOpen(false);
-          }}
-        />
-      )}
+        {() => (
+          <MaskToolbar
+            editor={editor}
+            onUpload={() => {
+              attachments.chooseFiles('mask');
+            }}
+          />
+        )}
+      </ComposerSettingPicker>
+      <MaskEditor
+        image={displayedImage}
+        editor={editor}
+        hasMask={mask !== undefined}
+        toolsOpen={open}
+        onOpenTools={() => {
+          onSettingMenuChange('mask', true);
+        }}
+      />
     </>
   );
 }

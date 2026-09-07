@@ -3,9 +3,11 @@ import { RefreshCw, WandSparkles, X } from 'lucide-react';
 /** Cancelling replaces generating while the loaded run still has droppable work. */
 export function SubmitButton({
   isSubmitting,
+  blockedReason,
   onCancel,
 }: {
   isSubmitting: boolean;
+  blockedReason: string | undefined;
   onCancel?: () => void;
 }) {
   if (onCancel) {
@@ -26,8 +28,8 @@ export function SubmitButton({
     <button
       className="generate-button"
       type="submit"
-      disabled={isSubmitting}
-      title="Generate (⌘ Enter)"
+      disabled={isSubmitting || blockedReason !== undefined}
+      title={blockedReason ?? 'Generate (⌘ Enter)'}
     >
       {isSubmitting ? <RefreshCw className="spin" size={18} /> : <WandSparkles size={17} />}
       <span>Generate</span>

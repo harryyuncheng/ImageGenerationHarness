@@ -1,15 +1,15 @@
-import { Download, Upload } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { ImageViewer } from '../../editor/components/ImageViewer.js';
+import { progressMessage } from '../../editor/components/ImageViewer.js';
 import type { LoadedImage } from '../../editor/use-loaded-image.js';
 import type { Capability, ProviderDescriptor } from '../../../shared/types/domain.js';
-import { toolbarTabs } from '../model-presentation.js';
+import { mainImageInputs, toolbarTabs } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
 import type { DraftActionsController } from '../use-draft-actions.js';
 import type { GenerationController } from '../use-generation.js';
 import type { GenerationSettingsController } from '../use-generation-settings.js';
 import type { PromptDraftController } from '../use-prompt-draft.js';
-import { AttachmentStrip } from './AttachmentStrip.js';
+import { ImageInputs } from './ImageInputs.js';
 import type { ComposerSettingMenu } from './ComposerSettingPicker.js';
 import { ComposerTools } from './ComposerTools.js';
 import { DestinationPill } from './DestinationPill.js';
@@ -58,20 +58,30 @@ export function CreateView({
     [selectedCapability.category]: selectedCapability.canonicalId,
   });
   const [settingMenu, setSettingMenu] = useState<ComposerSettingMenu>(null);
-  // Style guide images are represented by the fan and its modal, never in the composer strip.
-  const uploads = attachments.attachments.filter((item) => item.source === 'upload');
+  const [maskImage, setMaskImage] = useState<HTMLImageElement | null>(null);
+  const source = attachments.inputs.source;
+  const referenceGeneration =
+    selectedCapability.maxInputImages !== undefined && selectedCapability.category === 'generation';
+  const showPreview =
+    loaded?.selectedOutput !== undefined && (attachments.roles.length === 0 || referenceGeneration);
+  const showImages = mainImageInputs(attachments.inputs).length > 0 || showPreview;
+  const imageStatus =
+    attachments.blockedReason ??
+    (loaded &&
+    (!loaded.selectedOutput || ['submitting', 'queued', 'running'].includes(loaded.status))
+      ? progressMessage(loaded.status, false)
+      : undefined);
 
   useEffect(() => {
     lastToolByCategory.current[selectedCapability.category] = selectedCapability.canonicalId;
     setSettingMenu(null);
-  }, [selectedCapability.canonicalId, selectedCapability.category]);
+  }, [selectedCapability.canonicalId, selectedCapability.category, source?.id]);
 
   function updateSettingMenu(menu: Exclude<ComposerSettingMenu, null>, open: boolean) {
     setSettingMenu((current) => (open ? menu : current === menu ? null : current));
   }
 
   function selectTool(targetId: string) {
-    setSettingMenu(null);
     settings.updateSettings('targetId', targetId);
   }
 
@@ -94,37 +104,19 @@ export function CreateView({
         onSubmit={(event) => {
           void generation.generate(event);
         }}
-        className={`prompt-workspace ${loaded ? 'prompt-workspace--loaded' : ''}`}
-        onDragEnter={(event) => {
-          event.preventDefault();
-          attachments.setDragActive(true);
-        }}
+        className={`prompt-workspace ${showImages ? 'prompt-workspace--loaded' : ''}`}
         onDragOver={(event) => {
           event.preventDefault();
-        }}
-        onDragLeave={(event) => {
-          if (
-            event.relatedTarget instanceof Node &&
-            event.currentTarget.contains(event.relatedTarget)
-          ) {
-            return;
-          }
-          attachments.setDragActive(false);
         }}
         onDrop={attachments.handleDrop}
       >
         <section
-          className={`prompt-stage ${attachments.dragActive ? 'prompt-stage--drag' : ''}`}
+          className="prompt-stage"
           aria-label="Prompt canvas"
           onClick={(event) => {
             if (event.target === event.currentTarget) promptDraft.focusPrompt();
           }}
         >
-          {attachments.dragActive && (
-            <div className="prompt-drop-overlay">
-              <Upload size={24} /> Drop images here
-            </div>
-          )}
           <div className="prompt-editor">
             <PromptCanvas
               capability={selectedCapability}
@@ -137,27 +129,28 @@ export function CreateView({
               }}
               onKeyDown={generation.handlePromptKeyDown}
             />
-            {uploads.length > 0 && (
-              <AttachmentStrip
-                attachments={uploads}
-                capability={selectedCapability}
-                onRemove={attachments.removeUpload}
-              />
+            {imageStatus && (
+              <p className="image-input-status" role="status">
+                {imageStatus}
+              </p>
             )}
-            {destinationLabel !== undefined && loaded === undefined && (
+            {destinationLabel !== undefined && !showImages && (
               <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
             )}
           </div>
         </section>
 
-        {loaded && (
-          <ImageViewer
+        {showImages && (
+          <ImageInputs
+            attachments={attachments}
+            capability={selectedCapability}
             loaded={loaded}
             destination={
               destinationLabel === undefined ? null : (
                 <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
               )
             }
+            onSourceImageReady={setMaskImage}
             onReset={draftActions.resetDraft}
           />
         )}
@@ -182,12 +175,12 @@ export function CreateView({
                 onSelect={selectTool}
               />
 
-              {activeTab.id === 'export' && loaded?.selectedOutput && (
+              {activeTab.id === 'export' && source && (
                 <div className="toolbar-control-group" role="group" aria-label="Export actions">
                   <a
                     className="tool-chip"
-                    href={loaded.selectedOutput.url}
-                    download={loaded.selectedOutput.name}
+                    href={source.previewUrl}
+                    download={source.name}
                     title="Download image"
                     aria-label="Download image"
                   >
@@ -202,9 +195,8 @@ export function CreateView({
                 settings={settings}
                 settingMenu={settingMenu}
                 onSettingMenuChange={updateSettingMenu}
-                maskSource={uploads.at(0)}
-                hasMask={uploads.length > 1}
-                onMaskChange={attachments.setMaskUpload}
+                attachments={attachments}
+                maskImage={maskImage}
                 onSavePrompt={onSavePrompt}
               />
             </div>
@@ -212,6 +204,7 @@ export function CreateView({
             <span className="toolbar-divider" aria-hidden="true" />
             <SubmitButton
               isSubmitting={generation.isSubmitting}
+              blockedReason={attachments.blockedReason}
               {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
             />
           </div>

@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Capability } from '../../shared/types/domain.js';
+import type { ImageInputRole, ImageInputs } from '../../shared/types/attachments.js';
 import { hasParameter } from './capabilities.js';
 
 export const toolbarTabs = [
@@ -46,7 +47,7 @@ interface ToolbarRangeSetting {
 /** Continuous controls the capability accepts, in the order their chips appear in the toolbar. */
 export function toolbarRangeSettings(capability: Capability): readonly ToolbarRangeSetting[] {
   const ranges: ToolbarRangeSetting[] = [];
-  if (capability.modes.includes('image-to-image')) {
+  if (hasParameter(capability, 'strength')) {
     ranges.push({
       key: 'strength',
       label: 'Image strength',
@@ -137,11 +138,23 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
   return ranges;
 }
 
-export function attachmentRole(capability: Capability, index: number): string {
-  if (index === 0) {
+export function inputRoleLabel(capability: Capability, role: ImageInputRole): string {
+  if (role === 'source') {
     return capability.canonicalId === 'service/style-transfer' ? 'Content' : 'Source';
   }
-  if (index === 1 && capability.canonicalId === 'service/style-transfer') return 'Style reference';
-  if (index === 1 && hasParameter(capability, 'mask')) return 'Mask';
-  return `Image ${String(index + 1)}`;
+  if (role === 'references') {
+    return capability.maxInputImages === undefined ? 'Style reference' : 'References';
+  }
+  return 'Mask';
+}
+
+export function mainImageInputs(inputs: ImageInputs) {
+  // Keep an existing mask's source on the canvas; reference-only guides stay in the left stack.
+  return [
+    ...(inputs.source ? [{ role: 'source' as const, image: inputs.source }] : []),
+    ...inputs.references.map((image) => ({ role: 'references' as const, image })),
+  ].filter(
+    ({ role, image }) =>
+      image.source !== 'style-guide' || (role === 'source' && inputs.mask !== undefined),
+  );
 }

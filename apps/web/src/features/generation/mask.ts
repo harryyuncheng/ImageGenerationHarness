@@ -35,7 +35,7 @@ export interface MaskStroke {
 export const MIN_BRUSH_SIZE = 4;
 export const MAX_BRUSH_SIZE = 256;
 /** Drawn opaque so the canvas doubles as the export alpha source; the display fades it in CSS. */
-const SELECTION_COLOR = '#4f9cff';
+export const SELECTION_COLOR = '#4f9cff';
 
 function applyStroke(context: CanvasRenderingContext2D, stroke: MaskStroke): void {
   context.save();
@@ -77,12 +77,14 @@ function applyStroke(context: CanvasRenderingContext2D, stroke: MaskStroke): voi
 
 export function paintSelection(
   canvas: HTMLCanvasElement,
+  base: HTMLCanvasElement | undefined,
   strokes: readonly MaskStroke[],
   draft: MaskStroke | undefined,
 ): void {
   const context = canvas.getContext('2d');
   if (!context) return;
   context.clearRect(0, 0, canvas.width, canvas.height);
+  if (base) context.drawImage(base, 0, 0);
   for (const stroke of strokes) applyStroke(context, stroke);
   if (draft) applyStroke(context, draft);
 }
@@ -139,7 +141,7 @@ export function exportMask(
 }
 
 /** A drawn mask enters the composer as an ordinary upload so staging treats it like any input. */
-export function maskAttachment(encoded: string): UploadAttachment {
+export function maskAttachment(encoded: string, capability: Capability): UploadAttachment {
   return {
     source: 'upload',
     id: crypto.randomUUID(),
@@ -148,5 +150,6 @@ export function maskAttachment(encoded: string): UploadAttachment {
     byteLength: Math.floor((encoded.length * 3) / 4),
     data: encoded,
     previewUrl: `data:image/png;base64,${encoded}`,
+    maskEncoding: usesTransparencyMask(capability) ? 'alpha' : 'luminance',
   };
 }

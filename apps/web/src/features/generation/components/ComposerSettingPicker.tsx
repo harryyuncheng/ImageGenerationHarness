@@ -14,15 +14,25 @@ export interface ComposerSettingGroupProps {
 }
 
 type ComposerSettingVariant =
-  'canvas' | 'count' | 'dimensions' | 'format' | 'model' | 'range' | 'seed' | 'style' | 'text';
+  | 'canvas'
+  | 'count'
+  | 'dimensions'
+  | 'format'
+  | 'mask'
+  | 'model'
+  | 'range'
+  | 'seed'
+  | 'style'
+  | 'text';
 
 interface ComposerSettingPickerProps {
   menuId: string;
   label: string;
   menuLabel: string;
-  menuDescription: string;
+  menuDescription?: string;
   value: string;
   open: boolean;
+  disabled?: boolean;
   variant: ComposerSettingVariant;
   triggerContent: ReactNode;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +50,7 @@ export function ComposerSettingPicker({
   menuDescription,
   value,
   open,
+  disabled = false,
   variant,
   triggerContent,
   onOpenChange,
@@ -102,6 +113,7 @@ export function ComposerSettingPicker({
       });
     };
     const closeFromOutside = (event: PointerEvent) => {
+      if (event.defaultPrevented) return;
       if (
         event.target instanceof Node &&
         !trigger.contains(event.target) &&
@@ -154,6 +166,7 @@ export function ComposerSettingPicker({
       <button
         ref={triggerRef}
         type="button"
+        disabled={disabled}
         className={`composer-setting composer-setting--${variant} ${open ? 'is-open' : ''}`}
         aria-label={label}
         title={label}
@@ -186,10 +199,12 @@ export function ComposerSettingPicker({
             tabIndex={-1}
             className={`composer-setting-menu composer-setting-menu--${variant} popover surface-enter`}
           >
-            <div className="composer-setting-menu-header">
-              <strong>{menuLabel}</strong>
-              <small>{menuDescription}</small>
-            </div>
+            {variant !== 'mask' && (
+              <div className="composer-setting-menu-header">
+                <strong>{menuLabel}</strong>
+                {menuDescription !== undefined && <small>{menuDescription}</small>}
+              </div>
+            )}
             {children(close)}
           </div>,
           document.body,

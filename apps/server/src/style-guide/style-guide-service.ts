@@ -43,7 +43,10 @@ export interface StyleGuideService {
   deleteFolder(folderId: string): Promise<void>;
   createImage(folderId: string, input: CreateStyleGuideImageRequest): Promise<StyleGuideImage>;
   getImage(folderId: string, imageId: string): Promise<StyleGuideImage | undefined>;
-  getImageById(imageId: string): Promise<StyleGuideImage | undefined>;
+  getImageById(
+    repository: LocalImageRepository,
+    imageId: string,
+  ): Promise<StyleGuideImage | undefined>;
   readImage(imageOrRelativePath: StyleGuideImage | string): Promise<Uint8Array>;
   renameImage(folderId: string, imageId: string, name: string): Promise<void>;
   deleteImage(folderId: string, imageId: string): Promise<void>;
@@ -205,13 +208,14 @@ export class LocalStyleGuideService implements StyleGuideService {
     });
   }
 
-  async getImageById(imageId: string): Promise<StyleGuideImage | undefined> {
-    return this.manager.withRepository((repository) =>
-      this.#findUniqueImage(
-        repository,
-        (image) => image.imageId === imageId,
-        'Duplicate style guide image identifiers were found.',
-      ),
+  async getImageById(
+    repository: LocalImageRepository,
+    imageId: string,
+  ): Promise<StyleGuideImage | undefined> {
+    return this.#findUniqueImage(
+      repository,
+      (image) => image.imageId === imageId,
+      'Duplicate style guide image identifiers were found.',
     );
   }
 
@@ -273,7 +277,9 @@ export class LocalStyleGuideService implements StyleGuideService {
   }
 
   async #findImageForRead(identifier: string): Promise<StyleGuideImage | undefined> {
-    if (uuidSchema.safeParse(identifier).success) return this.getImageById(identifier);
+    if (uuidSchema.safeParse(identifier).success) {
+      return this.getImageById(this.manager.getActiveRepository(), identifier);
+    }
     return this.manager.withRepository((repository) =>
       this.#findUniqueImage(
         repository,

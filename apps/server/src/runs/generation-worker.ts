@@ -57,7 +57,8 @@ export class GenerationWorker {
 
     try {
       const capability = getCapability(job.targetId);
-      const payload = await hydrateInputs(repository, job.request, job.inputs);
+      const request = capability.requestSchema.parse(job.request) as Record<string, unknown>;
+      const payload = await hydrateInputs(repository, request, job.inputs);
       const validatedPayload = capability.requestSchema.parse(payload) as Record<string, unknown>;
       const result = await this.#providers[capability.providerId].invoke(
         capability,

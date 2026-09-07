@@ -24,9 +24,9 @@ export function ToolbarModelPicker({
       .map((capability) => ({
         value: capability.canonicalId,
         label: capability.name,
-        description: `${provider.name} - ${
-          provider.configured ? capabilityDescription(capability) : provider.setupHint
-        }`,
+        description: provider.configured
+          ? capabilityDescription(capability)
+          : `${provider.name} - ${provider.setupHint}`,
         disabled: !provider.configured,
       })),
   );

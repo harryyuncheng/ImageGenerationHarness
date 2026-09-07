@@ -4,7 +4,7 @@ import type { RefObject } from 'react';
 interface GlobalShortcutOptions {
   closeOverlays: () => void;
   openSettings: () => void;
-  fileInput: RefObject<HTMLInputElement | null>;
+  chooseImages: () => void;
   promptInput: RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -20,7 +20,7 @@ export function useGlobalShortcuts(options: GlobalShortcutOptions) {
       }
       if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
         event.preventDefault();
-        options.fileInput.current?.click();
+        options.chooseImages();
       }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -31,5 +31,5 @@ export function useGlobalShortcuts(options: GlobalShortcutOptions) {
     return () => {
       window.removeEventListener('keydown', handleGlobalKey);
     };
-  }, []);
+  }, [options.closeOverlays, options.openSettings, options.chooseImages, options.promptInput]);
 }

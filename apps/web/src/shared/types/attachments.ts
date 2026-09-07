@@ -11,6 +11,13 @@ interface AttachmentBase {
 export interface UploadAttachment extends AttachmentBase {
   source: 'upload';
   data: string;
+  maskSourceId?: string;
+  maskEncoding?: 'alpha' | 'luminance';
+}
+
+interface RepositoryAttachment extends AttachmentBase {
+  source: 'repository';
+  imageId: string;
 }
 
 export interface StyleGuideAttachment extends AttachmentBase {
@@ -19,4 +26,12 @@ export interface StyleGuideAttachment extends AttachmentBase {
   imageId: string;
 }
 
-export type Attachment = UploadAttachment | StyleGuideAttachment;
+export type Attachment = UploadAttachment | RepositoryAttachment | StyleGuideAttachment;
+
+export interface ImageInputs {
+  source: Attachment | undefined;
+  references: readonly Attachment[];
+  mask: UploadAttachment | undefined;
+}
+
+export type ImageInputRole = keyof ImageInputs;

@@ -84,9 +84,16 @@
   .prompt-workspace--loaded .prompt-editor {
     width: min(960px, 100%);
   }
+  .image-workspace {
+    padding: 46px 14px 174px;
+  }
+  .image-input-grid {
+    height: auto;
+    flex-direction: column;
+    gap: 46px;
+  }
   .loaded-image {
     justify-content: center;
-    padding: 46px 14px 174px;
   }
   .loaded-image-figure--fill {
     min-height: 300px;
@@ -108,9 +115,6 @@
   }
   .prompt-canvas-input {
     min-height: 3em;
-  }
-  .attachment-strip {
-    grid-template-columns: 1fr;
   }
   .generation-toolbar {
     --toolbar-edge-gap: 14px;

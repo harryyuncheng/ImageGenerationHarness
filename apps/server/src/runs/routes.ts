@@ -1,4 +1,6 @@
 import {
+  MAX_GPT_IMAGE_INPUTS,
+  MAX_IMAGE_BYTES,
   createRunRequestSchema,
   queuedRunResponseSchema,
   runParamsSchema,
@@ -13,11 +15,18 @@ import type { RunService } from './run-types.js';
 export function registerRunRoutes(app: FastifyInstance, runService: RunService | null): void {
   const service = () => requireService(runService, 'Generation is not available.');
 
-  app.post('/api/runs', async (request, reply) => {
-    const submission = createRunRequestSchema.parse(request.body);
-    const result = await service().submit(submission);
-    return reply.code(202).send(queuedRunResponseSchema.parse({ ...result, status: 'queued' }));
-  });
+  app.post(
+    '/api/runs',
+    {
+      // Sixteen base64 image inputs plus a separate mask and bounded JSON overhead.
+      bodyLimit: Math.ceil(MAX_IMAGE_BYTES / 3) * 4 * (MAX_GPT_IMAGE_INPUTS + 1) + 64 * 1024,
+    },
+    async (request, reply) => {
+      const submission = createRunRequestSchema.parse(request.body);
+      const result = await service().submit(submission);
+      return reply.code(202).send(queuedRunResponseSchema.parse({ ...result, status: 'queued' }));
+    },
+  );
   app.get('/api/runs', async (request) => {
     const destination = parseDestinationQuery(request.query);
     return runsResponseSchema.parse({

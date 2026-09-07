@@ -35,35 +35,33 @@ export function useGeneration(options: GenerationOptions) {
         selectedCapability,
         prompt,
         settings.settings,
-        attachments.attachments,
+        attachments.inputs,
         destination.destination,
       ),
-    [
-      attachments.attachments,
-      destination.destination,
-      prompt,
-      selectedCapability,
-      settings.settings,
-    ],
+    [attachments.inputs, destination.destination, prompt, selectedCapability, settings.settings],
   );
 
   function draftIsIncomplete(): boolean {
+    if (attachments.blockedReason) {
+      notify(attachments.blockedReason, 'error');
+      return true;
+    }
     if (!prompt.trim() && requiresPrompt(selectedCapability)) {
       notify('Describe the image you want to create.', 'error');
       promptDraft.focusPrompt();
       return true;
     }
-    if (needsImage(selectedCapability) && attachments.attachments.length === 0) {
+    if (needsImage(selectedCapability) && !attachments.inputs.source) {
       notify('Add a source image for this tool.', 'error');
-      attachments.fileInput.current?.click();
+      attachments.chooseFiles('source');
       return true;
     }
     if (
       selectedCapability.canonicalId === 'service/style-transfer' &&
-      attachments.attachments.length < 2
+      attachments.inputs.references.length === 0
     ) {
       notify('Style Transfer needs a source image and a style reference.', 'error');
-      attachments.fileInput.current?.click();
+      attachments.chooseFiles('references');
       return true;
     }
     if (
@@ -99,7 +97,13 @@ export function useGeneration(options: GenerationOptions) {
       targetName: capabilityLabel(selectedCapability),
       aspectRatio: settings.settings.aspectRatio,
       outputCount: settings.settings.outputCount,
-      attachmentNames: attachments.attachments.map((attachment) => attachment.name),
+      attachmentNames: [
+        attachments.inputs.source,
+        ...attachments.inputs.references,
+        attachments.inputs.mask,
+      ]
+        .filter((attachment) => attachment !== undefined)
+        .map((attachment) => attachment.name),
       outputImageIds: [],
       destination: destination.destination,
       status: 'submitting',
@@ -130,7 +134,7 @@ export function useGeneration(options: GenerationOptions) {
   function handlePromptKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault();
-      void generate();
+      event.currentTarget.form?.requestSubmit();
     }
   }
 

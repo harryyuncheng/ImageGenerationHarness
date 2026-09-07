@@ -61,8 +61,8 @@ export class LocalRunService implements RunService {
     this.#manager = options.manager;
     this.#projects = options.projectService ?? new LocalProjectService(options.manager);
     const styleGuide = options.styleGuideService ?? new LocalStyleGuideService(options.manager);
-    this.#inputs = new InputStager(styleGuide);
     this.#images = new GeneratedImageStore(options.manager);
+    this.#inputs = new InputStager(styleGuide, this.#images);
     this.#runs = new RunStore(this.#images);
     this.#providers = options.providers ?? {
       bedrock: new StabilityBedrockAdapter(),
@@ -94,6 +94,7 @@ export class LocalRunService implements RunService {
     }
     validateSeedPlan(input.seedPlan, capability.seedMaximum);
     const destinationDirectory = await this.#projects.resolveDestinationDirectory(
+      repository,
       input.destination,
     );
     // Targets that accept `n` return the whole run from one billed call, so they use one job.
@@ -263,6 +264,7 @@ export class LocalRunService implements RunService {
         await this.#runs.discardFailedJob(repository, job);
       } else if (job.status === 'queued') {
         const destinationDirectory = await this.#projects.resolveDestinationDirectory(
+          repository,
           job.destination,
         );
         this.#queue.enqueue({

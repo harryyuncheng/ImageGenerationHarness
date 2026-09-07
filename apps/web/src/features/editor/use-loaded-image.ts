@@ -11,7 +11,13 @@ export interface LoadedImage {
   requestedOutputCount: number;
   outputCount: number;
   selectedIndex: number;
-  selectedOutput?: { url: string; name: string };
+  selectedOutput?: {
+    imageId: string;
+    url: string;
+    name: string;
+    mediaType: GalleryImage['mediaType'];
+    byteLength: number;
+  };
   /**
    * Present while the run still has work the server can drop. Cancelling removes
    * queued jobs; an active Bedrock call cannot be reliably interrupted.
@@ -80,20 +86,22 @@ export function useLoadedImage(options: LoadedImageOptions): LoadedImage | undef
     Math.max(outputImageIds.length - 1, 0),
   );
   const selectedImageId = outputImageIds[selectedIndex];
-  const mediaType =
-    images.find((candidate) => candidate.imageId === selectedImageId)?.mediaType ?? 'image/png';
+  const selectedImage = images.find((candidate) => candidate.imageId === selectedImageId);
   const cancellable = run?.status === 'queued' || run?.status === 'running';
 
   return {
     ...common,
     outputCount: outputImageIds.length,
     selectedIndex,
-    ...(selectedImageId === undefined
+    ...(selectedImage === undefined
       ? {}
       : {
           selectedOutput: {
-            url: generatedImageContentUrl(selectedImageId),
-            name: `${selectedImageId}.${imageFileExtension(mediaType)}`,
+            imageId: selectedImage.imageId,
+            url: generatedImageContentUrl(selectedImage.imageId),
+            name: `${selectedImage.imageId}.${imageFileExtension(selectedImage.mediaType)}`,
+            mediaType: selectedImage.mediaType,
+            byteLength: selectedImage.byteLength,
           },
         }),
     ...(cancellable

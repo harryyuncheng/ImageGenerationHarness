@@ -55,26 +55,32 @@ export function useStyleGuide({
   const activeFolder = folders.find((folder) => folder.folderId === activeFolderId);
   const activeImages = activeFolder?.images;
   const { setStyleGuideImages } = attachments;
+  const appliedImages =
+    activeImages?.filter((image) =>
+      [attachments.inputs.source, ...attachments.inputs.references].some(
+        (input) => input?.source === 'style-guide' && input.imageId === image.imageId,
+      ),
+    ) ?? [];
 
   useEffect(() => {
     setStyleGuideImages(activeImages ?? []);
   }, [activeImages, setStyleGuideImages]);
 
-  /**
-   * Only Create-tab models consume a style guide image, and Core is text-only, so
-   * activating a guide moves the studio to the closest image-capable model.
-   */
+  useEffect(() => {
+    if (attachments.styleGuideFolderId === activeFolderId && appliedImages.length === 0)
+      setActiveFolderId(null);
+  }, [activeFolderId, attachments.styleGuideFolderId, appliedImages.length, setActiveFolderId]);
+
   function toggleActiveFolder(folder: StyleGuideFolder) {
     if (folder.folderId === activeFolderId) {
       setActiveFolderId(null);
-      notify(`“${folder.name}” is no longer applied.`);
       return;
     }
     setActiveFolderId(folder.folderId);
+    attachments.applyStyleGuide(folder.images);
     if (settings.selectedCapability.canonicalId === 'generation/core') {
       settings.updateSettings('targetId', 'generation/sd3.5-large');
     }
-    notify(`“${folder.name}” is now your active style guide.`, 'success');
   }
 
   async function refresh() {
@@ -217,6 +223,7 @@ export function useStyleGuide({
     styleGuideQuery,
     folders,
     activeFolderId,
+    appliedImages,
     ...(activeFolder ? { activeFolder } : {}),
     toggleActiveFolder,
     isMutating,

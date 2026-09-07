@@ -1,5 +1,4 @@
-/* The right half of the main area. Nothing here competes with the image itself. */
-.loaded-image {
+.image-workspace {
   display: flex;
   min-width: 0;
   min-height: 0;
@@ -7,6 +6,171 @@
   align-items: center;
   justify-content: flex-start;
   padding: calc(28px + var(--top-bar-height)) 34px 188px 24px;
+}
+
+.image-input-header,
+.image-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.image-input-status {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.image-input-grid {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  gap: 18px;
+}
+
+.image-input-grid--with-preview {
+  flex-direction: column;
+}
+
+.image-input-panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  flex: 1;
+}
+
+.image-input-panel--references {
+  height: auto;
+  max-height: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+
+.image-input-grid--with-preview .image-input-panel--references {
+  flex: 0 1 auto;
+}
+
+.image-input-header > span {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.image-input-header strong,
+.image-input-caption {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.image-input-header small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-input-actions {
+  flex: 0 0 auto;
+  gap: 2px;
+}
+
+.image-input-actions .icon-button {
+  width: 26px;
+  height: 26px;
+}
+
+.image-reference-help {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.image-reference-grid {
+  display: grid;
+  min-height: 0;
+  max-height: 42dvh;
+  overflow-y: auto;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+  padding: 2px;
+}
+
+.image-input-grid--with-preview .image-reference-grid {
+  max-height: 160px;
+}
+
+.image-reference {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  padding: 4px;
+}
+
+.image-reference img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 5px;
+}
+
+.image-reference figcaption {
+  overflow: hidden;
+  padding: 5px 2px 1px;
+  color: var(--text-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-reference-number,
+.image-reference-remove {
+  position: absolute;
+  top: 7px;
+  display: flex;
+  width: 22px;
+  height: 22px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface-raised) 90%, transparent);
+  color: var(--text-secondary);
+}
+
+.image-reference-number {
+  left: 7px;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.image-reference-remove {
+  right: 7px;
+}
+
+.image-reference-remove.is-pointer-hover {
+  color: var(--danger);
+}
+
+.loaded-image {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .loaded-image-figure {
@@ -49,7 +213,6 @@
   color: var(--danger);
 }
 
-/* Sits directly above the artwork and spans exactly its width. */
 .loaded-image-header {
   position: absolute;
   right: 0;

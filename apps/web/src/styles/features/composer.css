@@ -20,11 +20,6 @@
     background 160ms ease;
 }
 
-.prompt-stage--drag {
-  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
-  background: color-mix(in srgb, var(--accent-soft) 38%, transparent);
-}
-
 /* Alongside an image the prompt rides higher, level with the artwork. */
 .prompt-workspace--loaded .prompt-stage {
   justify-items: end;
@@ -44,31 +39,6 @@
   flex-direction: column;
   align-items: center;
   gap: 24px;
-}
-
-.prompt-drop-overlay {
-  position: absolute;
-  z-index: 30;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  border: 2px dashed color-mix(in srgb, var(--accent) 72%, var(--border));
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  color: var(--accent-text);
-  font-size: 14px;
-  font-weight: 650;
-  backdrop-filter: blur(10px);
-  pointer-events: none;
-}
-
-.attachment-strip {
-  display: grid;
-  width: min(560px, 100%);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 7px;
 }
 
 /* Surfaces a non-default save target so it is visible and reversible. */
@@ -100,61 +70,6 @@
 .destination-pill > svg {
   flex: 0 0 auto;
   color: var(--text-muted);
-}
-
-.attachment {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border-soft);
-  border-radius: 11px;
-  background: var(--surface-soft);
-  padding: 5px;
-}
-
-.attachment img {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 auto;
-  border-radius: 8px;
-  object-fit: cover;
-}
-
-.attachment > span {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-.attachment strong {
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.attachment small {
-  overflow: hidden;
-  color: var(--text-muted);
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.attachment button {
-  display: inline-flex;
-  width: 26px;
-  height: 26px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--text-muted);
-}
-
-.attachment button.is-pointer-hover {
-  background: var(--surface-hover);
-  color: var(--text);
 }
 
 .generation-toolbar {

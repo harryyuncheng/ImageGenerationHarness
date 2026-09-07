@@ -1,166 +1,68 @@
-import { X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import type { PointerEvent } from 'react';
 import { createPortal } from 'react-dom';
-import type { UploadAttachment } from '../../../shared/types/attachments.js';
-import type { Capability } from '../../../shared/types/domain.js';
-import { exportMask, maskTools, selectionIsEmpty, usesTransparencyMask } from '../mask.js';
-import { useMaskEditor } from '../use-mask-editor.js';
-import { MaskToolbar } from './MaskToolbar.js';
+import type { MaskPoint } from '../mask.js';
+import { handleMaskShortcut, type MaskEditorController } from '../use-mask-editor.js';
 
-const dialogId = 'mask-editor-dialog';
+/** Strokes use source pixels even when the displayed image is scaled. */
+function sourcePoint(event: PointerEvent<HTMLCanvasElement>): MaskPoint {
+  const canvas = event.currentTarget;
+  const bounds = canvas.getBoundingClientRect();
+  return {
+    x: ((event.clientX - bounds.left) / bounds.width) * canvas.width,
+    y: ((event.clientY - bounds.top) / bounds.height) * canvas.height,
+  };
+}
 
 export function MaskEditor({
-  source,
-  capability,
-  onCancel,
-  onSave,
+  image,
+  editor,
+  hasMask,
+  toolsOpen,
+  onOpenTools,
 }: {
-  source: UploadAttachment;
-  capability: Capability;
-  onCancel: () => void;
-  onSave: (maskDataUrl: string) => void;
+  image: HTMLImageElement | null;
+  editor: MaskEditorController;
+  hasMask: boolean;
+  toolsOpen: boolean;
+  onOpenTools: () => void;
 }) {
-  const editor = useMaskEditor();
-  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
-  const [toolMenuOpen, setToolMenuOpen] = useState(false);
-  const [error, setError] = useState<string | undefined>(undefined);
-  const closeRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const image = new Image();
-    image.onload = () => {
-      setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
-    };
-    image.src = source.previewUrl;
-  }, [source.previewUrl]);
-
-  useEffect(() => {
-    const handleKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        if (toolMenuOpen) setToolMenuOpen(false);
-        else onCancel();
-      }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        editor.undo();
-      }
-    };
-    window.addEventListener('keydown', handleKey, true);
-    return () => {
-      window.removeEventListener('keydown', handleKey, true);
-    };
-  }, [editor, onCancel, toolMenuOpen]);
-
-  function save() {
-    const canvas = editor.canvasRef.current;
-    if (!canvas) return;
-    if (selectionIsEmpty(canvas)) {
-      setError('Select an area before saving the mask.');
-      return;
-    }
-    const encoded = exportMask(canvas, capability);
-    if (!encoded) {
-      setError('This browser could not render the mask.');
-      return;
-    }
-    onSave(encoded);
-  }
-
-  const activeTool = maskTools.find((entry) => entry.id === editor.tool) ?? maskTools[0];
+  if (!image?.parentElement) return null;
 
   return createPortal(
-    <div
-      className="mask-editor-backdrop surface-enter"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onCancel();
+    <canvas
+      ref={editor.canvasRef}
+      width={image.naturalWidth}
+      height={image.naturalHeight}
+      className={`mask-editor__canvas mask-editor__canvas--${editor.tool}`}
+      data-editing={editor.ready}
+      data-input-role={hasMask ? 'mask' : undefined}
+      aria-label="Mask drawing surface"
+      tabIndex={0}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || !editor.ready) return;
+        if (toolsOpen) event.preventDefault();
+        event.currentTarget.focus({ preventScroll: true });
+        event.currentTarget.setPointerCapture(event.pointerId);
+        editor.beginStroke(sourcePoint(event));
       }}
-    >
-      <section
-        className="mask-editor surface-enter"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={`${dialogId}-title`}
-      >
-        <header className="mask-editor__header">
-          <div>
-            <h2 id={`${dialogId}-title`}>Mask</h2>
-            <p>
-              {usesTransparencyMask(capability)
-                ? `${capability.name} changes only the area you select.`
-                : `${capability.name} repaints only the area you select.`}
-            </p>
-          </div>
-          <button
-            ref={closeRef}
-            type="button"
-            className="icon-button"
-            onClick={onCancel}
-            aria-label="Close mask editor"
-          >
-            <X size={18} />
-          </button>
-        </header>
-
-        <div className="mask-editor__stage">
-          <img src={source.previewUrl} alt="" draggable={false} />
-          {dimensions && (
-            <canvas
-              ref={editor.canvasRef}
-              width={dimensions.width}
-              height={dimensions.height}
-              className={`mask-editor__canvas mask-editor__canvas--${editor.tool}`}
-              aria-label="Mask drawing surface"
-              onPointerDown={editor.beginStroke}
-              onPointerMove={editor.extendStroke}
-              onPointerUp={editor.endStroke}
-              onPointerCancel={editor.endStroke}
-              onContextMenu={(event) => {
-                event.preventDefault();
-                setToolMenuOpen(true);
-              }}
-            />
-          )}
-        </div>
-
-        <MaskToolbar editor={editor} onCancel={onCancel} onSave={save} />
-
-        {error !== undefined && <p className="mask-editor__error">{error}</p>}
-
-        {toolMenuOpen && (
-          <div
-            className="mask-editor__menu popover surface-enter"
-            role="dialog"
-            aria-label="Choose a mask tool"
-          >
-            <div className="composer-setting-menu-header">
-              <strong>Mask tool</strong>
-              <small>Currently using {activeTool.label}</small>
-            </div>
-            {maskTools.map((entry) => {
-              const Icon = entry.icon;
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  className={`mask-editor__menu-option ${entry.id === editor.tool ? 'selected' : ''}`}
-                  onClick={() => {
-                    editor.setTool(entry.id);
-                    setToolMenuOpen(false);
-                  }}
-                >
-                  <Icon size={16} />
-                  <span>
-                    <strong>{entry.label}</strong>
-                    <small>{entry.description}</small>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </section>
-    </div>,
-    document.body,
+      onPointerMove={(event) => {
+        editor.extendStroke(sourcePoint(event));
+      }}
+      onPointerUp={(event) => {
+        const canvas = event.currentTarget;
+        if (canvas.hasPointerCapture(event.pointerId))
+          canvas.releasePointerCapture(event.pointerId);
+        editor.endStroke(sourcePoint(event));
+      }}
+      onPointerCancel={editor.cancelStroke}
+      onKeyDown={(event) => {
+        handleMaskShortcut(event, editor.undo);
+      }}
+      onContextMenu={(event) => {
+        event.preventDefault();
+        onOpenTools();
+      }}
+    />,
+    image.parentElement,
   );
 }

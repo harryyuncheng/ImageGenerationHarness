@@ -55,16 +55,16 @@ function readCredentials(): FoundryCredentials | undefined {
   };
 }
 
-async function imageFile(
-  encoded: string,
-  name: 'image' | 'mask',
-  accepted: readonly MediaType[],
-): Promise<File> {
+async function imageFile(encoded: string, name: 'image' | 'mask', accepted: readonly MediaType[]) {
   const data = await characterizeImageData(encoded, { label: `The ${name}` });
   if (!accepted.includes(data.mediaType)) {
     throw new Error(`GPT Image accepts only ${accepted.join(' or ')} for the ${name}`);
   }
-  return new File([data.bytes], `${name}.${data.extension}`, { type: data.mediaType });
+  return {
+    file: new File([data.bytes], `${name}.${data.extension}`, { type: data.mediaType }),
+    width: data.width,
+    height: data.height,
+  };
 }
 
 /** The edits endpoint takes multipart form data, so staged base64 inputs become files here. */
@@ -75,11 +75,22 @@ async function editFormData(request: Record<string, unknown>): Promise<FormData>
     form.set(field, String(value));
   }
   const image = request['image'];
-  if (typeof image !== 'string') throw new Error('GPT Image editing requires a source image');
-  form.append('image[]', await imageFile(image, 'image', EDIT_IMAGE_MEDIA_TYPES));
+  const images: unknown[] = Array.isArray(image) ? image : [image];
+  let source: Awaited<ReturnType<typeof imageFile>> | undefined;
+  for (const encoded of images) {
+    if (typeof encoded !== 'string') throw new Error('GPT Image requires image inputs');
+    const input = await imageFile(encoded, 'image', EDIT_IMAGE_MEDIA_TYPES);
+    source ??= input;
+    form.append('image[]', input.file);
+  }
+  if (!source) throw new Error('GPT Image requires at least one image input');
   const mask = request['mask'];
   if (typeof mask === 'string') {
-    form.set('mask', await imageFile(mask, 'mask', EDIT_MASK_MEDIA_TYPES));
+    const input = await imageFile(mask, 'mask', EDIT_MASK_MEDIA_TYPES);
+    if (input.width !== source.width || input.height !== source.height) {
+      throw new Error('The GPT Image mask must have the same dimensions as the first image');
+    }
+    form.set('mask', input.file);
   }
   return form;
 }
@@ -122,8 +133,9 @@ export class AzureFoundryAdapter implements ImageProvider {
       throw new Error(`${capability.name} is not an Azure AI Foundry target`);
     }
     const deployment = credentials.deploymentOverride ?? invocation.deploymentName;
+    const operation = request['image'] === undefined ? invocation.operation : 'edits';
     const url = new URL(
-      `openai/deployments/${encodeURIComponent(deployment)}/images/${invocation.operation}`,
+      `openai/deployments/${encodeURIComponent(deployment)}/images/${operation}`,
       credentials.endpoint,
     );
     url.searchParams.set('api-version', credentials.apiVersion);
@@ -133,10 +145,9 @@ export class AzureFoundryAdapter implements ImageProvider {
       method: 'POST',
       headers: {
         'api-key': credentials.apiKey,
-        ...(invocation.operation === 'edits' ? {} : { 'content-type': 'application/json' }),
+        ...(operation === 'edits' ? {} : { 'content-type': 'application/json' }),
       },
-      body:
-        invocation.operation === 'edits' ? await editFormData(request) : JSON.stringify(request),
+      body: operation === 'edits' ? await editFormData(request) : JSON.stringify(request),
     });
     if (!response.ok) throw new Error(await describeFailure(response, url));
     const decoded = gptImageResponseSchema.parse(await response.json());
@@ -152,6 +163,7 @@ export class AzureFoundryAdapter implements ImageProvider {
       metadata: {
         httpStatusCode: response.status,
         apiVersion: credentials.apiVersion,
+        operation,
       },
     };
   }

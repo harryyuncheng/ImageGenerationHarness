@@ -1,6 +1,6 @@
 # Image capability coverage
 
-Registry version: `2026-08-29.1`
+Registry version: `2026-09-07.1`
 
 The capability registry and Baroque controls cover every request parameter documented for the targets below. Unsupported fields are intentionally rejected per target rather than being forwarded to a provider.
 
@@ -22,12 +22,16 @@ All three generation models are available only through the `us-west-2` Bedrock R
 <!-- prettier-ignore -->
 | Target | Modes | Parameters | Output | Seed range |
 | --- | --- | --- | --- | --- |
-| GPT Image 2 | Text to image | `prompt`, `size`, `quality`, `background`, `output_format`, `n` | JPEG, PNG | Not supported |
-| GPT Image 2 Edit | Image and optional mask | `prompt`, `image`, `mask`, `size`, `quality`, `background`, `input_fidelity`, `output_format`, `n` | JPEG, PNG | Not supported |
+| GPT Image 2 | Text to image, reference-assisted generation | `prompt`, optional `image`, `size`, `quality`, `background`, `output_format`, `n` | JPEG, PNG | Not supported |
+| GPT Image 2 Edit | Source, optional references and mask | `prompt`, `image`, `mask`, `size`, `quality`, `background`, `input_fidelity`, `output_format`, `n` | JPEG, PNG | Not supported |
 
 GPT Image takes explicit pixel dimensions rather than a named ratio, so the shared aspect-ratio picker maps each of the nine ratios to a size that keeps both edges on a multiple of 16 and stays inside the documented pixel-count and 3:1 limits. Quality is `low`, `medium`, or `high`. A transparent background requires PNG output and is rejected with any other format. Editing takes PNG or JPEG source bytes and a PNG mask; WebP is not accepted by either target.
 
-Neither target accepts a seed, so the harness uses provider-random planning without injecting a seed field. Requesting several images sends one call with `n` set to the run's output count, which charges the prompt and any source image once instead of once per image. Both targets are reached through the `images/generations` and `images/edits` endpoints of a single deployment on the configured Azure OpenAI resource.
+GPT Image 2 Create accepts up to 16 optional reference images for generating a new composition. Edit accepts one source followed by up to 15 references. The `image` field accepts a single string or an ordered array of 1–16 strings; it is optional only for Create. A mask is separate from that count, must be PNG with the first image's dimensions, and applies only to that first image. Reference roles are described by the user's prompt, not a separate style-guide parameter or an automatically injected instruction.
+
+Neither target accepts a seed, so the harness uses provider-random planning without injecting a seed field. Requesting several images sends one call with `n` set to the run's output count, which charges the prompt and input images once instead of once per output. Text-only generation uses `images/generations`; any request containing images uses `images/edits`, even when creating a new image in Create. Both endpoints use a single deployment on the configured Azure OpenAI resource. Provenance records the effective operation and retains ordered opaque references, never base64 arrays.
+
+Azure documents PNG/JPEG inputs under 50 MB each; the harness retains its stricter 10 MiB per-image limit. The run-upload route has a bounded body allowance for 16 base64 images plus a separate mask and JSON overhead. Other routes keep their existing limits.
 
 ## Image Services on Amazon Bedrock
 
@@ -58,7 +62,8 @@ The complete style preset set is available where supported: 3D model, analog fil
 
 - Prompts and negative prompts are limited to 10,000 characters.
 - Generation and service images accept JPEG, PNG, and WebP source bytes, except GPT Image editing, which accepts PNG or JPEG. Individual services impose documented pixel-count, minimum-side, and aspect-ratio constraints; the provider remains authoritative for these image-content constraints.
-- Mask-capable tools accept a separate black-and-white mask, where white marks the area to change. When omitted, Inpaint and Erase derive the mask from the source image alpha channel. GPT Image masks invert that convention: they are PNG files whose fully transparent pixels mark the area to change. The studio's mask editor draws once and exports whichever encoding the selected target expects.
+- Actual working images and uploaded references are shown in the main workspace, not as prompt attachments or empty upload slots. Style-guide references stay in the left-hand stack and can be excluded from requests through the guide panel without deleting their files. Stability targets get only their supported source, mask, and Style Transfer references. GPT Image targets retain reference order and a 16-image total limit, reserving one image for the source in Edit. Extra uploads are reported rather than silently submitted; oversized style guides block generation until excess references are removed. Text-only models and GPT Image 2 Create keep loaded output previews separate from inputs.
+- Mask-capable tools accept a separate black-and-white mask, where white marks the area to change. When omitted, Inpaint and Erase derive the mask from the source image alpha channel. GPT Image masks invert that convention: they are PNG files whose fully transparent pixels mark the area to change. Masks are drawn and displayed directly over their source. Completed strokes, undo, clear, and uploaded masks update the request without an apply/cancel step. Switching providers converts a drawn mask's encoding without changing its selection; loading or invalid masks block generation until the visible input is ready.
 - Outpaint directions are integers from 0 through 2,000, with at least one non-zero direction.
 - Mask growth is an integer from 0 through 20.
 - Stability targets perform one invocation per requested output so each output has an independently planned seed and durable job record. GPT Image targets accept `n` and return a whole run from a single billed call, so one job holds every output of that run.

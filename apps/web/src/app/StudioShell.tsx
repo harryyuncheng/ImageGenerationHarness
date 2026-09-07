@@ -23,11 +23,7 @@ function StudioLayout() {
   const styleGuideOpen = pathname === '/style-guide';
   const showCreateWorkspace = pathname === '/' || styleGuideOpen;
   const isGallery = pathname.startsWith('/gallery');
-  // Only Create-tab models accept a style guide image, so the stack stays out of the way elsewhere.
-  const showStyleGuideStack =
-    showCreateWorkspace &&
-    !styleGuideOpen &&
-    studio.settings.selectedCapability.category === 'generation';
+  const showStyleGuideStack = showCreateWorkspace && !styleGuideOpen;
 
   useGlobalShortcuts({
     closeOverlays: () => {
@@ -36,7 +32,7 @@ function StudioLayout() {
     openSettings: () => {
       setSettingsTab('repository');
     },
-    fileInput: studio.attachments.fileInput,
+    chooseImages: studio.attachments.chooseFiles,
     promptInput: studio.promptDraft.promptInput,
   });
 
@@ -57,6 +53,7 @@ function StudioLayout() {
         {showStyleGuideStack && (
           <StyleGuideStack
             activeFolder={studio.styleGuide.activeFolder}
+            appliedImages={studio.styleGuide.appliedImages}
             onOpen={(origins) => {
               setFanOrigins(origins);
               studio.navigate.goToStyleGuide();
@@ -95,6 +92,7 @@ function StudioLayout() {
         <StyleGuideModal
           folders={studio.styleGuide.folders}
           activeFolderId={studio.styleGuide.activeFolderId}
+          appliedImages={studio.styleGuide.appliedImages}
           origins={fanOrigins}
           isLoading={studio.styleGuide.styleGuideQuery.isLoading}
           isMutating={studio.styleGuide.isMutating}
@@ -118,6 +116,17 @@ function StudioLayout() {
           }}
           onDeleteImage={(image) => {
             void studio.styleGuide.deleteImage(image);
+          }}
+          onExcludeImage={(image) => {
+            const { source, references } = studio.attachments.inputs;
+            if (source?.source === 'style-guide' && source.imageId === image.imageId) {
+              studio.attachments.removeInput('source');
+            } else {
+              const reference = references.find(
+                (input) => input.source === 'style-guide' && input.imageId === image.imageId,
+              );
+              if (reference) studio.attachments.removeInput('references', reference.id);
+            }
           }}
           onRetry={() => {
             void studio.styleGuide.refresh();

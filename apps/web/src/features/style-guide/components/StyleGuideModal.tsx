@@ -1,11 +1,10 @@
-import { Check, CloudOff, ImagePlus, Info, Pencil, Plus, Trash2, Upload, X } from 'lucide-react';
+import { Check, CloudOff, ImagePlus, Info, Plus, X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { EmptyState } from '../../../shared/components/EmptyState.js';
-import { formatBytes } from '../../../shared/format.js';
 import type { StyleGuideFolder, StyleGuideImage } from '../../../shared/types/domain.js';
-import { styleGuideImageContentUrl } from '../api.js';
+import { StyleGuideFolderPanel } from './StyleGuideFolderPanel.js';
 import type { FanOrigin } from './StyleGuideStack.js';
 
 const dialogId = 'style-guide-dialog';
@@ -21,6 +20,7 @@ const flyEasing = 'cubic-bezier(0.22, 1, 0.36, 1)';
 interface StyleGuideModalProps {
   folders: StyleGuideFolder[];
   activeFolderId: string | null;
+  appliedImages: readonly StyleGuideImage[];
   origins: readonly FanOrigin[];
   isLoading: boolean;
   isMutating: boolean;
@@ -33,6 +33,7 @@ interface StyleGuideModalProps {
   onToggleActive: (folder: StyleGuideFolder) => void;
   onRenameImage: (image: StyleGuideImage) => void;
   onDeleteImage: (image: StyleGuideImage) => void;
+  onExcludeImage: (image: StyleGuideImage) => void;
   onRetry: () => void;
 }
 
@@ -221,6 +222,7 @@ export function StyleGuideModal(props: StyleGuideModalProps) {
               <StyleGuideFolderPanel
                 folder={viewedFolder}
                 applied={viewedFolder.folderId === activeFolderId}
+                appliedImages={props.appliedImages}
                 isMutating={props.isMutating}
                 gridRef={grid}
                 onRenameFolder={props.onRenameFolder}
@@ -229,6 +231,7 @@ export function StyleGuideModal(props: StyleGuideModalProps) {
                 onToggleActive={props.onToggleActive}
                 onRenameImage={props.onRenameImage}
                 onDeleteImage={props.onDeleteImage}
+                onExcludeImage={props.onExcludeImage}
               />
             </>
           )}
@@ -251,186 +254,11 @@ function StyleGuideInfo() {
         <Info size={15} />
       </button>
       <p className="style-guide-info__bubble" id={`${dialogId}-info`} role="tooltip">
-        A style guide is a set of images that share a look. Apply one and its images are sent with
-        your next Create image to guide how it turns out.
+        A style guide is a set of images that share a look. Apply one to fill the model's image
+        inputs. GPT Image 2 accepts up to 16 references in Create, or a source plus 15 references in
+        Edit. Describe how to use them in your prompt. Active guides are previewed at the left;
+        exclude images from the request here without deleting their files.
       </p>
     </span>
-  );
-}
-
-function StyleGuideFolderPanel({
-  folder,
-  applied,
-  isMutating,
-  gridRef,
-  onRenameFolder,
-  onDeleteFolder,
-  onAddImages,
-  onToggleActive,
-  onRenameImage,
-  onDeleteImage,
-}: {
-  folder: StyleGuideFolder;
-  applied: boolean;
-  isMutating: boolean;
-  gridRef: RefObject<HTMLDivElement | null>;
-  onRenameFolder: (folder: StyleGuideFolder, name: string) => void;
-  onDeleteFolder: (folder: StyleGuideFolder) => void;
-  onAddImages: (folderId: string) => void;
-  onToggleActive: (folder: StyleGuideFolder) => void;
-  onRenameImage: (image: StyleGuideImage) => void;
-  onDeleteImage: (image: StyleGuideImage) => void;
-}) {
-  const [renaming, setRenaming] = useState(false);
-  const [draftName, setDraftName] = useState('');
-
-  return (
-    <>
-      <div className="style-guide-folder-bar">
-        <div>
-          {renaming ? (
-            <input
-              className="style-guide-folder-name-input"
-              value={draftName}
-              aria-label="Style guide name"
-              autoFocus
-              onFocus={(event) => {
-                event.target.select();
-              }}
-              onChange={(event) => {
-                setDraftName(event.target.value);
-              }}
-              onBlur={() => {
-                onRenameFolder(folder, draftName);
-                setRenaming(false);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault();
-                  event.currentTarget.blur();
-                }
-                if (event.key === 'Escape') {
-                  event.stopPropagation();
-                  setDraftName(folder.name);
-                  setRenaming(false);
-                }
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              className="style-guide-folder-name"
-              title="Rename this style guide"
-              onClick={() => {
-                setDraftName(folder.name);
-                setRenaming(true);
-              }}
-            >
-              <h3>{folder.name}</h3>
-            </button>
-          )}
-          <p>
-            {folder.images.length} image{folder.images.length === 1 ? '' : 's'}
-          </p>
-        </div>
-        <div className="style-guide-folder-actions">
-          <button
-            className={applied ? 'primary-small' : 'text-button'}
-            onClick={() => {
-              onToggleActive(folder);
-            }}
-            aria-pressed={applied}
-            disabled={isMutating}
-          >
-            {applied ? <Check size={15} /> : null} {applied ? 'Applied' : 'Apply'}
-          </button>
-          <button
-            className="text-button"
-            onClick={() => {
-              onAddImages(folder.folderId);
-            }}
-            disabled={isMutating}
-          >
-            <Upload size={15} /> Add images
-          </button>
-          <button
-            className="text-button danger"
-            onClick={() => {
-              onDeleteFolder(folder);
-            }}
-            disabled={isMutating}
-          >
-            <Trash2 size={15} /> Delete guide
-          </button>
-        </div>
-      </div>
-
-      {folder.images.length === 0 ? (
-        <button
-          className="style-guide-folder-empty"
-          onClick={() => {
-            onAddImages(folder.folderId);
-          }}
-          disabled={isMutating}
-        >
-          <ImagePlus size={22} />
-          <span>Add PNG, JPEG, or WebP images</span>
-          <small>Up to 10 MB each</small>
-        </button>
-      ) : (
-        <div className="style-guide-grid" ref={gridRef}>
-          {folder.images.map((image) => (
-            <article className="style-guide-card" key={image.imageId}>
-              <div className="style-guide-preview">
-                <img
-                  src={styleGuideImageContentUrl(image.folderId, image.imageId)}
-                  alt={image.name}
-                />
-              </div>
-              <div className="style-guide-card-meta">
-                <div>
-                  <strong>{image.name}</strong>
-                  <small>
-                    {image.width} × {image.height} · {formatBytes(image.byteLength)}
-                  </small>
-                </div>
-                <button
-                  className="icon-button"
-                  onClick={() => {
-                    onRenameImage(image);
-                  }}
-                  aria-label={`Rename ${image.name}`}
-                  disabled={isMutating}
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  className="icon-button danger"
-                  onClick={() => {
-                    onDeleteImage(image);
-                  }}
-                  aria-label={`Delete ${image.name}`}
-                  disabled={isMutating}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </article>
-          ))}
-          <button
-            type="button"
-            className="style-guide-add-tile"
-            aria-label="Add images to this style guide"
-            title="Add images"
-            onClick={() => {
-              onAddImages(folder.folderId);
-            }}
-            disabled={isMutating}
-          >
-            <Plus size={26} />
-          </button>
-        </div>
-      )}
-    </>
   );
 }

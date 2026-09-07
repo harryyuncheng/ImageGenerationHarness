@@ -3,6 +3,7 @@ import type { Notify } from '../../shared/hooks/use-toasts.js';
 import type { Destination, GalleryImage } from '../../shared/types/domain.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import { imageDestination } from './destination.js';
+import type { AttachmentsController } from './use-attachments.js';
 import type { DestinationController } from './use-destination.js';
 import type { GenerationSettingsController } from './use-generation-settings.js';
 import type { PromptDraftController } from './use-prompt-draft.js';
@@ -11,6 +12,7 @@ interface DraftActionsOptions {
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
   destination: DestinationController;
+  attachments: AttachmentsController;
   notify: Notify;
 }
 
@@ -18,6 +20,7 @@ export function useDraftActions({
   promptDraft,
   settings,
   destination,
+  attachments,
   notify,
 }: DraftActionsOptions) {
   const navigate = useStudioNavigate();
@@ -48,6 +51,7 @@ export function useDraftActions({
   }
 
   function resetDraft() {
+    attachments.reset();
     promptDraft.setPrompt('');
     settings.resetSettings();
     destination.resetDestination();

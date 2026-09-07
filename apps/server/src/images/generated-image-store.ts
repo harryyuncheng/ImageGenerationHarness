@@ -11,7 +11,7 @@ export class GeneratedImageStore {
   constructor(private readonly manager: LocalRepositoryManager) {}
 
   async getImage(imageId: string): Promise<GeneratedImageRecord | undefined> {
-    const sidecar = await this.getImageMetadata(imageId);
+    const sidecar = await this.getImageMetadata(this.manager.getActiveRepository(), imageId);
     if (!sidecar) return undefined;
     return {
       imageId,
@@ -22,9 +22,12 @@ export class GeneratedImageStore {
     };
   }
 
-  async getImageMetadata(imageId: string): Promise<GeneratedImageSidecar | undefined> {
+  async getImageMetadata(
+    repository: LocalImageRepository,
+    imageId: string,
+  ): Promise<GeneratedImageSidecar | undefined> {
     const matches: GeneratedImageSidecar[] = [];
-    await this.walk(this.manager.getActiveRepository(), (sidecar) => {
+    await this.walk(repository, (sidecar) => {
       if (sidecar.imageId === imageId) matches.push(sidecar);
     });
     if (matches.length > 1) throw new Error('Duplicate generated image identifiers');
@@ -32,13 +35,12 @@ export class GeneratedImageStore {
   }
 
   async readImage(image: GeneratedImageRecord): Promise<Uint8Array> {
-    const current = await this.getImageMetadata(image.imageId);
+    const repository = this.manager.getActiveRepository();
+    const current = await this.getImageMetadata(repository, image.imageId);
     if (current?.repositoryRelativePath !== image.repositoryRelativePath) {
       throw new Error('Generated image record is no longer valid');
     }
-    const bytes = await this.manager
-      .getActiveRepository()
-      .readBytes(current.repositoryRelativePath);
+    const bytes = await repository.readBytes(current.repositoryRelativePath);
     if (!imageBytesMatch(bytes, current.output.sha256, current.output.byteLength)) {
       throw new Error('Generated image integrity verification failed');
     }

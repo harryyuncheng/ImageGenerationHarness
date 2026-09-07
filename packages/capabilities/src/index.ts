@@ -1,4 +1,5 @@
 import {
+  MAX_GPT_IMAGE_INPUTS,
   MAX_REQUEST_IMAGES,
   STABILITY_STANDARD_SEED_MAX,
   UINT32_MAX,
@@ -126,14 +127,19 @@ const gptImageShared = {
 function opaqueUnlessPng(value: { background: string; output_format: string }): boolean {
   return value.background !== 'transparent' || value.output_format === 'png';
 }
+const gptImageInputsSchema = z.union([image, z.array(image).min(1).max(MAX_GPT_IMAGE_INPUTS)]);
 const gptImageGenerationSchema = z
-  .object({ prompt: promptSchema.min(1), ...gptImageShared })
+  .object({
+    prompt: promptSchema.min(1),
+    image: gptImageInputsSchema.optional(),
+    ...gptImageShared,
+  })
   .strict()
   .refine(opaqueUnlessPng, 'A transparent background requires PNG output');
 const gptImageEditSchema = z
   .object({
     prompt: promptSchema.min(1),
-    image,
+    image: gptImageInputsSchema,
     mask: image.optional(),
     input_fidelity: z.enum(['low', 'high']).default('low'),
     ...gptImageShared,

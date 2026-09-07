@@ -73,6 +73,7 @@ const capabilityDescriptorSchema = z
     parameters: z.array(requestParameterSchema),
     outputFormats: z.array(outputFormatSchema).min(1),
     seedMaximum: uint32Schema.optional(),
+    maxInputImages: z.number().int().positive().optional(),
   })
   .strict();
 

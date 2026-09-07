@@ -4,7 +4,7 @@ import {
   type CreateRunRequest,
   type Destination,
 } from '@harness/contracts';
-import type { Attachment } from '../../shared/types/attachments.js';
+import type { Attachment, ImageInputs } from '../../shared/types/attachments.js';
 import type { Capability } from '../../shared/types/domain.js';
 import { effectiveSeed, hasParameter } from './capabilities.js';
 import type { GenerationSettings } from './settings.js';
@@ -19,14 +19,14 @@ function buildGenerationRequest(
   capability: Capability,
   prompt: string,
   settings: GenerationSettings,
-  attachments: Attachment[],
+  inputs: ImageInputs,
 ): Record<string, unknown> {
-  const attachmentValue = (attachment: Attachment | undefined): string | undefined => {
-    if (!attachment) return undefined;
+  const attachmentValue = (attachment: Attachment): string => {
     return attachment.source === 'upload' ? attachment.data : `repo-image://${attachment.imageId}`;
   };
-  const image = attachmentValue(attachments[0]);
-  const secondImage = attachmentValue(attachments[1]);
+  const image = inputs.source ? attachmentValue(inputs.source) : undefined;
+  const mask = inputs.mask ? attachmentValue(inputs.mask) : undefined;
+  const references = inputs.references.map(attachmentValue);
   const output_format = capability.outputFormats.includes(settings.outputFormat)
     ? settings.outputFormat
     : capability.outputFormats.includes('png')
@@ -63,7 +63,12 @@ function buildGenerationRequest(
     return { prompt, aspect_ratio: settings.aspectRatio, ...optional };
   }
   if (canonicalId === 'generation/gpt-image-2') {
-    return { prompt, ...gptImageShared, ...optional };
+    return {
+      prompt,
+      ...(references.length > 0 ? { image: references } : {}),
+      ...gptImageShared,
+      ...optional,
+    };
   }
   if (canonicalId === 'generation/ultra' || canonicalId === 'generation/sd3.5-large') {
     return image
@@ -76,8 +81,8 @@ function buildGenerationRequest(
     case 'edit/gpt-image-2':
       return {
         prompt,
-        image,
-        ...(secondImage ? { mask: secondImage } : {}),
+        image: [image, ...references],
+        ...(mask ? { mask } : {}),
         ...gptImageShared,
         input_fidelity: settings.inputFidelity,
         ...optional,
@@ -96,7 +101,7 @@ function buildGenerationRequest(
     case 'service/style-transfer':
       return {
         init_image: image,
-        style_image: secondImage ?? image,
+        ...(references[0] ? { style_image: references[0] } : {}),
         ...(prompt ? { prompt } : {}),
         composition_fidelity: settings.compositionFidelity,
         style_strength: settings.styleStrength,
@@ -112,7 +117,7 @@ function buildGenerationRequest(
       return {
         prompt,
         image,
-        ...(secondImage ? { mask: secondImage } : {}),
+        ...(mask ? { mask } : {}),
         grow_mask: settings.growMask,
         ...serviceOptional,
       };
@@ -146,7 +151,7 @@ function buildGenerationRequest(
     case 'service/erase':
       return {
         image,
-        ...(secondImage ? { mask: secondImage } : {}),
+        ...(mask ? { mask } : {}),
         grow_mask: settings.growMask,
         ...serviceOptional,
       };
@@ -169,12 +174,12 @@ export function buildGenerationSubmission(
   capability: Capability,
   prompt: string,
   settings: GenerationSettings,
-  attachments: Attachment[],
+  inputs: ImageInputs,
   destination: Destination,
 ): GenerationSubmission {
   return {
     targetId: capability.canonicalId,
-    request: buildGenerationRequest(capability, prompt, settings, attachments),
+    request: buildGenerationRequest(capability, prompt, settings, inputs),
     requestedJobCount: settings.outputCount,
     seedPlan: makeSeedPlan(settings, capability),
     destination,
