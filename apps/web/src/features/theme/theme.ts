@@ -4,16 +4,21 @@ type MatTheme = 'mat-light' | 'mat-dark' | 'mat-build' | 'mat-craft';
 type ResolvedTheme = 'light' | 'dark' | MatTheme;
 export type ThemePreference = ResolvedTheme | 'system';
 
+export const fontOptions = [
+  { value: 'sans', label: 'Sans' },
+  { value: 'serif', label: 'Serif' },
+  { value: 'mono', label: 'Mono' },
+] as const;
+export type FontPreference = (typeof fontOptions)[number]['value'];
+
 export const themeGroups: readonly {
   id: string;
   label: string;
-  hint: string;
   options: readonly { value: ThemePreference; label: string; Icon: LucideIcon }[];
 }[] = [
   {
     id: 'basic',
     label: 'Basic',
-    hint: 'A flat background across the whole studio.',
     options: [
       { value: 'light', label: 'Light', Icon: Sun },
       { value: 'dark', label: 'Dark', Icon: Moon },
@@ -23,7 +28,6 @@ export const themeGroups: readonly {
   {
     id: 'cutting-mat',
     label: 'Cutting mat',
-    hint: 'A ruled mat behind the create canvas.',
     options: [
       { value: 'mat-light', label: 'Light', Icon: Sun },
       { value: 'mat-dark', label: 'Dark', Icon: Moon },

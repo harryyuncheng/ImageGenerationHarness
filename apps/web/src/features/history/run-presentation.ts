@@ -1,10 +1,5 @@
 import type { RunStatus as DurableRunStatus, RunsResponse } from '@harness/contracts';
-import type {
-  Capability,
-  Destination,
-  Project,
-  ProjectDetailResponse,
-} from '../../shared/types/domain.js';
+import type { Capability } from '../../shared/types/domain.js';
 import { capabilityLabel, resolveCapability } from '../generation/capabilities.js';
 
 export type RunStatus = DurableRunStatus | 'submitting';
@@ -21,14 +16,16 @@ export interface StudioRun {
   prompt: string;
   targetId: string;
   targetName: string;
-  aspectRatio: string;
+  aspectRatio?: number;
   outputCount: number;
   attachmentNames: string[];
-  outputImageIds?: string[];
-  destination: Destination;
+  jobs: {
+    id: string;
+    status: RunStatus;
+    outputImageIds: string[];
+  }[];
   status: RunStatus;
   error?: string;
-  favorite: boolean;
 }
 
 interface RunFailure {
@@ -39,7 +36,7 @@ interface RunFailure {
 
 /**
  * Server-reported failures plus failed run snapshots. A failed snapshot is always
- * treated as discarded so the optimistic tile disappears with its toast.
+ * treated as discarded so failed optimistic tiles never become gallery entries.
  */
 export function collectRunFailures(data: RunsResponse | undefined): RunFailure[] {
   const failures = new Map<string, { error: string; discarded: boolean }>();
@@ -59,7 +56,6 @@ export function collectRunFailures(data: RunsResponse | undefined): RunFailure[]
 export function toStudioRuns(
   data: RunsResponse | undefined,
   capabilities: readonly Capability[],
-  favoriteRuns: ReadonlySet<string>,
 ): StudioRun[] {
   return (data?.runs ?? [])
     .filter(({ run }) => run.status !== 'failed')
@@ -74,14 +70,16 @@ export function toStudioRuns(
         prompt: run.prompt ?? '',
         targetId: run.targetId,
         targetName: capabilityLabel(capability),
-        aspectRatio: 'saved settings',
+        ...(run.aspectRatio === undefined ? {} : { aspectRatio: run.aspectRatio }),
         outputCount: run.requestedJobCount,
         attachmentNames: [],
-        outputImageIds: jobs.flatMap((job) => job.outputImageIds),
-        destination: run.destination,
+        jobs: jobs.map((job) => ({
+          id: job.jobId,
+          status: job.status,
+          outputImageIds: job.outputImageIds,
+        })),
         status: run.status,
         ...(error ? { error } : {}),
-        favorite: favoriteRuns.has(run.runId),
       };
     });
 }
@@ -95,21 +93,4 @@ export function mergeRuns(
   return [...optimisticRuns.filter((run) => !durableIds.has(run.remoteId)), ...durableRuns].sort(
     (left, right) => right.createdAt.localeCompare(left.createdAt),
   );
-}
-
-export function runDestinationLabel(
-  value: Destination,
-  projects: readonly Project[],
-  detail: ProjectDetailResponse | undefined,
-): string {
-  if (value.kind === 'main') return 'Main repository';
-  const project = projects.find((candidate) => candidate.projectId === value.projectId);
-  if (value.kind === 'project') return project?.name ?? 'Project';
-  const asset =
-    detail?.project.projectId === value.projectId
-      ? detail.assets.find((candidate) => candidate.assetId === value.projectAssetId)
-      : undefined;
-  return asset
-    ? `${project?.name ?? 'Project'} / ${asset.name}`
-    : (project?.name ?? 'Project asset');
 }

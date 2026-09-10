@@ -68,9 +68,14 @@
 }
 
 .composer-setting-menu--count,
+.composer-setting-menu--negative,
 .composer-setting-menu--range,
 .composer-setting-menu--text {
   --popover-height-limit: var(--popover-height-sm);
+}
+
+.composer-setting-menu--negative {
+  height: var(--popover-height-sm);
 }
 
 .composer-setting-menu--canvas,
@@ -96,6 +101,7 @@
 }
 
 .composer-setting-field input:not([type='range']),
+.composer-setting-field textarea,
 .seed-input input {
   width: 100%;
   min-width: 0;
@@ -108,9 +114,22 @@
   font-size: 11px;
 }
 
-.composer-setting-field input:not([type='range']):focus,
-.seed-input input:focus {
-  border-color: var(--accent);
+.negative-prompt-editor {
+  min-height: 0;
+}
+
+.negative-prompt-editor textarea {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  resize: none;
+  line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
+}
+
+.negative-prompt-editor textarea::placeholder {
+  color: var(--text-muted);
 }
 
 .range-setting > label {
@@ -198,7 +217,6 @@
 .composer-setting-menu-header {
   display: flex;
   flex: 0 0 auto;
-  flex-direction: column;
   padding: 8px 9px 10px;
 }
 
@@ -207,14 +225,8 @@
   font-weight: 650;
 }
 
-.composer-setting-menu-header small {
-  margin-top: 2px;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
 .composer-setting-menu--model .composer-setting-menu-header {
-  text-align: center;
+  justify-content: center;
 }
 
 /* Keep scrolling inside the list so headers and seed inputs stay visible. */

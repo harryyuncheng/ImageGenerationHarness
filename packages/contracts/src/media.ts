@@ -64,6 +64,19 @@ export type OutputFormat = z.infer<typeof outputFormatSchema>;
 export type AspectRatio = z.infer<typeof aspectRatioSchema>;
 export type ImageQuality = z.infer<typeof imageQualitySchema>;
 
+export function requestedImageAspectRatio(
+  request: Readonly<Record<string, unknown>>,
+): number | undefined {
+  const size = request['size'];
+  const value = size ?? request['aspect_ratio'];
+  if (typeof value !== 'string') return undefined;
+  // Retained jobs may use dimensions no longer offered by the current toolbar.
+  const dimensions = /^([1-9]\d*)[x:]([1-9]\d*)$/u.exec(value);
+  if (!dimensions) return undefined;
+  const ratio = Number(dimensions[1]) / Number(dimensions[2]);
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : undefined;
+}
+
 export function isMediaType(value: string): value is MediaType {
   return MEDIA_TYPES.some((mediaType) => mediaType === value);
 }

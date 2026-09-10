@@ -25,8 +25,6 @@ export const generatedImageSidecarSchema = z
     schemaVersion: z.literal(IMAGE_SIDECAR_SCHEMA_VERSION),
     imageId: uuidSchema,
     repositoryRelativePath: repositoryRelativePathSchema,
-    projectId: uuidSchema.optional(),
-    projectAssetId: uuidSchema.optional(),
     createdAt: timestampSchema,
     runId: uuidSchema,
     jobId: uuidSchema,
@@ -63,24 +61,19 @@ export const generatedImageSidecarSchema = z
       })
       .strict(),
   })
-  .strict()
-  .superRefine((value, context) => {
-    if (value.projectAssetId && !value.projectId) {
-      context.addIssue({ code: 'custom', message: 'A project asset image requires a project' });
-    }
-  });
+  .strict();
 
 const galleryImageSchema = z
   .object({
     imageId: uuidSchema,
     runId: uuidSchema,
+    jobId: uuidSchema,
+    aspectRatio: z.number().positive(),
     mediaType: mediaTypeSchema,
     byteLength: z.number().int().positive(),
     createdAt: timestampSchema,
     prompt: z.string().max(10_000).optional(),
     targetId: nonEmptyStringSchema,
-    projectId: uuidSchema.optional(),
-    projectAssetId: uuidSchema.optional(),
   })
   .strict();
 export const galleryResponseSchema = z.object({ images: z.array(galleryImageSchema) }).strict();

@@ -1,20 +1,21 @@
 /*
- * The style guide floats directly on the scrim: no panel, no card surfaces. Because the
- * scrim is dark in both themes, contained content uses fixed light-on-dark colours rather
- * than the theme tokens, which would be unreadable in light mode.
+ * The style guide floats on a scrim that is dark in both themes. Its content uses fixed
+ * light-on-dark colours rather than theme tokens, which would be unreadable in light mode.
  */
 .style-guide-backdrop {
   --on-scrim: #f4f4f4;
   --on-scrim-muted: rgb(255 255 255 / 58%);
   --on-scrim-hover: rgb(255 255 255 / 12%);
+  --style-guide-top: 64px;
+  --style-guide-edge: 24px;
 
   position: fixed;
   z-index: 100;
   inset: 0;
   display: grid;
-  place-items: center;
+  place-items: start center;
   background: rgb(0 0 0 / 66%);
-  padding: 24px;
+  padding: var(--style-guide-top) var(--style-guide-edge) var(--style-guide-edge);
   animation: style-guide-backdrop-in 220ms ease both;
   backdrop-filter: blur(6px);
 }
@@ -25,11 +26,29 @@
   }
 }
 
-/* Matches `.library-page` insets so the grid keeps the margins it had as a full page. */
+.style-guide-backdrop--motion {
+  animation: none;
+}
+
+.style-guide-flight {
+  position: fixed;
+  z-index: 101;
+  overflow: hidden;
+  pointer-events: none;
+  transform-origin: center;
+}
+
+.style-guide-flight img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .style-guide-dialog {
   display: flex;
-  width: min(1120px, calc(100vw - 48px));
-  max-height: min(760px, calc(100dvh - 48px));
+  width: min(1120px, calc(100vw - var(--style-guide-edge) * 2));
+  max-height: min(760px, calc(100dvh - var(--style-guide-top) - var(--style-guide-edge)));
   flex-direction: column;
   background: transparent;
 }
@@ -45,54 +64,13 @@
 
 .style-guide-dialog__title {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: 4px;
 }
 
-.style-guide-info {
-  position: relative;
-  display: inline-flex;
-}
-
-.style-guide-info__trigger {
-  width: 26px;
-  height: 26px;
-}
-
-/*
- * Driven by the shared pointer-hover class rather than `:hover`, which can stick after a
- * click or scroll. The bubble is non-interactive, so it need not survive the pointer
- * travelling onto it.
- */
-.style-guide-info__bubble {
-  position: absolute;
-  z-index: 1;
-  top: calc(100% + 8px);
-  left: -6px;
-  width: 280px;
-  margin: 0;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface-raised);
-  padding: 11px 13px;
-  box-shadow: var(--shadow-md);
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.5;
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 130ms ease,
-    visibility 130ms;
-}
-
-.style-guide-info__trigger.is-pointer-hover + .style-guide-info__bubble,
-.style-guide-info__trigger:focus-visible + .style-guide-info__bubble {
-  opacity: 1;
-  visibility: visible;
-}
-
-.style-guide-dialog__header h2 {
+.style-guide-dialog__header h2,
+.preset-name-input {
   margin: 0;
   color: var(--on-scrim);
   font-size: 21px;
@@ -102,6 +80,7 @@
 
 .style-guide-dialog__header-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 8px;
 }
@@ -113,122 +92,144 @@
   padding: 2px;
 }
 
-.style-guide-folder-rail {
+.style-guide-folder-card {
   display: flex;
-  flex: 0 0 auto;
-  overflow-x: auto;
-  gap: 6px;
-  padding: 0 2px 14px;
-}
-
-.style-guide-folder-chip {
-  display: flex;
-  height: 30px;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
   border: 1px solid transparent;
-  border-radius: 9px;
-  background: transparent;
-  padding: 0 11px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 4%);
+  padding: 8px;
   color: var(--on-scrim-muted);
   font-size: 12px;
   font-weight: 560;
+  text-align: left;
   transition:
+    border-color 140ms ease,
     background 140ms ease,
     color 140ms ease;
 }
 
-.style-guide-folder-chip.is-pointer-hover {
+.style-guide-folder-card.is-pointer-hover {
   background: var(--on-scrim-hover);
   color: var(--on-scrim);
 }
 
-.style-guide-folder-chip.selected {
-  border-color: rgb(255 255 255 / 26%);
+.style-guide-folder-card.applied {
+  border-color: rgb(255 255 255 / 42%);
+  background: rgb(255 255 255 / 10%);
   color: var(--on-scrim);
 }
 
-.style-guide-folder-bar {
-  display: flex;
-  min-height: 44px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+.style-guide-folder-cover {
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 2px;
+  border-radius: 9px;
+  background: rgb(255 255 255 / 8%);
 }
 
-.style-guide-folder-name {
+.style-guide-folder-cover img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.style-guide-folder-cover > :only-child {
+  grid-area: 1 / 1 / -1 / -1;
+}
+
+.style-guide-folder-cover[data-image-count='2'] img,
+.style-guide-folder-cover[data-image-count='3'] img:first-child {
+  grid-row: span 2;
+}
+
+.style-guide-folder-cover[data-image-count='0'] {
+  place-items: center;
+  border: 1px dashed rgb(255 255 255 / 30%);
+}
+
+.style-guide-folder-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.style-guide-folder-label > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.style-guide-folder-label > svg {
+  flex-shrink: 0;
+}
+
+.style-guide-folder-heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.style-guide-folder-heading h2 {
+  min-width: 0;
+}
+
+.style-guide-name {
   display: block;
-  border-radius: 7px;
+  width: 100%;
+  overflow: hidden;
   background: transparent;
   padding: 2px 6px;
-  margin-left: -6px;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.style-guide-folder-name.is-pointer-hover {
-  background: var(--on-scrim-hover);
-}
-
-.style-guide-folder-bar h3 {
-  margin: 0;
-  color: var(--on-scrim);
-  font-size: 14px;
-  font-weight: 650;
-}
-
-.style-guide-folder-name-input {
-  width: min(320px, 60vw);
-  border: 1px solid rgb(255 255 255 / 32%);
-  border-radius: 7px;
+.style-guide-name:focus,
+.style-guide-name-input:focus {
+  border: 0;
   outline: 0;
-  background: rgb(255 255 255 / 10%);
-  padding: 2px 6px;
-  margin-left: -7px;
-  color: var(--on-scrim);
-  font-size: 14px;
-  font-weight: 650;
+  box-shadow: none;
 }
 
-.style-guide-folder-bar p {
-  margin: 3px 0 0;
+.style-guide-name-input {
+  display: block;
+  width: min(320px, 60vw);
+  max-width: 100%;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px 6px;
+  color: var(--on-scrim);
+}
+
+.style-guide-folder-heading p {
+  flex-shrink: 0;
+  margin: 0;
   color: var(--on-scrim-muted);
   font-size: 10px;
+  white-space: nowrap;
 }
 
 .style-guide-folder-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
 }
 
-.style-guide-folder-empty {
-  display: flex;
-  width: 100%;
-  min-height: 180px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  border: 1px dashed rgb(255 255 255 / 26%);
-  border-radius: 14px;
-  background: transparent;
-  color: var(--on-scrim);
-}
-
-.style-guide-folder-empty.is-pointer-hover {
-  border-color: rgb(255 255 255 / 52%);
-}
-
-.style-guide-folder-empty span {
-  font-size: 11px;
-  font-weight: 650;
-}
-
-.style-guide-folder-empty small {
-  color: var(--on-scrim-muted);
-  font-size: 9px;
+.style-guide-folder-actions button {
+  white-space: nowrap;
 }
 
 .style-guide-grid {
@@ -262,7 +263,6 @@
 .style-guide-card {
   min-width: 0;
   background: transparent;
-  will-change: transform;
 }
 
 .style-guide-preview {
@@ -294,6 +294,12 @@
   min-width: 0;
   flex: 1;
   flex-direction: column;
+}
+
+.style-guide-card-meta .style-guide-name,
+.style-guide-card-meta .style-guide-name-input {
+  width: 100%;
+  padding: 0;
 }
 
 .style-guide-card-meta strong,

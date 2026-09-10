@@ -1,9 +1,5 @@
 import { isCanonicalCapabilityId, type CanonicalCapabilityId } from '@harness/capabilities/catalog';
-import {
-  IMAGE_SIZE_BY_ASPECT_RATIO,
-  type CreateRunRequest,
-  type Destination,
-} from '@harness/contracts';
+import { IMAGE_SIZE_BY_ASPECT_RATIO, type CreateRunRequest } from '@harness/contracts';
 import type { Attachment, ImageInputs } from '../../shared/types/attachments.js';
 import type { Capability } from '../../shared/types/domain.js';
 import { effectiveSeed, hasParameter } from './capabilities.js';
@@ -175,13 +171,11 @@ export function buildGenerationSubmission(
   prompt: string,
   settings: GenerationSettings,
   inputs: ImageInputs,
-  destination: Destination,
 ): GenerationSubmission {
   return {
     targetId: capability.canonicalId,
     request: buildGenerationRequest(capability, prompt, settings, inputs),
     requestedJobCount: settings.outputCount,
     seedPlan: makeSeedPlan(settings, capability),
-    destination,
   };
 }

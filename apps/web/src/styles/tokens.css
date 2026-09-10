@@ -1,5 +1,20 @@
 @theme {
   --font-sans: Inter, 'SF Pro Text', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', ui-serif, serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+:root,
+[data-font='sans'] {
+  --font-ui: var(--font-sans);
+}
+
+[data-font='serif'] {
+  --font-ui: var(--font-serif);
+}
+
+[data-font='mono'] {
+  --font-ui: var(--font-mono);
 }
 
 /*
@@ -11,6 +26,8 @@
 :root {
   --motion-surface-duration: 220ms;
   --motion-surface-easing: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-sheet-duration: 640ms;
+  --motion-sheet-easing: cubic-bezier(0.3, 0, 0.2, 1);
   /* Persistent screen-edge controls must use this shared inset system. */
   --studio-edge-inline: 18px;
   --studio-edge-block: 14px;

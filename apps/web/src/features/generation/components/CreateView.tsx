@@ -1,18 +1,16 @@
-import { Download } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { Download, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { progressMessage } from '../../editor/components/ImageViewer.js';
 import type { LoadedImage } from '../../editor/use-loaded-image.js';
 import type { Capability, ProviderDescriptor } from '../../../shared/types/domain.js';
-import { mainImageInputs, toolbarTabs } from '../model-presentation.js';
+import { mainSourceImage, toolbarTabs } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
-import type { DraftActionsController } from '../use-draft-actions.js';
 import type { GenerationController } from '../use-generation.js';
 import type { GenerationSettingsController } from '../use-generation-settings.js';
 import type { PromptDraftController } from '../use-prompt-draft.js';
-import { ImageInputs } from './ImageInputs.js';
+import { ImageInputs, ReferenceInputs } from './ImageInputs.js';
 import type { ComposerSettingMenu } from './ComposerSettingPicker.js';
 import { ComposerTools } from './ComposerTools.js';
-import { DestinationPill } from './DestinationPill.js';
 import { PromptCanvas } from './PromptCanvas.js';
 import { SubmitButton } from './SubmitButton.js';
 import { ToolbarModelPicker } from './ToolbarModelPicker.js';
@@ -22,12 +20,12 @@ interface CreateViewProps {
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
   attachments: AttachmentsController;
-  draftActions: DraftActionsController;
   generation: GenerationController;
+  feedback: ReactNode;
   capabilities: readonly Capability[];
   providers: readonly ProviderDescriptor[];
   loaded?: LoadedImage;
-  destinationLabel?: string;
+  onResetSettings: () => void;
   onSavePrompt: () => void;
 }
 
@@ -35,12 +33,12 @@ export function CreateView({
   promptDraft,
   settings,
   attachments,
-  draftActions,
   generation,
+  feedback,
   capabilities,
   providers,
   loaded,
-  destinationLabel,
+  onResetSettings,
   onSavePrompt,
 }: CreateViewProps) {
   const selectedCapability = settings.selectedCapability;
@@ -63,12 +61,14 @@ export function CreateView({
   const referenceGeneration =
     selectedCapability.maxInputImages !== undefined && selectedCapability.category === 'generation';
   const showPreview =
-    loaded?.selectedOutput !== undefined && (attachments.roles.length === 0 || referenceGeneration);
-  const showImages = mainImageInputs(attachments.inputs).length > 0 || showPreview;
+    loaded !== undefined &&
+    (loaded.isPending ||
+      (loaded.selectedOutput !== undefined &&
+        (attachments.roles.length === 0 || referenceGeneration)));
+  const showImages = mainSourceImage(attachments.inputs) !== undefined || showPreview;
   const imageStatus =
     attachments.blockedReason ??
-    (loaded &&
-    (!loaded.selectedOutput || ['submitting', 'queued', 'running'].includes(loaded.status))
+    (loaded && !loaded.selectedOutput && !loaded.isPending
       ? progressMessage(loaded.status, false)
       : undefined);
 
@@ -99,7 +99,7 @@ export function CreateView({
   }
 
   return (
-    <div className="create-page surface-enter">
+    <div className="create-page">
       <form
         onSubmit={(event) => {
           void generation.generate(event);
@@ -122,20 +122,14 @@ export function CreateView({
               capability={selectedCapability}
               inputRef={promptDraft.promptInput}
               value={promptDraft.prompt}
-              negativePrompt={settings.settings.negativePrompt}
               onChange={promptDraft.setPrompt}
-              onNegativePromptChange={(value) => {
-                settings.updateSettings('negativePrompt', value);
-              }}
               onKeyDown={generation.handlePromptKeyDown}
             />
+            {feedback}
             {imageStatus && (
               <p className="image-input-status" role="status">
                 {imageStatus}
               </p>
-            )}
-            {destinationLabel !== undefined && !showImages && (
-              <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
             )}
           </div>
         </section>
@@ -145,68 +139,77 @@ export function CreateView({
             attachments={attachments}
             capability={selectedCapability}
             loaded={loaded}
-            destination={
-              destinationLabel === undefined ? null : (
-                <DestinationPill label={destinationLabel} onReset={draftActions.resetDestination} />
-              )
-            }
             onSourceImageReady={setMaskImage}
-            onReset={draftActions.resetDraft}
           />
         )}
 
-        <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
-          <ToolbarTabs
-            capabilities={availableCapabilities}
-            activeCategory={activeTab.category}
-            onSelect={selectTab}
-          />
+        <ReferenceInputs attachments={attachments} />
 
-          <div className="generation-toolbar-controls">
-            <div className="toolbar-tool-row">
-              <ToolbarModelPicker
-                capabilities={visibleTools}
-                providers={providers}
-                selectedCapability={selectedCapability}
-                open={settingMenu === 'model'}
-                onOpenChange={(open) => {
-                  updateSettingMenu('model', open);
-                }}
-                onSelect={selectTool}
-              />
+        <div className="composer-dock">
+          <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
+            <button
+              type="button"
+              className="icon-button create-reset"
+              onClick={onResetSettings}
+              aria-label="Reset settings"
+              title="Reset settings"
+            >
+              <RotateCcw size={18} aria-hidden="true" />
+            </button>
 
-              {activeTab.id === 'export' && source && (
-                <div className="toolbar-control-group" role="group" aria-label="Export actions">
-                  <a
-                    className="tool-chip"
-                    href={source.previewUrl}
-                    download={source.name}
-                    title="Download image"
-                    aria-label="Download image"
-                  >
-                    <Download size={16} />
-                    <span>Download</span>
-                  </a>
-                </div>
-              )}
+            <ToolbarTabs
+              capabilities={availableCapabilities}
+              activeCategory={activeTab.category}
+              onSelect={selectTab}
+            />
+
+            <div className="generation-toolbar-controls">
+              <div className="toolbar-tool-row">
+                <ToolbarModelPicker
+                  capabilities={visibleTools}
+                  providers={providers}
+                  selectedCapability={selectedCapability}
+                  open={settingMenu === 'model'}
+                  onOpenChange={(open) => {
+                    updateSettingMenu('model', open);
+                  }}
+                  onSelect={selectTool}
+                />
+
+                {activeTab.id === 'export' && source && (
+                  <div className="toolbar-control-group" role="group" aria-label="Export actions">
+                    <a
+                      className="tool-chip"
+                      href={source.previewUrl}
+                      download={source.name}
+                      title="Download image"
+                      aria-label="Download image"
+                    >
+                      <Download size={16} />
+                      <span>Download</span>
+                    </a>
+                  </div>
+                )}
+
+                <span className="toolbar-divider" aria-hidden="true" />
+                <ComposerTools
+                  settings={settings}
+                  settingMenu={settingMenu}
+                  onSettingMenuChange={updateSettingMenu}
+                  attachments={attachments}
+                  maskImage={maskImage}
+                  onSavePrompt={onSavePrompt}
+                />
+              </div>
 
               <span className="toolbar-divider" aria-hidden="true" />
-              <ComposerTools
-                settings={settings}
-                settingMenu={settingMenu}
-                onSettingMenuChange={updateSettingMenu}
-                attachments={attachments}
-                maskImage={maskImage}
-                onSavePrompt={onSavePrompt}
+              <SubmitButton
+                isSubmitting={generation.isSubmitting}
+                blockedReason={attachments.blockedReason}
+                shortcut={generation.createShortcut}
+                {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
               />
             </div>
-
-            <span className="toolbar-divider" aria-hidden="true" />
-            <SubmitButton
-              isSubmitting={generation.isSubmitting}
-              blockedReason={attachments.blockedReason}
-              {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
-            />
           </div>
         </div>
       </form>

@@ -10,16 +10,16 @@ import {
   supportedImageFiles,
 } from '../../shared/images/files.js';
 import type { Confirm, Prompt } from '../../shared/hooks/use-dialogs.js';
-import type { Notify } from '../../shared/hooks/use-toasts.js';
+import { useInlineError } from '../../shared/hooks/use-inline-error.js';
 import type { UploadAttachment } from '../../shared/types/attachments.js';
 import type { StyleGuideFolder, StyleGuideImage } from '../../shared/types/domain.js';
 import type { AttachmentsController } from '../generation/use-attachments.js';
 import type { GenerationSettingsController } from '../generation/use-generation-settings.js';
+import { defaultCapabilities, resolveCapability } from '../generation/capabilities.js';
 import * as api from './api.js';
 
 interface StyleGuideOptions {
   activeRepositoryId: string | undefined;
-  notify: Notify;
   confirm: Confirm;
   prompt: Prompt;
   requireRepository: (action: string) => boolean;
@@ -29,13 +29,17 @@ interface StyleGuideOptions {
 
 export function useStyleGuide({
   activeRepositoryId,
-  notify,
   confirm,
   prompt,
   requireRepository,
   attachments,
   settings,
 }: StyleGuideOptions) {
+  const feedback = useInlineError();
+  const guideCapability =
+    settings.selectedCapability.canonicalId === 'generation/core'
+      ? resolveCapability(defaultCapabilities, 'generation/sd3.5-large')
+      : settings.selectedCapability;
   const [isMutating, setIsMutating] = useState(false);
   const [uploadFolderId, setUploadFolderId] = useState<string>();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -71,16 +75,32 @@ export function useStyleGuide({
       setActiveFolderId(null);
   }, [activeFolderId, attachments.styleGuideFolderId, appliedImages.length, setActiveFolderId]);
 
+  function activateFolder(folderId: string) {
+    setActiveFolderId(folderId);
+    if (guideCapability.canonicalId !== settings.selectedCapability.canonicalId) {
+      settings.updateSettings('targetId', guideCapability.canonicalId);
+    }
+  }
+
   function toggleActiveFolder(folder: StyleGuideFolder) {
     if (folder.folderId === activeFolderId) {
       setActiveFolderId(null);
       return;
     }
-    setActiveFolderId(folder.folderId);
     attachments.applyStyleGuide(folder.images);
-    if (settings.selectedCapability.canonicalId === 'generation/core') {
-      settings.updateSettings('targetId', 'generation/sd3.5-large');
+    activateFolder(folder.folderId);
+  }
+
+  function toggleImage(image: StyleGuideImage) {
+    feedback.clearError();
+    try {
+      attachments.toggleStyleGuideImage(image, guideCapability);
+    } catch (error) {
+      if (!(error instanceof Error)) throw error;
+      feedback.reportError(error.message);
+      return;
     }
+    activateFolder(image.folderId);
   }
 
   async function refresh() {
@@ -91,11 +111,10 @@ export function useStyleGuide({
     operation: () => Promise<T>,
     fallback: string,
   ): Promise<MutationOutcome<T>> {
+    feedback.clearError();
     setIsMutating(true);
     try {
-      return await runMutation(operation, fallback, (message) => {
-        notify(message, 'error');
-      });
+      return await runMutation(operation, fallback, feedback.reportError);
     } finally {
       setIsMutating(false);
     }
@@ -110,24 +129,24 @@ export function useStyleGuide({
       confirmLabel: 'Create style guide',
     });
     if (!name) return;
-    const result = await performLibraryMutation(async () => {
+    await performLibraryMutation(async () => {
       await api.createStyleGuideFolder(name);
       await refresh();
     }, 'Could not create the guide.');
-    if (result.ok) notify('Style guide created.', 'success');
   }
 
-  async function renameFolder(folder: StyleGuideFolder, name: string): Promise<void> {
+  async function renameRecord(record: StyleGuideFolder | StyleGuideImage, name: string) {
     const trimmed = name.trim();
-    if (!trimmed || trimmed === folder.name) return;
+    if (!trimmed || trimmed === record.name) return;
+    const isImage = 'imageId' in record;
+    const endpoint = isImage
+      ? api.styleGuideImageEndpoint(record.folderId, record.imageId)
+      : api.styleGuideFolderEndpoint(record.folderId);
+    const fallback = `Could not rename the ${isImage ? 'image' : 'guide'}.`;
     await performLibraryMutation(async () => {
-      await api.renameStyleGuideRecord(
-        api.styleGuideFolderEndpoint(folder.folderId),
-        trimmed,
-        'Could not rename the guide.',
-      );
+      await api.renameStyleGuideRecord(endpoint, trimmed, fallback);
       await refresh();
-    }, 'Could not rename the guide.');
+    }, fallback);
   }
 
   async function deleteFolder(folder: StyleGuideFolder) {
@@ -144,7 +163,6 @@ export function useStyleGuide({
     }, 'Could not delete the guide.');
     if (!result.ok) return;
     if (folder.folderId === activeFolderId) setActiveFolderId(null);
-    notify('Style guide deleted.', 'success');
   }
 
   function chooseUploads(folderId: string) {
@@ -158,10 +176,10 @@ export function useStyleGuide({
     const folderId = uploadFolderId;
     if (!folderId || files.length === 0) return;
     const accepted = supportedImageFiles(files);
-    if (accepted.length !== files.length) {
-      notify('Use PNG, JPEG, or WebP images up to 10 MB.', 'error');
+    if (accepted.length === 0) {
+      feedback.reportError('Use PNG, JPEG, or WebP images up to 10 MB.');
+      return;
     }
-    if (accepted.length === 0) return;
     const result = await performLibraryMutation(async () => {
       const uploads: UploadAttachment[] = [];
       try {
@@ -179,28 +197,9 @@ export function useStyleGuide({
       await refresh();
       return;
     }
-    notify(
-      `${String(accepted.length)} style guide image${accepted.length === 1 ? '' : 's'} added.`,
-      'success',
-    );
-  }
-
-  async function renameImage(image: StyleGuideImage) {
-    const name = await prompt({
-      title: 'Rename image',
-      label: 'Name',
-      initialValue: image.name,
-      confirmLabel: 'Rename',
-    });
-    if (!name || name === image.name) return;
-    await performLibraryMutation(async () => {
-      await api.renameStyleGuideRecord(
-        api.styleGuideImageEndpoint(image.folderId, image.imageId),
-        name,
-        'Could not rename the image.',
-      );
-      await refresh();
-    }, 'Could not rename the image.');
+    if (accepted.length !== files.length) {
+      feedback.reportError('Some files were not added. Use PNG, JPEG, or WebP images up to 10 MB.');
+    }
   }
 
   async function deleteImage(image: StyleGuideImage) {
@@ -211,30 +210,30 @@ export function useStyleGuide({
       danger: true,
     });
     if (!confirmed) return;
-    const result = await performLibraryMutation(async () => {
+    await performLibraryMutation(async () => {
       await api.deleteStyleGuideImage(image.folderId, image.imageId);
       await refresh();
     }, 'Could not delete the image.');
-    if (!result.ok) return;
-    notify('Image deleted.', 'success');
   }
 
   return {
+    feedback,
     styleGuideQuery,
     folders,
     activeFolderId,
     appliedImages,
     ...(activeFolder ? { activeFolder } : {}),
     toggleActiveFolder,
+    toggleImage,
     isMutating,
     fileInput,
     refresh,
     createFolder,
-    renameFolder,
+    renameFolder: renameRecord,
     deleteFolder,
     chooseUploads,
     handleFiles,
-    renameImage,
+    renameImage: renameRecord,
     deleteImage,
   };
 }

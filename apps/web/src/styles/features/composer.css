@@ -1,8 +1,14 @@
 .prompt-workspace {
   position: relative;
-  display: flex;
+  display: grid;
   min-height: 480px;
   flex: 1;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+}
+
+.prompt-workspace--loaded {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .prompt-stage {
@@ -14,7 +20,7 @@
   border: 1px solid transparent;
   border-radius: 24px;
   /* Pushes the greeting below centre; scales so short windows keep it clear of the toolbar. */
-  padding: max(calc(54px + var(--top-bar-height)), 26dvh) 34px 174px;
+  padding: max(calc(54px + var(--top-bar-height)), 26dvh) 34px 32px;
   transition:
     border-color 160ms ease,
     background 160ms ease;
@@ -25,7 +31,7 @@
   justify-items: end;
   padding-top: calc(24px + var(--top-bar-height));
   padding-right: 24px;
-  padding-bottom: 204px;
+  padding-bottom: 56px;
 }
 
 .prompt-workspace--loaded .prompt-editor {
@@ -41,50 +47,32 @@
   gap: 24px;
 }
 
-/* Surfaces a non-default save target so it is visible and reversible. */
-.destination-pill {
-  display: inline-flex;
-  max-width: 100%;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-soft);
-  padding: 7px 11px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 650;
+.composer-dock {
+  --toolbar-edge-gap: 24px;
+  --toolbar-inline-inset: 48px;
+  --toolbar-width: 880px;
+  --negative-prompt-width: 128px;
+
+  position: relative;
+  z-index: 20;
+  width: min(
+    var(--toolbar-width),
+    calc(
+      100% - var(--toolbar-inline-inset) - 2 *
+        (var(--studio-corner-control-size) + var(--studio-corner-control-gap))
+    )
+  );
+  grid-column: 1 / -1;
+  margin: 0 auto var(--toolbar-edge-gap);
 }
 
-.destination-pill.is-pointer-hover {
-  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
-  color: var(--text);
-}
-
-.destination-pill > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.destination-pill > svg {
-  flex: 0 0 auto;
-  color: var(--text-muted);
+.composer-dock:has(.composer-setting--negative) {
+  --toolbar-width: calc(880px + var(--negative-prompt-width) + 5px);
 }
 
 .generation-toolbar {
-  --toolbar-edge-gap: 24px;
-  --toolbar-inline-inset: 48px;
-  --toolbar-width: 1120px;
-
-  position: absolute;
-  z-index: 20;
-  right: 0;
-  bottom: var(--toolbar-edge-gap);
-  left: 0;
+  position: relative;
   display: flex;
-  width: min(var(--toolbar-width), calc(100% - var(--toolbar-inline-inset)));
-  margin: 0 auto;
   flex-direction: column-reverse;
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
   border-radius: 15px;
@@ -95,8 +83,15 @@
     0 2px 7px rgb(0 0 0 / 7%);
 }
 
-.studio-main--create .generation-toolbar {
-  bottom: 64px;
+.studio-main--create .composer-dock {
+  --toolbar-edge-gap: 64px;
+}
+
+.create-reset {
+  position: absolute;
+  top: 50%;
+  right: calc(100% + var(--studio-corner-control-gap));
+  transform: translateY(-50%);
 }
 
 .generation-toolbar-controls,
@@ -219,4 +214,10 @@
 
 .composer-setting-picker {
   display: inline-flex;
+}
+
+.composer-setting--negative {
+  width: var(--negative-prompt-width);
+  flex: 0 0 auto;
+  white-space: nowrap;
 }

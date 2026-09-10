@@ -1,4 +1,4 @@
-import { localJobSchema, localRunSchema, type LocalJob, type LocalRun } from '@harness/domain';
+import { localJobSchema, localRunSchema, type LocalJob } from '@harness/domain';
 import { imageSidecarPath } from '@harness/image';
 import type { GeneratedImageStore } from '../images/generated-image-store.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
@@ -29,16 +29,11 @@ export class RunStore {
     return jobs;
   }
 
-  /** Reads job records only for the runs a caller actually wants. */
-  async listSnapshots(
-    repository: LocalImageRepository,
-    matches: (run: LocalRun) => boolean = () => true,
-  ): Promise<RunSnapshot[]> {
+  async listSnapshots(repository: LocalImageRepository): Promise<RunSnapshot[]> {
     const snapshots: RunSnapshot[] = [];
     for (const file of await repository.listFiles('.image-harness/runs')) {
       if (!file.endsWith('.json')) continue;
       const run = await repository.readJson(`.image-harness/runs/${file}`, localRunSchema);
-      if (!matches(run)) continue;
       const jobs: LocalJob[] = [];
       let complete = true;
       for (const jobId of run.jobIds) {

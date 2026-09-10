@@ -16,7 +16,7 @@ import {
 import { characterizeImageData, imageBytesMatch, type CharacterizedImage } from '@harness/image';
 import {
   findDirectoryManifest,
-  hasActiveNameConflict,
+  hasNameConflict,
   loadDirectoryManifests,
   requireDirectoryManifest,
 } from '../repository/manifest-collection.js';
@@ -82,7 +82,7 @@ export class LocalStyleGuideService implements StyleGuideService {
     return this.manager.withRepository((repository) =>
       repository.withMutation(async () => {
         const folders = await this.#loadFolders(repository);
-        if (hasActiveNameConflict(folders, validatedName)) {
+        if (hasNameConflict(folders, validatedName)) {
           throw new StyleGuideError('A style guide already has that name.', 409);
         }
         const folderId = randomUUID();
@@ -115,11 +115,7 @@ export class LocalStyleGuideService implements StyleGuideService {
         const folder = await this.#requireFolder(repository, folderId);
         const folders = await this.#loadFolders(repository);
         if (
-          hasActiveNameConflict(
-            folders,
-            validatedName,
-            (candidate) => candidate.folderId === folderId,
-          )
+          hasNameConflict(folders, validatedName, (candidate) => candidate.folderId === folderId)
         ) {
           throw new StyleGuideError('A style guide already has that name.', 409);
         }

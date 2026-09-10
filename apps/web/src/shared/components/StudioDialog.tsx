@@ -1,16 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { DialogController } from '../hooks/use-dialogs.js';
+import type { DialogController, DialogRequest } from '../hooks/use-dialogs.js';
+import { useModalDialog } from '../hooks/use-modal-dialog.js';
 
 const dialogId = 'studio-dialog';
 
 export function StudioDialog({ dialogs }: { dialogs: DialogController }) {
-  const { request, submit, cancel } = dialogs;
+  return dialogs.request ? <OpenStudioDialog dialogs={dialogs} request={dialogs.request} /> : null;
+}
+
+function OpenStudioDialog({
+  dialogs,
+  request,
+}: {
+  dialogs: DialogController;
+  request: DialogRequest;
+}) {
+  const { submit, cancel } = dialogs;
+  const dialog = useModalDialog<HTMLFormElement>(cancel);
   const input = useRef<HTMLInputElement>(null);
   const [value, setValue] = useState('');
 
   useEffect(() => {
-    if (!request) return;
     setValue(request.kind === 'prompt' ? (request.initialValue ?? '') : '');
     const frame = window.requestAnimationFrame(() => {
       input.current?.select();
@@ -21,7 +32,6 @@ export function StudioDialog({ dialogs }: { dialogs: DialogController }) {
   }, [request]);
 
   useEffect(() => {
-    if (!request) return;
     const handleKey = (event: globalThis.KeyboardEvent) => {
       if (event.key !== 'Escape') return;
       // Stops the owning surface, such as the style guide, from closing underneath.
@@ -34,8 +44,6 @@ export function StudioDialog({ dialogs }: { dialogs: DialogController }) {
     };
   }, [request, cancel]);
 
-  if (!request) return null;
-
   const canSubmit =
     request.kind === 'confirm' || request.allowEmpty === true || value.trim().length > 0;
 
@@ -47,6 +55,7 @@ export function StudioDialog({ dialogs }: { dialogs: DialogController }) {
       }}
     >
       <form
+        {...dialog}
         className="studio-dialog surface-enter"
         role="dialog"
         aria-modal="true"

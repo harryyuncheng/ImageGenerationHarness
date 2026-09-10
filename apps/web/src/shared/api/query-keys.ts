@@ -5,10 +5,8 @@
 export const queryKeys = {
   capabilities: () => ['capabilities'] as const,
   repository: () => ['repository'] as const,
-  projects: (repositoryId: string | undefined) => ['projects', repositoryId] as const,
-  project: (repositoryId: string | undefined, projectId: string | undefined) =>
-    ['project', repositoryId, projectId] as const,
   styleGuide: (repositoryId: string | undefined) => ['style-guide', repositoryId] as const,
+  presets: (repositoryId: string | undefined) => ['presets', repositoryId] as const,
   runs: (repositoryId: string | undefined) => ['runs', repositoryId] as const,
   allRuns: (repositoryId: string | undefined) => ['runs', repositoryId, 'all'] as const,
   images: (repositoryId: string | undefined) => ['images', repositoryId] as const,
@@ -16,9 +14,8 @@ export const queryKeys = {
 };
 
 export const repositoryScopedQueryPrefixes: readonly string[] = [
-  'projects',
-  'project',
   'style-guide',
+  'presets',
   'runs',
   'images',
 ];

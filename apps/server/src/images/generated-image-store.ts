@@ -1,17 +1,19 @@
-import type { Destination, GeneratedImageSidecar } from '@harness/domain';
+import type { GeneratedImageSidecar } from '@harness/domain';
 import { generatedImageSidecarSchema } from '@harness/domain';
-import { imageBytesMatch } from '@harness/image';
+import { imageBytesMatch, imageSidecarPath, outputFileForMediaType } from '@harness/image';
 import { z } from 'zod';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { LocalRepositoryManager } from '../repository/repository-manager.js';
-import { destinationMatches } from '../runs/run-helpers.js';
 import type { GalleryImage, GeneratedImageRecord } from '../runs/run-types.js';
 
 export class GeneratedImageStore {
   constructor(private readonly manager: LocalRepositoryManager) {}
 
-  async getImage(imageId: string): Promise<GeneratedImageRecord | undefined> {
-    const sidecar = await this.getImageMetadata(this.manager.getActiveRepository(), imageId);
+  async getImage(
+    imageId: string,
+    repository = this.manager.getActiveRepository(),
+  ): Promise<GeneratedImageRecord | undefined> {
+    const sidecar = await this.getImageMetadata(repository, imageId);
     if (!sidecar) return undefined;
     return {
       imageId,
@@ -34,8 +36,10 @@ export class GeneratedImageStore {
     return matches[0];
   }
 
-  async readImage(image: GeneratedImageRecord): Promise<Uint8Array> {
-    const repository = this.manager.getActiveRepository();
+  async readImage(
+    image: GeneratedImageRecord,
+    repository = this.manager.getActiveRepository(),
+  ): Promise<Uint8Array> {
     const current = await this.getImageMetadata(repository, image.imageId);
     if (current?.repositoryRelativePath !== image.repositoryRelativePath) {
       throw new Error('Generated image record is no longer valid');
@@ -47,20 +51,19 @@ export class GeneratedImageStore {
     return bytes;
   }
 
-  async listImages(destination?: Destination): Promise<GalleryImage[]> {
+  async listImages(): Promise<GalleryImage[]> {
     const images: GalleryImage[] = [];
     await this.walk(this.manager.getActiveRepository(), (sidecar) => {
-      if (destination && !destinationMatches(sidecar, destination)) return;
       images.push({
         imageId: sidecar.imageId,
         runId: sidecar.runId,
+        jobId: sidecar.jobId,
+        aspectRatio: sidecar.output.width / sidecar.output.height,
         mediaType: sidecar.output.mediaType,
         byteLength: sidecar.output.byteLength,
         createdAt: sidecar.createdAt,
         ...(sidecar.prompt === undefined ? {} : { prompt: sidecar.prompt }),
         targetId: sidecar.canonicalTargetId,
-        ...(sidecar.projectId === undefined ? {} : { projectId: sidecar.projectId }),
-        ...(sidecar.projectAssetId === undefined ? {} : { projectAssetId: sidecar.projectAssetId }),
       });
     });
     return images.sort((left, right) => right.createdAt.localeCompare(left.createdAt));
@@ -75,7 +78,17 @@ export class GeneratedImageStore {
         if (!file.endsWith('.image.json')) continue;
         const path = `${directory}/${file}`;
         try {
-          await visit(await repository.readJson(path, generatedImageSidecarSchema));
+          const sidecar = await repository.readJson(path, generatedImageSidecarSchema);
+          const outputFile = outputFileForMediaType(sidecar.output.mediaType);
+          if (
+            imageSidecarPath(sidecar.repositoryRelativePath) !== path ||
+            !file.endsWith(`--${sidecar.imageId}.image.json`) ||
+            !sidecar.repositoryRelativePath.endsWith(`.${outputFile.extension}`) ||
+            sidecar.output.format !== outputFile.format
+          ) {
+            throw new Error('Generated image metadata has an invalid file binding');
+          }
+          await visit(sidecar);
         } catch (error) {
           if (error instanceof z.ZodError) {
             throw new Error(`Malformed generated image metadata: ${path}`);
@@ -88,6 +101,5 @@ export class GeneratedImageStore {
       }
     };
     await walkDirectory('images');
-    await walkDirectory('projects');
   }
 }

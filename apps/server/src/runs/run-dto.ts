@@ -1,18 +1,24 @@
-import { jobDtoSchema, runDtoSchema, runSnapshotSchema } from '@harness/contracts';
+import {
+  jobDtoSchema,
+  requestedImageAspectRatio,
+  runDtoSchema,
+  runSnapshotSchema,
+} from '@harness/contracts';
 import type { LocalJob, LocalRun } from '@harness/domain';
 import type { RunSnapshot } from './run-types.js';
 
-function localRunDto(run: LocalRun) {
+function localRunDto(run: LocalRun, job: LocalJob | undefined) {
+  const aspectRatio = job ? requestedImageAspectRatio(job.request) : undefined;
   return runDtoSchema.parse({
     schemaVersion: run.schemaVersion,
     runId: run.runId,
     status: run.status,
     registryVersion: run.registryVersion,
     targetId: run.targetId,
-    destination: run.destination,
     requestedJobCount: run.requestedJobCount,
     seedPlan: run.seedPlan,
     ...(run.prompt === undefined ? {} : { prompt: run.prompt }),
+    ...(aspectRatio === undefined ? {} : { aspectRatio }),
     jobIds: run.jobIds,
     createdAt: run.createdAt,
     updatedAt: run.updatedAt,
@@ -26,7 +32,6 @@ function localJobDto(job: LocalJob) {
     jobId: job.jobId,
     status: job.status,
     targetId: job.targetId,
-    destination: job.destination,
     plannedSeed: job.plannedSeed,
     providerSeed: job.providerSeed,
     outputImageIds: job.outputImageIds,
@@ -51,7 +56,7 @@ function localJobDto(job: LocalJob) {
 
 export function runSnapshotDto(snapshot: RunSnapshot) {
   return runSnapshotSchema.parse({
-    run: localRunDto(snapshot.run),
+    run: localRunDto(snapshot.run, snapshot.jobs[0]),
     jobs: snapshot.jobs.map(localJobDto),
   });
 }

@@ -8,7 +8,7 @@ import {
   type RequestParameter,
 } from '@harness/contracts';
 
-export const CAPABILITY_REGISTRY_VERSION = '2026-09-07.1' as const;
+export const CAPABILITY_REGISTRY_VERSION = '2026-09-09.1' as const;
 
 export const providerCatalog = [
   {
@@ -120,7 +120,16 @@ export const capabilityCatalog = [
       operation: 'generations',
     },
     modes: ['text-to-image', 'image-to-image'],
-    parameters: ['prompt', 'image', 'size', 'quality', 'background', 'output_format', 'n'],
+    parameters: [
+      'prompt',
+      'negative_prompt',
+      'image',
+      'size',
+      'quality',
+      'background',
+      'output_format',
+      'n',
+    ],
     outputFormats: ['jpeg', 'png'],
     maxInputImages: MAX_GPT_IMAGE_INPUTS,
   },
@@ -137,6 +146,7 @@ export const capabilityCatalog = [
     modes: ['image-service'],
     parameters: [
       'prompt',
+      'negative_prompt',
       'image',
       'mask',
       'size',

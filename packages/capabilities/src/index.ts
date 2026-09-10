@@ -117,6 +117,8 @@ export const gptImageErrorSchema = z.object({
 
 /** GPT Image rejects a transparent background unless the output is PNG. */
 const gptImageShared = {
+  // Harness-only: the Foundry adapter folds exclusions into the provider's prompt.
+  negative_prompt: promptSchema.optional(),
   size: imageSizeSchema.default('1024x1024'),
   quality: imageQualitySchema.default('high'),
   background: z.enum(['auto', 'transparent']).default('auto'),

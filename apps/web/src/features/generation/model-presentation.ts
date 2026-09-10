@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { Capability } from '../../shared/types/domain.js';
-import type { ImageInputRole, ImageInputs } from '../../shared/types/attachments.js';
+import type { ImageInputs } from '../../shared/types/attachments.js';
 import { hasParameter } from './capabilities.js';
 
 export const toolbarTabs = [
@@ -37,7 +37,6 @@ type RangeSettingKey =
 interface ToolbarRangeSetting {
   key: RangeSettingKey;
   label: string;
-  description: string;
   icon: LucideIcon;
   min: number;
   max: number;
@@ -51,7 +50,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'strength',
       label: 'Image strength',
-      description: 'How far results may move from a source image',
       icon: Blend,
       min: 0,
       max: 1,
@@ -62,7 +60,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'controlStrength',
       label: 'Control strength',
-      description: 'How strongly the source image guides the result',
       icon: Spline,
       min: 0,
       max: 1,
@@ -73,7 +70,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'fidelity',
       label: 'Style fidelity',
-      description: 'How closely results match the reference style',
       icon: Focus,
       min: 0,
       max: 1,
@@ -84,7 +80,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'compositionFidelity',
       label: 'Composition fidelity',
-      description: 'How closely results keep the content image layout',
       icon: LayoutTemplate,
       min: 0,
       max: 1,
@@ -95,7 +90,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'styleStrength',
       label: 'Style strength',
-      description: 'How strongly the style reference is applied',
       icon: Palette,
       min: 0,
       max: 1,
@@ -106,7 +100,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'changeStrength',
       label: 'Change strength',
-      description: 'How far results may depart from the content image',
       icon: Wand,
       min: 0.1,
       max: 1,
@@ -117,7 +110,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'creativity',
       label: 'Creativity',
-      description: 'How much new detail the model may invent',
       icon: Sparkles,
       min: 0.1,
       max: capability.category === 'upscale' ? 0.5 : 1,
@@ -128,7 +120,6 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
     ranges.push({
       key: 'growMask',
       label: 'Mask growth (px)',
-      description: 'Expand the edited area beyond the mask',
       icon: Expand,
       min: 0,
       max: 20,
@@ -138,23 +129,9 @@ export function toolbarRangeSettings(capability: Capability): readonly ToolbarRa
   return ranges;
 }
 
-export function inputRoleLabel(capability: Capability, role: ImageInputRole): string {
-  if (role === 'source') {
-    return capability.canonicalId === 'service/style-transfer' ? 'Content' : 'Source';
-  }
-  if (role === 'references') {
-    return capability.maxInputImages === undefined ? 'Style reference' : 'References';
-  }
-  return 'Mask';
-}
-
-export function mainImageInputs(inputs: ImageInputs) {
-  // Keep an existing mask's source on the canvas; reference-only guides stay in the left stack.
-  return [
-    ...(inputs.source ? [{ role: 'source' as const, image: inputs.source }] : []),
-    ...inputs.references.map((image) => ({ role: 'references' as const, image })),
-  ].filter(
-    ({ role, image }) =>
-      image.source !== 'style-guide' || (role === 'source' && inputs.mask !== undefined),
-  );
+export function mainSourceImage(inputs: ImageInputs) {
+  // Only a guide source with an existing mask needs a duplicate preview on the canvas.
+  return inputs.source?.source !== 'style-guide' || inputs.mask !== undefined
+    ? inputs.source
+    : undefined;
 }

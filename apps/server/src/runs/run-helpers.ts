@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import type { Destination, LocalJob, LocalRun, SeedPlan } from '@harness/domain';
+import type { LocalJob, LocalRun, SeedPlan } from '@harness/domain';
 import { z } from 'zod';
 import { safeSlug } from '../repository/slug.js';
 
@@ -58,29 +58,4 @@ export function summarizeRunStatus(jobs: LocalJob[]): LocalRun['status'] {
   if (jobs.every((job) => job.status === 'cancelled')) return 'cancelled';
   if (jobs.some((job) => job.status === 'failed')) return 'failed';
   return 'completed';
-}
-
-export function destinationMatches(
-  record: { projectId?: string | undefined; projectAssetId?: string | undefined },
-  destination: Destination,
-): boolean {
-  if (destination.kind === 'main') return !record.projectId && !record.projectAssetId;
-  if (destination.kind === 'project') {
-    return record.projectId === destination.projectId && !record.projectAssetId;
-  }
-  return (
-    record.projectId === destination.projectId &&
-    record.projectAssetId === destination.projectAssetId
-  );
-}
-
-export function sameDestination(left: Destination, right: Destination): boolean {
-  if (left.kind !== right.kind) return false;
-  if (left.kind === 'main' || right.kind === 'main') return true;
-  if (left.projectId !== right.projectId) return false;
-  return (
-    left.kind !== 'project-asset' ||
-    right.kind !== 'project-asset' ||
-    left.projectAssetId === right.projectAssetId
-  );
 }

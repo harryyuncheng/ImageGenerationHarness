@@ -2,11 +2,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys, repositoryScopedQueryPrefixes } from '../../shared/api/query-keys.js';
-import type { Notify } from '../../shared/hooks/use-toasts.js';
+import { useInlineError } from '../../shared/hooks/use-inline-error.js';
 import { getRepository, postRepositorySelection } from './api.js';
 
-export function useRepository(notify: Notify, setRepositorySettingsOpen: (open: boolean) => void) {
+export function useRepository(setRepositorySettingsOpen: (open: boolean) => void) {
   const queryClient = useQueryClient();
+  const feedback = useInlineError();
   const repositoryQuery = useQuery({
     queryKey: queryKeys.repository(),
     queryFn: getRepository,
@@ -24,14 +25,13 @@ export function useRepository(notify: Notify, setRepositorySettingsOpen: (open: 
   }
 
   async function selectRepository(endpoint: string) {
+    feedback.clearError();
     setIsMutating(true);
     try {
       const result = await runMutation(
         () => postRepositorySelection(endpoint),
         'Could not select the repository.',
-        (message) => {
-          notify(message, 'error');
-        },
+        feedback.reportError,
       );
       if (!result.ok) return;
       const status = result.value;
@@ -40,7 +40,6 @@ export function useRepository(notify: Notify, setRepositorySettingsOpen: (open: 
       // A cancelled native picker resolves with the unchanged status, which must not read as a switch.
       if (status.active && status.active.repositoryId !== activeRepositoryId) {
         setRepositorySettingsOpen(false);
-        notify(`Using ${status.active.name}.`, 'success');
       }
     } finally {
       setIsMutating(false);
@@ -51,12 +50,13 @@ export function useRepository(notify: Notify, setRepositorySettingsOpen: (open: 
   function requireRepository(action: string): boolean {
     if (activeRepositoryId) return true;
     setRepositorySettingsOpen(true);
-    notify(`Choose an image repository to ${action}.`);
+    feedback.reportError(`Choose an image repository to ${action}.`);
     return false;
   }
 
   return {
     repositoryQuery,
+    feedback,
     activeRepositoryId,
     isMutating,
     selectRepository,

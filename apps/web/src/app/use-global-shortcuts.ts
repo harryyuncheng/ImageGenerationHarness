@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import type { RefObject } from 'react';
+import { matchesShortcut, type ShortcutBindings } from '../shared/shortcuts.js';
 
 interface GlobalShortcutOptions {
+  bindings: ShortcutBindings;
   closeOverlays: () => void;
   openSettings: () => void;
   chooseImages: () => void;
@@ -11,18 +13,21 @@ interface GlobalShortcutOptions {
 export function useGlobalShortcuts(options: GlobalShortcutOptions) {
   useEffect(() => {
     const handleGlobalKey = (event: globalThis.KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.repeat) return;
       if (event.key === 'Escape') {
         options.closeOverlays();
+        return;
       }
-      if ((event.metaKey || event.ctrlKey) && event.key === '/') {
+      if (event.target instanceof Element && event.target.closest('[role="dialog"]')) return;
+      if (matchesShortcut(event, options.bindings.openSettings)) {
         event.preventDefault();
         options.openSettings();
       }
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'o') {
+      if (matchesShortcut(event, options.bindings.addImages)) {
         event.preventDefault();
         options.chooseImages();
       }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (matchesShortcut(event, options.bindings.focusPrompt)) {
         event.preventDefault();
         options.promptInput.current?.focus();
       }
@@ -31,5 +36,11 @@ export function useGlobalShortcuts(options: GlobalShortcutOptions) {
     return () => {
       window.removeEventListener('keydown', handleGlobalKey);
     };
-  }, [options.closeOverlays, options.openSettings, options.chooseImages, options.promptInput]);
+  }, [
+    options.bindings,
+    options.closeOverlays,
+    options.openSettings,
+    options.chooseImages,
+    options.promptInput,
+  ]);
 }

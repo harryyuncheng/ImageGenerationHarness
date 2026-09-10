@@ -1,20 +1,127 @@
+.shortcut-settings {
+  display: grid;
+  gap: 12px;
+}
+
+.shortcut-settings__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.shortcut-settings__toolbar > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
 .shortcut-list {
   display: flex;
   flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.shortcut-list > div:not(.shortcut-hero) {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.shortcut-row {
   border-bottom: 1px solid var(--border-soft);
   padding: 14px 3px;
   color: var(--text-secondary);
   font-size: 12px;
 }
 
-.shortcut-list > div:last-child {
+.shortcut-row:last-child {
   border-bottom: 0;
+}
+
+.shortcut-row__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.shortcut-row__copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.shortcut-row__copy small,
+.shortcut-editor__hint,
+.shortcut-settings__note {
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.shortcut-binding {
+  border-radius: 6px;
+  background: transparent;
+  padding: 0;
+}
+
+.shortcut-binding kbd {
+  display: block;
+  max-width: 140px;
+}
+
+.shortcut-binding.is-pointer-hover kbd,
+.shortcut-binding[aria-expanded='true'] kbd {
+  border-color: var(--accent);
+}
+
+.shortcut-reset {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+}
+
+.shortcut-editor {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  padding: 12px;
+}
+
+.shortcut-editor input {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  padding: 10px;
+  text-align: center;
+}
+
+.shortcut-editor__hint,
+.shortcut-editor__error {
+  margin: 0;
+}
+
+.shortcut-editor__error {
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.shortcut-editor__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.shortcut-editor__actions > button:first-child {
+  margin-right: auto;
+}
+
+.shortcut-settings__note {
+  margin: 0;
+  border-top: 1px solid var(--border-soft);
+  padding: 12px 3px;
 }
 
 kbd {

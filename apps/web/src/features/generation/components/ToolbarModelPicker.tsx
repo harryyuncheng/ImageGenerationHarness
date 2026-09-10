@@ -37,7 +37,6 @@ export function ToolbarModelPicker({
         menuId="image-model-menu"
         label="Model"
         menuLabel="Image model"
-        menuDescription="Choose a model for this workflow"
         value={selectedCapability.name}
         open={open}
         variant="model"

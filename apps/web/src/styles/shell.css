@@ -25,12 +25,11 @@
 }
 
 .studio-corner-icon {
-  border: 1px solid transparent;
-}
-
-.studio-corner-icon.active {
-  background: var(--surface-hover);
-  color: var(--accent-text);
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  padding: 0;
 }
 
 .studio-main {
@@ -52,127 +51,173 @@
     var(--bg);
 }
 
-/* Cutting-mat themes trade the accent wash for the ruled sheet on the create canvas. */
-[data-theme^='mat-'] .studio-main--create {
+[data-theme^='mat-'] .studio-main--create,
+.studio-main--overview {
   background: var(--bg);
 }
 
 .cutting-mat {
+  --sheet-bg: var(--mat-bg, var(--bg));
+  --sheet-ink: var(--mat-ink, var(--text));
+  --sheet-alt: var(--mat-alt, var(--border-soft));
+
   position: absolute;
   z-index: -1;
   inset: 0;
   display: none;
   width: 100%;
   height: 100%;
-  font-family: var(--font-sans);
   pointer-events: none;
 }
 
-[data-theme^='mat-'] .studio-main--create > .cutting-mat {
+[data-theme^='mat-'] .studio-main--create > .cutting-mat,
+.studio-main--overview > .cutting-mat {
   display: block;
 }
 
-.cutting-mat__sheet {
-  fill: var(--mat-bg);
+.cutting-mat > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.cutting-mat__grid {
+  view-transition-name: sheet-grid;
 }
 
 .cutting-mat__cell,
 .cutting-mat__major,
 .cutting-mat__bias,
-.cutting-mat__tick,
-.cutting-mat__band-edge,
 .cutting-mat__guide {
   fill: none;
   stroke-width: 1;
 }
 
 .cutting-mat__cell {
-  stroke: color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg));
+  stroke: color-mix(in srgb, var(--sheet-alt) 70%, var(--sheet-bg));
 }
 
 .cutting-mat__major {
-  stroke: color-mix(in srgb, var(--mat-ink) 22%, transparent);
+  stroke: color-mix(in srgb, var(--sheet-ink) 22%, transparent);
 }
 
 .cutting-mat__bias {
-  stroke: color-mix(in srgb, var(--mat-ink) 7%, transparent);
+  stroke: color-mix(in srgb, var(--sheet-ink) 7%, transparent);
 }
 
 .cutting-mat__guide {
-  stroke: color-mix(in srgb, var(--mat-ink) 13%, transparent);
+  stroke: color-mix(in srgb, var(--sheet-ink) 13%, transparent);
 }
 
-.cutting-mat__band {
-  fill: color-mix(in srgb, var(--mat-alt) 42%, var(--mat-bg));
+@property --ruler-scale {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
 }
 
-.cutting-mat__band-edge {
-  stroke: color-mix(in srgb, var(--mat-ink) 24%, transparent);
+@property --ruler-offset-y {
+  syntax: '<length>';
+  inherits: true;
+  initial-value: 0px;
 }
 
-.cutting-mat__tick {
-  stroke: color-mix(in srgb, var(--mat-ink) 30%, transparent);
+.cutting-mat__rulers {
+  --ruler-ink: color-mix(in srgb, var(--sheet-ink) 30%, transparent);
+  --ruler-band: color-mix(in srgb, var(--sheet-alt) 42%, var(--sheet-bg));
+  --ruler-edge: color-mix(in srgb, var(--sheet-ink) 24%, transparent);
+
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
 }
 
-.cutting-mat__measure {
-  fill: color-mix(in srgb, var(--mat-ink) 42%, transparent);
+.cutting-mat__ruler-x,
+.cutting-mat__ruler-y {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  background-color: var(--ruler-band);
+}
+
+.cutting-mat__ruler-x {
+  width: 100%;
+  height: 21px;
+  border-bottom: 1px solid var(--ruler-edge);
+  background-image:
+    linear-gradient(to right, var(--ruler-ink) 1px, transparent 1px),
+    linear-gradient(to right, var(--ruler-ink) 1px, transparent 1px);
+  background-size:
+    calc(48px * var(--ruler-scale)) 5px,
+    calc(240px * var(--ruler-scale)) 11px;
+  background-position: 0 100%;
+  background-repeat: repeat-x;
+}
+
+.cutting-mat__ruler-y {
+  width: 21px;
+  height: 100%;
+  border-right: 1px solid var(--ruler-edge);
+  background-image:
+    linear-gradient(to bottom, var(--ruler-ink) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--ruler-ink) 1px, transparent 1px);
+  background-size:
+    5px calc(48px * var(--ruler-scale)),
+    11px calc(240px * var(--ruler-scale));
+  background-position: 100% var(--ruler-offset-y);
+  background-repeat: repeat-y;
+}
+
+.cutting-mat__measure,
+.cutting-mat__corner {
+  color: color-mix(in srgb, var(--sheet-ink) 42%, transparent);
   font-size: 9px;
   font-variant-numeric: tabular-nums;
   font-weight: 600;
+  line-height: 1;
 }
 
-.top-controls {
+.cutting-mat__measure {
   position: absolute;
-  z-index: 15;
-  top: var(--studio-edge-block);
-  right: var(--studio-edge-inline);
-  left: var(--studio-edge-inline);
-  display: flex;
-  height: var(--studio-corner-control-size);
-  align-items: center;
-  justify-content: flex-end;
-  background: transparent;
-  pointer-events: none;
+  top: 2px;
+  left: 3px;
+  white-space: nowrap;
 }
 
-.top-actions {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  pointer-events: auto;
-}
-
-/* Stacks above the bottom-left settings control as one left-edge column. */
-.library-shortcuts {
+.cutting-mat__corner {
   position: absolute;
-  z-index: 21;
-  bottom: calc(
-    var(--studio-edge-block) + var(--studio-corner-control-size) + var(--studio-corner-control-gap)
-  );
-  left: var(--studio-edge-inline);
-  display: flex;
-  flex-direction: column;
-  gap: var(--studio-corner-control-gap);
+  top: 0;
+  left: 0;
+  display: grid;
+  width: 21px;
+  height: 21px;
+  place-items: center;
+  border-right: 1px solid var(--ruler-edge);
+  border-bottom: 1px solid var(--ruler-edge);
+  background: var(--ruler-band);
 }
 
-.gallery-launcher {
-  --surface-enter-offset-y: 6px;
-  --surface-enter-origin: bottom right;
+.studio-main--overview {
+  height: 100dvh;
+}
 
-  position: absolute;
-  z-index: 21;
+.studio-main--overview .cutting-mat__cell {
+  opacity: 0.45;
+}
+
+.studio-main--overview .cutting-mat__major,
+.studio-main--overview .cutting-mat__bias {
+  opacity: 0.65;
+}
+
+.studio-main--overview .workspace {
+  display: grid;
+}
+
+.sheet-navigation {
+  position: fixed;
+  z-index: 80;
   right: var(--studio-edge-inline);
   bottom: var(--studio-edge-block);
-  height: 44px;
-  border-radius: 12px;
-  background: transparent;
-  padding: 0 16px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.gallery-launcher.is-pointer-hover {
-  background: var(--surface-hover);
-  color: var(--text);
 }

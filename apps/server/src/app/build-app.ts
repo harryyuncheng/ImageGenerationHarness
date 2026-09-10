@@ -3,12 +3,12 @@ import type { RepositoryStatus } from '@harness/domain';
 import fastify, { type FastifyInstance } from 'fastify';
 import { registerCapabilityRoutes } from '../capabilities/routes.js';
 import { registerImageRoutes } from '../images/routes.js';
+import { LocalPresetService } from '../presets/preset-service.js';
+import { registerPresetRoutes } from '../presets/routes.js';
 import {
   getDefaultLocalRepositoryManager,
   type LocalRepositoryManager,
 } from '../repository/repository-manager.js';
-import { LocalProjectService } from '../projects/project-service.js';
-import { registerProjectRoutes } from '../projects/routes.js';
 import { LocalStyleGuideService } from '../style-guide/style-guide-service.js';
 import { registerStyleGuideRoutes } from '../style-guide/routes.js';
 import { registerRepositoryRoutes } from '../repository/routes.js';
@@ -22,21 +22,20 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const repositoryManager = options.repositoryManager ?? getDefaultLocalRepositoryManager();
   const initialRepositoryStatus = await repositoryManager.initialize();
   const localManager = repositoryManager as LocalRepositoryManager;
-  const projectService =
-    options.projectService === undefined
-      ? new LocalProjectService(localManager)
-      : options.projectService;
   const styleGuideService =
     options.styleGuideService === undefined
       ? new LocalStyleGuideService(localManager)
       : options.styleGuideService;
+  const presetService =
+    options.presetService === undefined
+      ? new LocalPresetService(localManager)
+      : options.presetService;
   const ownsRunService = options.runService === undefined;
   let runService: RunService | null;
   if (options.runService === undefined) {
     const { LocalRunService } = await import('../runs/run-service.js');
     runService = new LocalRunService({
       manager: localManager,
-      ...(projectService ? { projectService } : {}),
       ...(styleGuideService ? { styleGuideService } : {}),
     });
   } else {
@@ -69,8 +68,8 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
 
   registerCapabilityRoutes(app, runService);
   registerRepositoryRoutes(app, { repositoryManager, recoverSelectedRepository });
-  registerProjectRoutes(app, projectService);
   registerStyleGuideRoutes(app, styleGuideService);
+  registerPresetRoutes(app, presetService);
   registerRunRoutes(app, runService);
   registerImageRoutes(app, runService);
   return app;

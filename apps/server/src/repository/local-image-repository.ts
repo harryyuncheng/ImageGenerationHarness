@@ -36,7 +36,7 @@ const REQUIRED_DIRECTORIES = [
   '.image-harness/inputs',
   'images',
   'style-guide',
-  'projects',
+  'presets',
 ] as const;
 const REPOSITORY_DESCRIPTOR_PATH = '.image-harness/repository.json';
 const LEGACY_STYLE_GUIDE_DIRECTORY = 'references';
@@ -351,7 +351,7 @@ export class LocalImageRepository {
   }
 
   async #cleanupManagedTempsUnlocked(): Promise<void> {
-    for (const directory of ['.image-harness', 'images', 'style-guide', 'projects'] as const) {
+    for (const directory of ['.image-harness', 'images', 'style-guide', 'presets']) {
       const absoluteDirectory = await this.#resolveExisting(directory);
       await cleanupTempsRecursively(absoluteDirectory);
     }

@@ -46,16 +46,14 @@ export async function requireDirectoryManifest<T>(
   return record;
 }
 
-export function sameRecordName(left: string, right: string): boolean {
-  return left.localeCompare(right, undefined, { sensitivity: 'accent' }) === 0;
-}
-
-export function hasActiveNameConflict<T extends { name: string; archivedAt?: string | undefined }>(
+export function hasNameConflict<T extends { name: string }>(
   records: readonly T[],
   name: string,
   ignore: (record: T) => boolean = () => false,
 ): boolean {
   return records.some(
-    (record) => !record.archivedAt && !ignore(record) && sameRecordName(record.name, name),
+    (record) =>
+      !ignore(record) &&
+      record.name.localeCompare(name, undefined, { sensitivity: 'accent' }) === 0,
   );
 }

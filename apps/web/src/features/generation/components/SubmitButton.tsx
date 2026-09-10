@@ -1,13 +1,20 @@
 import { RefreshCw, WandSparkles, X } from 'lucide-react';
+import {
+  formatShortcut,
+  shortcutAriaKeys,
+  type ShortcutBinding,
+} from '../../../shared/shortcuts.js';
 
 /** Cancelling replaces generating while the loaded run still has droppable work. */
 export function SubmitButton({
   isSubmitting,
   blockedReason,
+  shortcut,
   onCancel,
 }: {
   isSubmitting: boolean;
   blockedReason: string | undefined;
+  shortcut: ShortcutBinding | null;
   onCancel?: () => void;
 }) {
   if (onCancel) {
@@ -29,7 +36,8 @@ export function SubmitButton({
       className="generate-button"
       type="submit"
       disabled={isSubmitting || blockedReason !== undefined}
-      title={blockedReason ?? 'Generate (⌘ Enter)'}
+      title={blockedReason ?? (shortcut ? `Generate (${formatShortcut(shortcut)})` : 'Generate')}
+      aria-keyshortcuts={shortcutAriaKeys(shortcut)}
     >
       {isSubmitting ? <RefreshCw className="spin" size={18} /> : <WandSparkles size={17} />}
       <span>Generate</span>

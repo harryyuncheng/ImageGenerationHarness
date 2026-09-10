@@ -7,6 +7,7 @@ import { z } from 'zod';
 export const studioSearchSchema = z.object({
   image: z.uuid().optional().catch(undefined),
   run: z.uuid().optional().catch(undefined),
+  output: z.number().int().nonnegative().optional().catch(undefined),
 });
 
 export type StudioSearch = z.infer<typeof studioSearchSchema>;

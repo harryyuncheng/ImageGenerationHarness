@@ -1,6 +1,5 @@
 .text-button,
-.primary-small,
-.preset-card > div button {
+.primary-small {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -13,8 +12,7 @@
   font-weight: 600;
 }
 
-.text-button.is-pointer-hover,
-.preset-card > div button.is-pointer-hover {
+.text-button.is-pointer-hover {
   background: var(--surface-hover);
   color: var(--text);
 }

@@ -2,19 +2,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
-import type { Notify } from '../../shared/hooks/use-toasts.js';
+import { useInlineError } from '../../shared/hooks/use-inline-error.js';
 import type { Capability } from '../../shared/types/domain.js';
 import { cancelRun, getRuns } from './api.js';
 import { collectRunFailures, mergeRuns, toStudioRuns, type StudioRun } from './run-presentation.js';
-import type { FavoritesController } from './use-favorites.js';
 
 const pollingIntervalMs = 3000;
 
 interface RunsOptions {
   activeRepositoryId: string | undefined;
   capabilities: readonly Capability[];
-  favorites: FavoritesController;
-  notify: Notify;
   focusedRunId: string | undefined;
   onFocusedRunFailed: () => void;
 }
@@ -24,7 +21,8 @@ interface RunsOptions {
  * the gap between submitting a run and seeing it in a poll.
  */
 export function useRuns(options: RunsOptions) {
-  const { activeRepositoryId, capabilities, favorites, notify, focusedRunId } = options;
+  const { activeRepositoryId, capabilities, focusedRunId } = options;
+  const feedback = useInlineError();
   const queryClient = useQueryClient();
   const [optimisticRuns, setOptimisticRuns] = useState<StudioRun[]>([]);
   const handledFailureIds = useRef(new Set<string>());
@@ -41,8 +39,8 @@ export function useRuns(options: RunsOptions) {
 
   const runFailures = useMemo(() => collectRunFailures(runsQuery.data), [runsQuery.data]);
   const durableRuns = useMemo(
-    () => toStudioRuns(runsQuery.data, capabilities, favorites.favoriteRuns),
-    [capabilities, favorites.favoriteRuns, runsQuery.data],
+    () => toStudioRuns(runsQuery.data, capabilities),
+    [capabilities, runsQuery.data],
   );
   const allRuns = mergeRuns(optimisticRuns, durableRuns);
 
@@ -64,10 +62,11 @@ export function useRuns(options: RunsOptions) {
       );
       return remaining.length === current.length ? current : remaining;
     });
-    favorites.dropFavorites(failedIds);
     if (focusedRunId !== undefined && failedIds.has(focusedRunId)) options.onFocusedRunFailed();
-    for (const failure of unhandled) notify(failure.error, 'error');
-  }, [runFailures, focusedRunId, optimisticRuns, favorites.dropFavorites]);
+    if (unhandled.length > 0) {
+      feedback.reportError(unhandled.map((failure) => failure.error).join('\n'));
+    }
+  }, [runFailures, focusedRunId, optimisticRuns]);
 
   /**
    * Draft ownership lasts only while the submitted run stays focused, which is what
@@ -87,7 +86,16 @@ export function useRuns(options: RunsOptions) {
   function markRunQueued(localId: string, remoteId: string) {
     submittedRunIds.current.add(remoteId);
     setOptimisticRuns((current) =>
-      current.map((run) => (run.id === localId ? { ...run, remoteId, status: 'queued' } : run)),
+      current.map((run) =>
+        run.id === localId
+          ? {
+              ...run,
+              remoteId,
+              status: 'queued',
+              jobs: run.jobs.map((job) => ({ ...job, status: 'queued' })),
+            }
+          : run,
+      ),
     );
   }
 
@@ -112,19 +120,18 @@ export function useRuns(options: RunsOptions) {
 
   async function cancel(run: StudioRun) {
     if (!run.remoteId) return;
+    feedback.clearError();
     const result = await runMutation(
       () => cancelRun(run.remoteId ?? ''),
       'Could not cancel the run.',
-      (message) => {
-        notify(message, 'error');
-      },
+      feedback.reportError,
     );
     if (!result.ok) return;
     await invalidateRuns();
-    notify('Queued work cancelled. Active Bedrock calls may still finish.', 'success');
   }
 
   return {
+    feedback,
     runsQuery,
     allRuns,
     addOptimisticRun,

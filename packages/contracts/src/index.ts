@@ -22,14 +22,13 @@ export {
   isMediaType,
   mediaTypeSchema,
   outputFormatSchema,
+  requestedImageAspectRatio,
   stylePresetSchema,
 } from './media.js';
 export type { AspectRatio, ImageQuality, MediaType, OutputFormat } from './media.js';
 export {
   attemptStatusSchema,
   createRunRequestSchema,
-  destinationQuerySchema,
-  destinationSchema,
   generationFailureSchema,
   jobDtoSchema,
   jobStatusSchema,
@@ -44,7 +43,6 @@ export {
 } from './runs.js';
 export type {
   CreateRunRequest,
-  Destination,
   GenerationFailure,
   RunStatus,
   RunsResponse,
@@ -62,26 +60,6 @@ export type {
 export { repositoryParamsSchema, repositoryStatusSchema } from './repository.js';
 export type { RepositoryStatus } from './repository.js';
 export {
-  includeArchivedQuerySchema,
-  projectAssetDtoSchema,
-  projectAssetParamsSchema,
-  projectAssetsResponseSchema,
-  projectCreateRequestSchema,
-  projectDetailResponseSchema,
-  projectDtoSchema,
-  projectParamsSchema,
-  projectUpdateRequestSchema,
-  projectsResponseSchema,
-} from './projects.js';
-export type {
-  ProjectAssetDto,
-  ProjectCreateRequest,
-  ProjectDetailResponse,
-  ProjectDto,
-  ProjectUpdateRequest,
-  ProjectsResponse,
-} from './projects.js';
-export {
   createStyleGuideImageRequestSchema,
   folderParamsSchema,
   styleGuideFolderDtoSchema,
@@ -97,6 +75,20 @@ export type {
   StyleGuideImageDto,
   StyleGuideResponse,
 } from './style-guide.js';
+export {
+  createPresetRequestSchema,
+  presetCoverRequestSchema,
+  presetDtoSchema,
+  presetsResponseSchema,
+  updatePresetRequestSchema,
+} from './presets.js';
+export type {
+  CreatePresetRequest,
+  PresetCoverRequest,
+  PresetDto,
+  PresetsResponse,
+  UpdatePresetRequest,
+} from './presets.js';
 export {
   galleryResponseSchema,
   generatedImageInputSchema,

@@ -2,24 +2,26 @@
 
 A local-first, single-user image-generation workbench for Stability AI models on Amazon Bedrock and OpenAI GPT Image deployments on Azure AI Foundry. The browser communicates only with a Fastify server bound to loopback. Image-domain data belongs to a user-selected folder on this Mac; the configured model providers are the only required cloud services.
 
-## Baroque
+## Constable
 
 The browser workbench provides:
 
 - Stable Image Core, Stable Image Ultra, Stable Diffusion 3.5 Large, and the registered Stability Image Services on Amazon Bedrock.
-- GPT Image 2 generation and editing on Azure AI Foundry, with up to 16 ordered image inputs. Create accepts 16 optional references; Edit accepts a source plus 15 references and an optional source mask.
+- GPT Image 2 generation and editing on Azure AI Foundry, with up to 16 ordered image inputs. Create accepts 16 optional references; Edit accepts a source plus 15 references and an optional source mask. Both support negative prompts through ordinary-language exclusions appended to the provider prompt.
 - One upward-opening model dropdown per workflow, with Stability and GPT Image models available together. Models without server-side provider credentials remain visible but disabled, with their setup requirements.
-- Model-aware controls for documented prompts, source images, styles, masks, strengths, quality, backgrounds, output formats, aspect ratios, and seed ranges.
+- Model-aware controls for documented prompts, source images, styles, masks, strengths, quality, backgrounds, output formats, aspect ratios, and seed ranges. Toolbar pop-ups use title-only headers.
+- A text-only Negative prompt toolbar button opens a compact multiline editor using the same popover as the image-count and other toolbar controls. Edits persist as you type; long text scrolls vertically with a thin, theme-colored scrollbar. The toolbar expands to fit the button without widening the other top-row controls, and the workflow tabs share the extra width equally.
 - A local image-repository selector in Settings with native macOS folder selection, New Folder support, recent folders, and automatic reopening of the last valid repository.
-- Projects with editable organizational descriptions, generated images, and nested project assets.
-- An explicit generation destination: the main repository, a project, or a nested project asset.
-- A fully local style guide of reusable image folders. Applying a folder fills the selected model's image inputs through opaque `repo-image://<image-id>` references, preserving an explicitly selected edit source. Active guide previews stay in the left-hand stack rather than being duplicated in the main area. Open the guide to exclude an image from the request without deleting it. GPT Image 2 stays in Create when a guide is applied; describe the references' style or role in the prompt. Excess references block generation until removed.
-- The main image area appears only for actual working images, uploaded references, or saved output previews. With none, the prompt keeps its text-only layout: no empty image slots, upload tiles, or reserved drop zones. Use the toolbar's Add images action, the image shortcut, or drop files without a dedicated drop area. Image previews retain their fitted size, and actual images keep their replace/remove controls. A selected saved image becomes the source for source-based tools; text-only models and GPT Image 2 Create keep output previews separate from submitted inputs.
+- Appearance settings with local Sans, Serif, and Mono font choices, previewed in their own typefaces and remembered on this device. Settings reopens to the last selected section.
+- Configurable shortcuts for focusing the prompt, creating, adding images, and opening Settings. Record a combination in Settings → Shortcuts, remove a binding, or restore defaults. Conflicts appear inline, and Escape and normal text editing remain available.
+- An ungrouped saved-preset library with optional covers uploaded from your computer or copied from your gallery. Click a cover to append its prompt without leaving the picker; mix and match presets without replacing what you have written. The canvas shortcut is a large bookmark tilted toward north-northwest and partly tucked beyond the left edge, with a centered plus and the style-guide cards' muted fill and dashed outline. Prompts and covers stay in the selected local repository, and covers are never sent to a model.
+- A fully local gallery of reusable style guides, with first-four-image covers and separate image views with back navigation. The side stack opens the applied guide directly, or the gallery when none is applied. Matching fan images unfold into the guide and collapse back on close; reduced-motion preferences skip this movement. Close with X or Escape, not by clicking outside the guide. Applying a folder fills the selected model's image inputs through opaque `repo-image://<image-id>` references, preserves an explicitly selected edit source, and returns to the canvas. Active guide previews stay in the left-hand stack rather than being duplicated in the main area. Each image has a plus/minus control to include or exclude it from the request without deleting its file; these individual changes keep the guide open. Selecting an image from another guide switches the active guide. Click a guide or image name to rename it inline. GPT Image 2 stays in Create when a guide is applied; describe the references' style or role in the prompt. Excess references block generation until removed.
+- The main image area appears only for actual source images or saved output previews. With none, the prompt keeps its full-width layout: no empty image slots, upload tiles, or reserved drop zones. Use the toolbar's Add images action, the image shortcut, or drop files without a dedicated drop area. Source images retain their fitted size, with an unboxed X over the top-right corner to remove the current input without deleting saved files. A selected saved image becomes the source for source-based tools; text-only models and GPT Image 2 Create keep output previews separate from submitted inputs.
+- Temporary reference images form a floating vertical stack at the right edge without shifting the prompt or working images. Previews share a responsive height capped at 180 px, with widths following their natural aspect ratios. Preset alternating tilts and a 20% outward offset tuck each image partly off-screen. There are no rounded corners, borders, captions, or numbering; each has an unboxed X over its top-left corner. The stack scrolls vertically when needed, preserves reference order, and never duplicates style-guide previews.
 - Live in-place masking: draw directly over the source image with box, pen, eraser, undo, clear, and mask upload in a compact icon toolbar. Each completed stroke, undo, and clear immediately updates the next request, without an apply or cancel step. Masks stay visible over their source, and switching providers preserves the selection while converting its encoding. Generation waits only while a stroke or mask conversion is in progress, or an input needs correction.
-- Durable server-backed history and gallery views for retained work, polling-based status, and cancellation of queued work. Selecting a saved image or run loads it into the main area beside the prompt it was made from. Failed attempts surface as pop-up errors and are discarded.
+- A zoomed-out gallery on the same ruled sheet. Matching bordered circular controls sit in the bottom corners: Settings on the left and an icon-only gallery/create switch on the right. Saved outputs form a continuous newest-first grid of uncropped images without headings, captions, numbering, or hover movement.
+- Durable server-backed history, polling-based status, and cancellation of queued work. In-progress images appear as thumbnail-sized skeletons in the gallery grid, preserving the submitted aspect ratio; stopped runs stay in a compact list. Pending and saved images use the same gallery card, image frame, and measured camera transition. Selecting either zooms into that specific output on the working canvas with its prompt and model, and completed pixels replace the skeleton inside the same frame. Back to canvas (or Escape) preserves the current draft and loaded image; the overview hides the style guide and generation toolbar. Failed attempts surface inline and are discarded.
 - Adjacent, strict JSON sidecars containing the exact prompt, normalized settings, seed provenance, dimensions, hashes, invocation target, inputs, and non-secret provider metadata.
-
-Project and project-asset descriptions are organizational notes only. They are never included in a provider request.
 
 ## Prerequisites
 
@@ -54,14 +56,14 @@ The monorepo keeps deployable applications separate from reusable boundaries:
 apps/
   web/src/
     app/          # application composition and shell
-    features/     # generation, editing, gallery, projects, style guide, and history
+    features/     # generation, editing, gallery, presets, style guide, and history
     shared/       # browser-only HTTP, hooks, image helpers, and reusable UI
     styles/       # ordered global, shell, shared, and feature styles
   server/src/
     app/          # Fastify composition, errors, and loopback security
     repository/   # selected-repository path and filesystem authority
-    projects/     # project and nested-asset behavior
     style-guide/  # local style guide behavior
+    presets/      # saved prompts and decorative cover images
     runs/         # durable run orchestration, queueing, workers, and recovery
     images/       # generated-image lookup, integrity checks, and HTTP routes
     providers/    # server-only provider adapters and the shared invocation interface
@@ -88,25 +90,26 @@ ESLint treats production files above 425 non-blank, non-comment lines as an arch
   images/
   style-guide/
     <folder-slug>--<folder-id>/
-  projects/
-    <project-slug>--<project-id>/
-      project.json
-      images/
-      assets/
-        <asset-slug>--<asset-id>/
-          asset.json
-          images/
+  presets/
+    <preset-slug>--<preset-id>/
+      preset.json
+      cover--<image-id>.<ext>
+      cover--<image-id>.image.json
 ```
 
 Generated image bytes are immutable and byte-exact. Each image has an adjacent `.image.json` provenance sidecar. Files are written with temporary-file-plus-rename or immutable-link semantics under an in-process repository mutation lock.
 
 ## Local processing and recovery
 
-`POST /api/runs` validates and durably writes local run/job records before placing jobs on a bounded in-process queue. Concurrency defaults to one. The server verifies local input hashes, converts only the trusted bytes to base64 for the model request, invokes the target's provider directly with retries disabled, validates the response, and writes outputs to the selected destination.
+`POST /api/runs` validates and durably writes local run/job records before placing jobs on a bounded in-process queue. Concurrency defaults to one. The server verifies local input hashes, converts only the trusted bytes to base64 for the model request, invokes the target's provider directly with retries disabled, validates the response, and writes outputs into the selected repository's `images/` directory.
 
 GPT Image 2 uses `images/generations` for text-only requests and `images/edits` whenever image inputs are present, including creating a new composition from references. The edit transport does not require modifying an existing composition. Ordered references are snapshotted separately, and a mask applies only to the first image. Azure inputs must be PNG or JPEG; the harness retains its 10 MiB per-image limit. The run-upload route allows bounded base64 payloads for all 16 images plus a separate mask without increasing other routes' body limits.
 
-If an invocation fails, polling delivers a minimal one-shot error notification from memory. The failed job and attempt records, partial outputs, and any now-unreferenced staged inputs are removed instead of entering recents or history. The browser leaves the current prompt, attachments, and generation settings intact so the request can be corrected or rerun.
+GPT Image has no native `negative_prompt` parameter. The server appends a blank line followed by `Avoid: <negative prompt>` to its normal prompt for both generation and editing, leaving an empty negative prompt out entirely. Stored prompts remain separate and unchanged; sidecar provider metadata records the combined `effectivePrompt` when exclusions are added. Stability targets continue to use their native negative-prompt field. These are model instructions, not guaranteed exclusions; see [the prompting sources](docs/model-capabilities.md#sources).
+
+While a request is submitting, queued, or generating, the canvas shows a skeleton in the image's place, shaped to the submitted aspect ratio or pixel dimensions. The gallery uses the same skeleton at thumbnail size for each pending output, without visible progress text. Polling retains that shape even if the draft settings change. An icon-only Reset settings button is always available just left of the Create toolbar, vertically centered, with a "Reset settings" hover label.
+
+The app does not show pop-up notifications. Errors appear inline in the relevant canvas, form, or panel. If an invocation fails, polling delivers a minimal one-shot error from memory. The failed job and attempt records, partial outputs, and any now-unreferenced staged inputs are removed instead of entering recents or history. The browser leaves the current prompt, attachments, and generation settings intact so the request can be corrected or rerun.
 
 Polling through `GET /api/runs/:runId` remains authoritative. On restart, queued jobs resume. A job that was running is marked interrupted with an ambiguous attempt because the provider may already have accepted and billed the call; it is never retried automatically. Queued jobs can be cancelled, while an active provider call cannot be reliably interrupted.
 

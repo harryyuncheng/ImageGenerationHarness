@@ -1,4 +1,5 @@
 import { FolderOpen, HardDrive } from 'lucide-react';
+import { InlineError } from '../../../shared/components/InlineError.js';
 import { activateRepositoryEndpoint, chooseRepositoryEndpoint } from '../api.js';
 import type { RepositoryController } from '../use-repository.js';
 
@@ -22,7 +23,7 @@ export function RepositorySelector({ repository }: { repository: RepositoryContr
           </strong>
           <small>
             {active
-              ? 'Every image, project, and run in the studio is read from and written to this folder.'
+              ? 'Every image and run in the studio is read from and written to this folder.'
               : 'Choose a folder, or create one in the picker, before saving any work.'}
           </small>
         </span>
@@ -44,6 +45,7 @@ export function RepositorySelector({ repository }: { repository: RepositoryContr
           {repositoryQuery.error.message}
         </p>
       )}
+      <InlineError feedback={repository.feedback} />
 
       {alternatives.length > 0 && (
         <div className="repository-recents">

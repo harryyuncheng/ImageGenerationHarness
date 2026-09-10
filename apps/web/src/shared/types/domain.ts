@@ -1,13 +1,10 @@
 import type {
   CapabilitiesResponse,
   CapabilityDescriptor,
-  Destination,
   GalleryImageDto,
   GalleryResponse,
-  ProjectAssetDto,
-  ProjectDetailResponse,
-  ProjectDto,
-  ProjectsResponse,
+  PresetDto,
+  PresetsResponse,
   ProviderDescriptor,
   StyleGuideFolderDto,
   StyleGuideImageDto,
@@ -17,17 +14,14 @@ import type {
 
 export type Capability = CapabilityDescriptor;
 export type GalleryImage = GalleryImageDto;
-export type Project = ProjectDto;
-export type ProjectAsset = ProjectAssetDto;
+export type Preset = PresetDto;
 export type StyleGuideFolder = StyleGuideFolderDto;
 export type StyleGuideImage = StyleGuideImageDto;
 
 export type {
   CapabilitiesResponse,
-  Destination,
   GalleryResponse,
-  ProjectDetailResponse,
-  ProjectsResponse,
+  PresetsResponse,
   ProviderDescriptor,
   StyleGuideResponse,
   RepositoryStatus,

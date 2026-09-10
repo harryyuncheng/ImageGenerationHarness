@@ -11,11 +11,17 @@
   min-height: 0;
   overflow: auto;
   background: transparent;
+  view-transition-name: sheet-content;
 }
 
-.canvas > .surface-enter {
-  --surface-enter-offset-y: 0;
-  --surface-enter-scale: 1;
+.studio-main--overview .canvas {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.canvas-origin {
+  height: 100%;
+  min-height: 100%;
 }
 
 .library-page {

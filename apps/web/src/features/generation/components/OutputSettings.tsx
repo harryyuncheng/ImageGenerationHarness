@@ -25,7 +25,6 @@ export function OutputSettings({
           menuId="output-format-menu"
           label="Output format"
           menuLabel="Output format"
-          menuDescription="Choose the file type written to the repository"
           value={current.outputFormat.toUpperCase()}
           open={settingMenu === 'format'}
           variant="format"
@@ -65,7 +64,6 @@ export function OutputSettings({
           menuId="seed-strategy-menu"
           label="Seed"
           menuLabel="Seed"
-          menuDescription="Control how each image picks its starting noise"
           value={current.seedMode === 'random' ? 'Random' : String(current.seed)}
           open={settingMenu === 'seed'}
           variant="seed"

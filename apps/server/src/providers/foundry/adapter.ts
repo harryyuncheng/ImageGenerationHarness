@@ -140,6 +140,14 @@ export class AzureFoundryAdapter implements ImageProvider {
     );
     url.searchParams.set('api-version', credentials.apiVersion);
 
+    // GPT Image has no negative_prompt field; only the wire prompt gets the exclusions.
+    const { negative_prompt: negativePrompt, ...payload } = request;
+    const effectivePrompt =
+      typeof negativePrompt === 'string' && negativePrompt.trim()
+        ? `${String(request['prompt'])}\n\nAvoid: ${negativePrompt.trim()}`
+        : undefined;
+    if (effectivePrompt) payload['prompt'] = effectivePrompt;
+
     // `n` travels in the validated request, so one call returns the whole run.
     const response = await fetch(url, {
       method: 'POST',
@@ -147,7 +155,7 @@ export class AzureFoundryAdapter implements ImageProvider {
         'api-key': credentials.apiKey,
         ...(operation === 'edits' ? {} : { 'content-type': 'application/json' }),
       },
-      body: operation === 'edits' ? await editFormData(request) : JSON.stringify(request),
+      body: operation === 'edits' ? await editFormData(payload) : JSON.stringify(payload),
     });
     if (!response.ok) throw new Error(await describeFailure(response, url));
     const decoded = gptImageResponseSchema.parse(await response.json());
@@ -164,6 +172,7 @@ export class AzureFoundryAdapter implements ImageProvider {
         httpStatusCode: response.status,
         apiVersion: credentials.apiVersion,
         operation,
+        ...(effectivePrompt ? { effectivePrompt } : {}),
       },
     };
   }

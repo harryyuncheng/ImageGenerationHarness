@@ -7,8 +7,8 @@ import {
   runsResponseSchema,
 } from '@harness/contracts';
 import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { ApiError, requireService } from '../app/api-error.js';
-import { parseDestinationQuery } from './destination-query.js';
 import { runSnapshotDto } from './run-dto.js';
 import type { RunService } from './run-types.js';
 
@@ -28,10 +28,10 @@ export function registerRunRoutes(app: FastifyInstance, runService: RunService |
     },
   );
   app.get('/api/runs', async (request) => {
-    const destination = parseDestinationQuery(request.query);
+    z.object({}).strict().parse(request.query);
     return runsResponseSchema.parse({
-      runs: (await service().listRuns(destination)).map(runSnapshotDto),
-      failures: service().consumeFailures(destination),
+      runs: (await service().listRuns()).map(runSnapshotDto),
+      failures: service().consumeFailures(),
     });
   });
   app.get('/api/runs/:runId', async (request) => {

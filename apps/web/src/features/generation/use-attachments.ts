@@ -5,17 +5,18 @@ import {
   revokeUploadPreviews,
   supportedImageFiles,
 } from '../../shared/images/files.js';
-import type { Notify } from '../../shared/hooks/use-toasts.js';
+import { useInlineError } from '../../shared/hooks/use-inline-error.js';
 import type {
   Attachment,
   ImageInputRole,
   ImageInputs,
+  StyleGuideAttachment,
   UploadAttachment,
 } from '../../shared/types/attachments.js';
 import type { Capability, StyleGuideImage } from '../../shared/types/domain.js';
 import { styleGuideImageContentUrl } from '../style-guide/api.js';
 import { imageInputRoles } from './capabilities.js';
-import { mainImageInputs } from './model-presentation.js';
+import { mainSourceImage } from './model-presentation.js';
 
 interface InputSelection {
   source: Attachment | null | undefined;
@@ -39,12 +40,8 @@ function revokeRemovedUploads(current: InputSelection, next: InputSelection): vo
   );
 }
 
-function resolveInputs(
-  capability: Capability,
-  selection: InputSelection,
-  styleGuideImages: readonly StyleGuideImage[],
-) {
-  const guideImages = styleGuideImages.map((image): Attachment => ({
+function styleGuideAttachment(image: StyleGuideImage): StyleGuideAttachment {
+  return {
     source: 'style-guide',
     id: `style-guide:${image.imageId}`,
     folderId: image.folderId,
@@ -53,19 +50,29 @@ function resolveInputs(
     mediaType: image.mediaType,
     byteLength: image.byteLength,
     previewUrl: styleGuideImageContentUrl(image.folderId, image.imageId),
-  }));
+  };
+}
+
+function resolveInputs(
+  capability: Capability,
+  selection: InputSelection,
+  styleGuideImages: readonly StyleGuideImage[],
+) {
+  const guideImages = styleGuideImages.map(styleGuideAttachment);
+  const guidesById = new Map(guideImages.map((image) => [image.id, image]));
+  const resolveImage = (image: Attachment) =>
+    image.source === 'style-guide' ? guidesById.get(image.id) : image;
   const roles = imageInputRoles(capability);
-  const availableReferences = (selection.references ?? guideImages).filter(
-    (image) => image.source !== 'style-guide' || guideImages.some((guide) => guide.id === image.id),
-  );
+  const availableReferences = (selection.references ?? guideImages)
+    .map(resolveImage)
+    .filter((image): image is Attachment => image !== undefined);
   const selectedSource =
-    selection.source === undefined ? availableReferences[0] : (selection.source ?? undefined);
-  const source =
-    roles.includes('source') &&
-    (selectedSource?.source !== 'style-guide' ||
-      guideImages.some((guide) => guide.id === selectedSource.id))
-      ? selectedSource
-      : undefined;
+    selection.source === undefined
+      ? availableReferences[0]
+      : selection.source
+        ? resolveImage(selection.source)
+        : undefined;
+  const source = roles.includes('source') ? selectedSource : undefined;
   const referenceLimit =
     capability.maxInputImages === undefined
       ? 1
@@ -91,7 +98,72 @@ function resolveInputs(
         : mask?.maskEncoding !== undefined && mask.maskEncoding !== encoding
           ? 'Preparing the mask for this model.'
           : undefined;
-  return { inputs, roles, referenceLimit, blockedReason };
+  return { inputs, roles, blockedReason };
+}
+
+function removeSelectedInput(
+  selection: InputSelection,
+  inputs: ImageInputs,
+  role: 'source' | 'references',
+  imageId?: string,
+): InputSelection {
+  return {
+    ...selection,
+    source: role === 'source' ? null : (inputs.source ?? selection.source),
+    references:
+      role === 'references'
+        ? inputs.references.filter((image) => imageId !== undefined && image.id !== imageId)
+        : inputs.references,
+    mask: role === 'source' ? undefined : selection.mask,
+  };
+}
+
+function styleGuideSelection(
+  capability: Capability,
+  selection: InputSelection,
+  availableImages: readonly StyleGuideImage[],
+  image?: StyleGuideImage,
+): InputSelection {
+  const { inputs, roles } = resolveInputs(capability, selection, availableImages);
+  if (image) {
+    if (inputs.source?.source === 'style-guide' && inputs.source.imageId === image.imageId) {
+      return removeSelectedInput(selection, inputs, 'source');
+    }
+    const reference = inputs.references.find(
+      (input) => input.source === 'style-guide' && input.imageId === image.imageId,
+    );
+    if (reference) return removeSelectedInput(selection, inputs, 'references', reference.id);
+  }
+  const selectedSource = inputs.source ?? selection.source;
+  const source =
+    selectedSource?.source === 'style-guide' && selectedSource.folderId !== image?.folderId
+      ? undefined
+      : (selectedSource ?? undefined);
+  const mask = source ? selection.mask : undefined;
+  if (!image) return { source, references: undefined, mask };
+
+  const input = styleGuideAttachment(image);
+  const references = inputs.references.filter(
+    (reference) => reference.source !== 'style-guide' || reference.folderId === image.folderId,
+  );
+  if (
+    roles.includes('source') &&
+    (!source || (!roles.includes('references') && source.source === 'style-guide'))
+  ) {
+    return { source: input, references, mask: undefined };
+  }
+  if (roles.includes('references')) {
+    return {
+      source,
+      references: capability.maxInputImages === undefined ? [input] : [...references, input],
+      mask,
+    };
+  }
+  throw new Error(
+    roles.includes('source')
+      ? `${capability.name} only accepts one source image. Remove the current source or choose a model that accepts reference images.`
+      : 'Choose an image-based model before selecting style guide images.',
+  );
 }
 
 function uploadRoles(
@@ -129,7 +201,8 @@ function uploadRoles(
   return roles.slice(roles.indexOf(first));
 }
 
-export function useAttachments(capability: Capability, notify: Notify) {
+export function useAttachments(capability: Capability) {
+  const feedback = useInlineError();
   const [selection, setSelection] = useState<InputSelection>(emptySelection);
   const [styleGuideImages, setStyleGuideImages] = useState<readonly StyleGuideImage[]>([]);
   const [maskStatus, setMaskStatus] = useState<{ sourceId: string; message: string }>();
@@ -137,7 +210,7 @@ export function useAttachments(capability: Capability, notify: Notify) {
   const pickerRole = useRef<ImageInputRole | undefined>(undefined);
   const mounted = useRef(true);
   const resolved = resolveInputs(capability, selection, styleGuideImages);
-  const { inputs, roles, referenceLimit } = resolved;
+  const { inputs, roles } = resolved;
   const { source } = inputs;
   const latest = useRef({ capability, selection, inputs, styleGuideImages });
   latest.current = { capability, selection, inputs, styleGuideImages };
@@ -146,7 +219,7 @@ export function useAttachments(capability: Capability, notify: Notify) {
   const blockedReason =
     resolved.blockedReason ??
     (roles.includes('mask') &&
-    mainImageInputs(inputs).some((input) => input.role === 'source') &&
+    mainSourceImage(inputs) !== undefined &&
     maskStatus?.sourceId === source?.id
       ? maskStatus?.message
       : undefined);
@@ -198,19 +271,21 @@ export function useAttachments(capability: Capability, notify: Notify) {
   }, []);
 
   function chooseFiles(role?: ImageInputRole) {
+    feedback.clearError();
     try {
       pickerRole.current = uploadRoles(capability, inputs, role)[0];
       fileInput.current?.click();
     } catch (error) {
-      notify(error instanceof Error ? error.message : 'Could not choose an image.', 'error');
+      feedback.reportError(error instanceof Error ? error.message : 'Could not choose an image.');
     }
   }
 
   async function addFiles(files: File[], role?: ImageInputRole) {
     if (files.length === 0) return;
+    feedback.clearError();
     const accepted = supportedImageFiles(files);
     if (accepted.length !== files.length) {
-      notify('Use PNG, JPEG, or WebP images up to 10 MB.', 'error');
+      feedback.reportError('Use PNG, JPEG, or WebP images up to 10 MB.');
     }
     const loaded: UploadAttachment[] = [];
     try {
@@ -226,7 +301,7 @@ export function useAttachments(capability: Capability, notify: Notify) {
         latest.current.styleGuideImages !== styleGuideImages
       ) {
         revokeUploadPreviews(loaded);
-        notify('The inputs or model changed. Choose the images again.', 'error');
+        feedback.reportError('The inputs or model changed. Choose the images again.');
         return;
       }
       const valid = loaded.filter((image, index) => {
@@ -236,11 +311,10 @@ export function useAttachments(capability: Capability, notify: Notify) {
             (targetRoles[index] === 'mask' && image.mediaType !== 'image/png'))
         ) {
           URL.revokeObjectURL(image.previewUrl);
-          notify(
+          feedback.reportError(
             targetRoles[index] === 'mask'
               ? 'GPT Image masks must be PNG images.'
               : 'GPT Image references and source images must be PNG or JPEG.',
-            'error',
           );
           return false;
         }
@@ -268,13 +342,13 @@ export function useAttachments(capability: Capability, notify: Notify) {
         return next;
       });
       if (accepted.length > targetRoles.length) {
-        notify(
+        feedback.reportError(
           `Added files to ${String(targetRoles.length)} available image slots. Extra files were not added.`,
         );
       }
     } catch (error) {
       revokeUploadPreviews(loaded);
-      notify(error instanceof Error ? error.message : 'Could not read the image.', 'error');
+      feedback.reportError(error instanceof Error ? error.message : 'Could not read the image.');
     }
   }
 
@@ -290,24 +364,21 @@ export function useAttachments(capability: Capability, notify: Notify) {
   }
 
   function removeInput(role: 'source' | 'references', imageId?: string) {
-    setSelection((current) => {
-      const { inputs } = resolveInputs(capability, current, styleGuideImages);
-      return {
-        ...current,
-        source: role === 'source' ? null : (inputs.source ?? current.source),
-        references:
-          role === 'references'
-            ? inputs.references.filter((image) => imageId !== undefined && image.id !== imageId)
-            : inputs.references,
-        mask: role === 'source' ? undefined : current.mask,
-      };
-    });
+    feedback.clearError();
+    setSelection((current) =>
+      removeSelectedInput(
+        current,
+        resolveInputs(capability, current, styleGuideImages).inputs,
+        role,
+        imageId,
+      ),
+    );
   }
 
   return {
+    feedback,
     inputs,
     roles,
-    referenceLimit,
     blockedReason,
     fileInput,
     chooseFiles,
@@ -321,18 +392,18 @@ export function useAttachments(capability: Capability, notify: Notify) {
     styleGuideFolderId: styleGuideImages[0]?.folderId,
     applyStyleGuide: (images: readonly StyleGuideImage[]) => {
       setStyleGuideImages(images);
-      setSelection((current) => {
-        const { inputs } = resolveInputs(capability, current, styleGuideImages);
-        const selectedSource = inputs.source ?? current.source;
-        const source = selectedSource?.source === 'style-guide' ? undefined : selectedSource;
-        return {
-          source: source ?? undefined,
-          references: undefined,
-          mask: source ? current.mask : undefined,
-        };
-      });
+      setSelection((current) => styleGuideSelection(capability, current, styleGuideImages));
+    },
+    toggleStyleGuideImage: (image: StyleGuideImage, target: Capability) => {
+      const next = styleGuideSelection(target, selection, styleGuideImages, image);
+      feedback.clearError();
+      setStyleGuideImages(
+        styleGuideImages[0]?.folderId === image.folderId ? styleGuideImages : [image],
+      );
+      setSelection(next);
     },
     reset: () => {
+      feedback.clearError();
       setSelection({ source: null, references: [], mask: undefined });
       setMaskStatus(undefined);
     },

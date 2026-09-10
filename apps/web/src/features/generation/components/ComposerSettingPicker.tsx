@@ -20,6 +20,7 @@ type ComposerSettingVariant =
   | 'format'
   | 'mask'
   | 'model'
+  | 'negative'
   | 'range'
   | 'seed'
   | 'style'
@@ -29,7 +30,6 @@ interface ComposerSettingPickerProps {
   menuId: string;
   label: string;
   menuLabel: string;
-  menuDescription?: string;
   value: string;
   open: boolean;
   disabled?: boolean;
@@ -47,7 +47,6 @@ export function ComposerSettingPicker({
   menuId,
   label,
   menuLabel,
-  menuDescription,
   value,
   open,
   disabled = false,
@@ -132,7 +131,9 @@ export function ComposerSettingPicker({
     positionMenu();
     const initialFocus =
       menu.querySelector<HTMLElement>('[role="option"][aria-selected="true"]:not([disabled])') ??
-      menu.querySelector<HTMLElement>('input:not([disabled]), button:not([disabled])') ??
+      menu.querySelector<HTMLElement>(
+        'input:not([disabled]), textarea:not([disabled]), button:not([disabled])',
+      ) ??
       menu;
     initialFocus.focus({ preventScroll: true });
     if (initialFocus.matches('[role="option"]')) initialFocus.scrollIntoView({ block: 'nearest' });
@@ -202,7 +203,6 @@ export function ComposerSettingPicker({
             {variant !== 'mask' && (
               <div className="composer-setting-menu-header">
                 <strong>{menuLabel}</strong>
-                {menuDescription !== undefined && <small>{menuDescription}</small>}
               </div>
             )}
             {children(close)}

@@ -40,7 +40,7 @@ body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -57,9 +57,13 @@ button {
   cursor: pointer;
 }
 
+input,
+textarea {
+  outline: 0;
+}
+
 button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
+input[type='range']:focus-visible,
 select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;

@@ -1,18 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilities';
 import type { GenerationFailure, ProviderId } from '@harness/contracts';
-import {
-  localJobSchema,
-  localRunSchema,
-  SCHEMA_VERSION,
-  type Destination,
-  type LocalJob,
-} from '@harness/domain';
+import { localJobSchema, localRunSchema, SCHEMA_VERSION, type LocalJob } from '@harness/domain';
 import { GeneratedImageStore } from '../images/generated-image-store.js';
 import { StabilityBedrockAdapter } from '../providers/bedrock/adapter.js';
 import { AzureFoundryAdapter } from '../providers/foundry/adapter.js';
 import type { ImageProviders } from '../providers/image-provider.js';
-import { LocalProjectService, type ProjectService } from '../projects/project-service.js';
 import {
   LocalStyleGuideService,
   type StyleGuideService,
@@ -26,7 +19,6 @@ import {
   jobRecordPath,
   plannedSeed,
   runRecordPath,
-  sameDestination,
   summarizeRunStatus,
   validateSeedPlan,
 } from './run-helpers.js';
@@ -34,7 +26,6 @@ import { RunStore } from './run-store.js';
 import type {
   GalleryImage,
   GeneratedImageRecord,
-  PendingGenerationFailure,
   RunService,
   RunSnapshot,
   RunSubmission,
@@ -42,24 +33,21 @@ import type {
 
 export class LocalRunService implements RunService {
   readonly #manager: LocalRepositoryManager;
-  readonly #projects: ProjectService;
   readonly #inputs: InputStager;
   readonly #runs: RunStore;
   readonly #images: GeneratedImageStore;
   readonly #queue: GenerationQueue;
   readonly #providers: ImageProviders;
-  readonly #failuresByRepository = new Map<string, PendingGenerationFailure[]>();
+  readonly #failuresByRepository = new Map<string, GenerationFailure[]>();
 
   constructor(options: {
     manager: LocalRepositoryManager;
-    projectService?: ProjectService;
     styleGuideService?: StyleGuideService;
     providers?: ImageProviders;
     concurrency?: number;
     maxQueuedJobs?: number;
   }) {
     this.#manager = options.manager;
-    this.#projects = options.projectService ?? new LocalProjectService(options.manager);
     const styleGuide = options.styleGuideService ?? new LocalStyleGuideService(options.manager);
     this.#images = new GeneratedImageStore(options.manager);
     this.#inputs = new InputStager(styleGuide, this.#images);
@@ -93,10 +81,6 @@ export class LocalRunService implements RunService {
       throw new Error(`${capability.name} is unavailable because its provider is not configured.`);
     }
     validateSeedPlan(input.seedPlan, capability.seedMaximum);
-    const destinationDirectory = await this.#projects.resolveDestinationDirectory(
-      repository,
-      input.destination,
-    );
     // Targets that accept `n` return the whole run from one billed call, so they use one job.
     const batches = capability.parameters.includes('n');
     const jobCount = batches ? 1 : input.requestedJobCount;
@@ -126,7 +110,6 @@ export class LocalRunService implements RunService {
               jobId: randomUUID(),
               status: 'queued',
               targetId: input.targetId,
-              destination: input.destination,
               request,
               inputs: staged.inputs,
               plannedSeed: seed,
@@ -144,7 +127,6 @@ export class LocalRunService implements RunService {
           status: 'queued',
           registryVersion: CAPABILITY_REGISTRY_VERSION,
           targetId: input.targetId,
-          destination: input.destination,
           requestedJobCount: input.requestedJobCount,
           seedPlan: input.seedPlan,
           ...(typeof validatedRequest['prompt'] === 'string'
@@ -174,7 +156,6 @@ export class LocalRunService implements RunService {
         runId,
         jobId: job.jobId,
         repository,
-        destinationDirectory,
       });
     }
     this.#queue.drain();
@@ -185,13 +166,10 @@ export class LocalRunService implements RunService {
     return this.#runs.getSnapshot(this.#manager.getActiveRepository(), runId);
   }
 
-  async listRuns(destination?: Destination): Promise<RunSnapshot[]> {
+  async listRuns(): Promise<RunSnapshot[]> {
     const repository = this.#manager.getActiveRepository();
     const snapshots: RunSnapshot[] = [];
-    const durable = await this.#runs.listSnapshots(
-      repository,
-      (run) => !destination || sameDestination(run.destination, destination),
-    );
+    const durable = await this.#runs.listSnapshots(repository);
     for (const snapshot of durable) {
       if (snapshot.run.status === 'failed') {
         for (const job of snapshot.jobs.filter((candidate) => candidate.status === 'failed')) {
@@ -204,18 +182,11 @@ export class LocalRunService implements RunService {
     return snapshots.sort((left, right) => right.run.createdAt.localeCompare(left.run.createdAt));
   }
 
-  consumeFailures(destination?: Destination): GenerationFailure[] {
+  consumeFailures(): GenerationFailure[] {
     const repositoryId = this.#manager.getActiveRepository().descriptor.repositoryId;
     const pending = this.#failuresByRepository.get(repositoryId) ?? [];
-    const consumed = destination
-      ? pending.filter((failure) => sameDestination(failure.destination, destination))
-      : pending;
-    const remaining = destination
-      ? pending.filter((failure) => !sameDestination(failure.destination, destination))
-      : [];
-    if (remaining.length > 0) this.#failuresByRepository.set(repositoryId, remaining);
-    else this.#failuresByRepository.delete(repositoryId);
-    return consumed.map(({ runId, error, discarded }) => ({ runId, error, discarded }));
+    this.#failuresByRepository.delete(repositoryId);
+    return pending;
   }
 
   async cancel(runId: string): Promise<RunSnapshot> {
@@ -251,8 +222,8 @@ export class LocalRunService implements RunService {
     return this.#images.readImage(image);
   }
 
-  listImages(destination?: Destination): Promise<GalleryImage[]> {
-    return this.#images.listImages(destination);
+  listImages(): Promise<GalleryImage[]> {
+    return this.#images.listImages();
   }
 
   async recover(): Promise<void> {
@@ -263,15 +234,10 @@ export class LocalRunService implements RunService {
       if (job.status === 'failed') {
         await this.#runs.discardFailedJob(repository, job);
       } else if (job.status === 'queued') {
-        const destinationDirectory = await this.#projects.resolveDestinationDirectory(
-          repository,
-          job.destination,
-        );
         this.#queue.enqueue({
           runId: job.runId,
           jobId: job.jobId,
           repository,
-          destinationDirectory,
         });
       } else if (job.status === 'running') {
         const now = new Date().toISOString();
@@ -304,7 +270,7 @@ export class LocalRunService implements RunService {
     this.#queue.drain();
   }
 
-  #recordFailure(repository: LocalImageRepository, failure: PendingGenerationFailure): void {
+  #recordFailure(repository: LocalImageRepository, failure: GenerationFailure): void {
     const repositoryId = repository.descriptor.repositoryId;
     const pending = this.#failuresByRepository.get(repositoryId) ?? [];
     const next = [

@@ -50,10 +50,6 @@
   color: var(--text-muted);
 }
 
-.search-field:focus-within {
-  border-color: var(--accent);
-}
-
 .search-field input {
   min-width: 0;
   flex: 1;
@@ -61,4 +57,47 @@
   outline: 0;
   background: transparent;
   font-size: 12px;
+}
+
+.library-info {
+  position: relative;
+  display: inline-flex;
+}
+
+.library-info__trigger {
+  width: 26px;
+  height: 26px;
+}
+
+/*
+ * Driven by the shared pointer-hover class rather than `:hover`, which can stick after a
+ * click or scroll. The bubble is non-interactive, so it need not survive the pointer
+ * travelling onto it.
+ */
+.library-info__bubble {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 8px);
+  left: -6px;
+  width: min(280px, calc(100vw - 28px));
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  padding: 11px 13px;
+  box-shadow: var(--shadow-md);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.5;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 130ms ease,
+    visibility 130ms;
+}
+
+.library-info__trigger.is-pointer-hover + .library-info__bubble,
+.library-info__trigger:focus-visible + .library-info__bubble {
+  opacity: 1;
+  visibility: visible;
 }

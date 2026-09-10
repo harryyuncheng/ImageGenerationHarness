@@ -5,7 +5,6 @@ import type {
   ProviderId,
 } from '@harness/contracts';
 import type {
-  Destination,
   GeneratedImageSidecar,
   LocalInputReference,
   LocalJob,
@@ -34,12 +33,12 @@ export interface RunService {
   isProviderConfigured(providerId: ProviderId): boolean;
   submit(input: RunSubmission): Promise<{ runId: string }>;
   getSnapshot(runId: string): Promise<RunSnapshot | undefined>;
-  listRuns(destination?: Destination): Promise<RunSnapshot[]>;
-  consumeFailures(destination?: Destination): GenerationFailure[];
+  listRuns(): Promise<RunSnapshot[]>;
+  consumeFailures(): GenerationFailure[];
   cancel(runId: string): Promise<RunSnapshot>;
   getImage(imageId: string): Promise<GeneratedImageRecord | undefined>;
   readImage(image: GeneratedImageRecord): Promise<Uint8Array>;
-  listImages(destination?: Destination): Promise<GalleryImage[]>;
+  listImages(): Promise<GalleryImage[]>;
   recover(): Promise<void>;
 }
 
@@ -47,17 +46,12 @@ export interface RunQueueItem {
   runId: string;
   jobId: string;
   repository: LocalImageRepository;
-  destinationDirectory: string;
 }
 
 export interface StagedRequest {
   request: Record<string, unknown>;
   inputs: LocalInputReference[];
   createdInputPaths: string[];
-}
-
-export interface PendingGenerationFailure extends GenerationFailure {
-  destination: Destination;
 }
 
 export interface PublishedOutput {

@@ -1,64 +1,73 @@
 import { Plus } from 'lucide-react';
-import { useRef } from 'react';
+import type { RefObject } from 'react';
 import type { StyleGuideFolder, StyleGuideImage } from '../../../shared/types/domain.js';
 import { styleGuideImageContentUrl } from '../api.js';
 
 const PREVIEW_SLOTS = [0, 1, 2];
 
-/** Geometry a fan tile occupied at click time, used to fly it into the modal grid. */
 export interface FanOrigin {
+  imageId: string | undefined;
   centerX: number;
   centerY: number;
   width: number;
   height: number;
   rotate: string;
+  radius: number;
+  shadow: string;
 }
 
-/** A rotated rectangle's bounding box shares its centre, so the box gives the true centre. */
-function readOrigin(tile: Element): FanOrigin {
-  const box = tile.getBoundingClientRect();
-  const rotate = getComputedStyle(tile).rotate;
-  return {
-    centerX: box.left + box.width / 2,
-    centerY: box.top + box.height / 2,
-    width: (tile as HTMLElement).offsetWidth,
-    height: (tile as HTMLElement).offsetHeight,
-    rotate: rotate === 'none' ? '0deg' : rotate,
-  };
+export function readFanOrigins(stack: HTMLElement): FanOrigin[] {
+  return Array.from(stack.querySelectorAll<HTMLElement>('.style-guide-tile'), (tile) => {
+    const box = tile.getBoundingClientRect();
+    const style = getComputedStyle(tile);
+    return {
+      imageId: tile.dataset['imageId'],
+      // Rotation about the left edge changes the centre, but not this bounding-box identity.
+      centerX: box.left + box.width / 2,
+      centerY: box.top + box.height / 2,
+      width: tile.offsetWidth,
+      height: tile.offsetHeight,
+      rotate: style.rotate === 'none' ? '0deg' : style.rotate,
+      radius: Number.parseFloat(style.borderTopLeftRadius),
+      shadow: style.boxShadow,
+    };
+  });
 }
 
 export function StyleGuideStack({
   activeFolder,
   appliedImages,
+  stackRef,
   onOpen,
 }: {
   activeFolder: StyleGuideFolder | undefined;
   appliedImages: readonly StyleGuideImage[];
+  stackRef: RefObject<HTMLButtonElement | null>;
   onOpen: (origins: FanOrigin[]) => void;
 }) {
-  const fan = useRef<HTMLSpanElement>(null);
   const label = activeFolder
     ? `Style guide: ${activeFolder.name} · ${String(appliedImages.length)} images selected`
     : 'Style guide';
 
   return (
     <button
+      ref={stackRef}
       type="button"
       className="style-guide-stack"
       aria-label={label}
       aria-haspopup="dialog"
       title={label}
-      onClick={() => {
-        const tiles = fan.current?.querySelectorAll('.style-guide-tile') ?? [];
-        onOpen(Array.from(tiles, readOrigin));
+      onClick={(event) => {
+        onOpen(readFanOrigins(event.currentTarget));
       }}
     >
-      <span className="style-guide-stack-fan" ref={fan} aria-hidden="true">
+      <span className="style-guide-stack-fan" aria-hidden="true">
         {PREVIEW_SLOTS.map((slot) => {
           const image = appliedImages[slot];
           return (
             <span
               className={`style-guide-tile ${image ? '' : 'style-guide-tile--empty'}`}
+              data-image-id={image?.imageId}
               key={slot}
             >
               {image && (

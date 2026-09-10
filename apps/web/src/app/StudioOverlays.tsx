@@ -1,7 +1,6 @@
 import { HiddenFileInputs } from './HiddenFileInputs.js';
 import { StudioDialog } from '../shared/components/StudioDialog.js';
 import { useStudio, useStudioShell } from './studio-context.js';
-import { ToastStack } from './ToastStack.js';
 
 export function StudioOverlays() {
   const studio = useStudio();
@@ -18,7 +17,6 @@ export function StudioOverlays() {
         }}
       />
 
-      <ToastStack toasts={shell.toasts} onDismiss={shell.dismissToast} />
       <StudioDialog dialogs={shell.dialogs} />
     </>
   );

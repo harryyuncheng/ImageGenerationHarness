@@ -17,7 +17,6 @@ const textSettings = [
     parameter: 'select_prompt',
     key: 'selectPrompt',
     label: 'Select object or area',
-    description: 'Name the object or area the model should change',
     placeholder: 'e.g. the red jacket',
     icon: Crosshair,
   },
@@ -25,7 +24,6 @@ const textSettings = [
     parameter: 'search_prompt',
     key: 'searchPrompt',
     label: 'Object to replace',
-    description: 'Name the object the model should replace',
     placeholder: 'e.g. the wooden chair',
     icon: Replace,
   },
@@ -36,7 +34,6 @@ const choiceSettings = [
     parameter: 'quality',
     key: 'quality',
     label: 'Quality',
-    description: 'Trade rendering time and cost against detail',
     icon: Gauge,
     options: [
       { value: 'low', label: 'Low', description: 'Fastest and least expensive' },
@@ -48,7 +45,6 @@ const choiceSettings = [
     parameter: 'background',
     key: 'background',
     label: 'Background',
-    description: 'Fill the background or leave it transparent',
     icon: Layers,
     options: [
       { value: 'auto', label: 'Auto', description: 'Let the model decide' },
@@ -59,7 +55,6 @@ const choiceSettings = [
     parameter: 'input_fidelity',
     key: 'inputFidelity',
     label: 'Input fidelity',
-    description: 'How closely the edit preserves the source image',
     icon: ScanFace,
     options: [
       { value: 'low', label: 'Low', description: 'Reinterpret freely' },
@@ -70,7 +65,6 @@ const choiceSettings = [
   parameter: RequestParameter;
   key: keyof GenerationSettings;
   label: string;
-  description: string;
   icon: LucideIcon;
   options: readonly { value: string; label: string; description: string }[];
 }[];
@@ -99,7 +93,6 @@ export function CapabilitySettings({
               menuId={`${setting.key}-menu`}
               label={setting.label}
               menuLabel={setting.label}
-              menuDescription={setting.description}
               value={value || 'Not set'}
               open={settingMenu === setting.key}
               variant="text"
@@ -141,7 +134,6 @@ export function CapabilitySettings({
               menuId={`${setting.key}-menu`}
               label={setting.label}
               menuLabel={setting.label}
-              menuDescription={setting.description}
               value={selectedLabel}
               open={settingMenu === setting.key}
               variant="format"
@@ -189,7 +181,6 @@ export function CapabilitySettings({
             menuId={`${range.key}-menu`}
             label={range.label}
             menuLabel={range.label}
-            menuDescription={range.description}
             value={value}
             open={settingMenu === range.key}
             variant="range"
@@ -223,7 +214,6 @@ export function CapabilitySettings({
           menuId="style-preset-menu"
           label="Style preset"
           menuLabel="Style preset"
-          menuDescription="Bias the result toward a familiar look"
           value={stylePresetName}
           open={settingMenu === 'style'}
           variant="style"

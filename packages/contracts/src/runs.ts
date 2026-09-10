@@ -30,18 +30,6 @@ export const seedPlanSchema = z.discriminatedUnion('strategy', [
     .strict(),
 ]);
 
-export const destinationSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('main') }).strict(),
-  z.object({ kind: z.literal('project'), projectId: uuidSchema }).strict(),
-  z
-    .object({
-      kind: z.literal('project-asset'),
-      projectId: uuidSchema,
-      projectAssetId: uuidSchema,
-    })
-    .strict(),
-]);
-
 const executionStatusSchema = z.enum([
   'queued',
   'running',
@@ -61,7 +49,6 @@ export const attemptStatusSchema = z.enum([
 ]);
 
 export type SeedPlan = z.infer<typeof seedPlanSchema>;
-export type Destination = z.infer<typeof destinationSchema>;
 export type RunStatus = z.infer<typeof runStatusSchema>;
 
 export const createRunRequestSchema = z
@@ -70,7 +57,6 @@ export const createRunRequestSchema = z
     request: z.record(z.string(), z.unknown()),
     requestedJobCount: z.number().int().min(1).max(MAX_REQUEST_IMAGES),
     seedPlan: seedPlanSchema,
-    destination: destinationSchema.default({ kind: 'main' }),
   })
   .strict();
 
@@ -81,10 +67,10 @@ export const runDtoSchema = z
     status: runStatusSchema,
     registryVersion: nonEmptyStringSchema,
     targetId: nonEmptyStringSchema,
-    destination: destinationSchema,
     requestedJobCount: z.number().int().min(1).max(MAX_REQUEST_IMAGES),
     seedPlan: seedPlanSchema,
     prompt: z.string().max(10_000).optional(),
+    aspectRatio: z.number().positive().optional(),
     jobIds: z.array(uuidSchema).min(1).max(MAX_REQUEST_IMAGES),
     createdAt: timestampSchema,
     updatedAt: timestampSchema,
@@ -111,7 +97,6 @@ export const jobDtoSchema = z
     jobId: uuidSchema,
     status: jobStatusSchema,
     targetId: nonEmptyStringSchema,
-    destination: destinationSchema,
     plannedSeed: uint32Schema.nullable(),
     providerSeed: uint32Schema.nullable(),
     outputImageIds: z.array(uuidSchema),
@@ -144,18 +129,6 @@ export const queuedRunResponseSchema = z
   .strict();
 
 export const runParamsSchema = z.object({ runId: uuidSchema }).strict();
-export const destinationQuerySchema = z.union([
-  z.object({}).strict(),
-  z.object({ destination: z.literal('main') }).strict(),
-  z.object({ destination: z.literal('project'), projectId: uuidSchema }).strict(),
-  z
-    .object({
-      destination: z.literal('project-asset'),
-      projectId: uuidSchema,
-      projectAssetId: uuidSchema,
-    })
-    .strict(),
-]);
 
 export type CreateRunRequest = z.infer<typeof createRunRequestSchema>;
 export type GenerationFailure = z.infer<typeof generationFailureSchema>;

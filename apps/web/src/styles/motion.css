@@ -1,3 +1,169 @@
+.app-settings {
+  view-transition-name: sheet-settings;
+}
+
+.style-guide-stack {
+  view-transition-name: sheet-guides;
+}
+
+.image-reference-stack {
+  view-transition-name: sheet-references;
+}
+
+.presets-button {
+  view-transition-name: sheet-presets;
+}
+
+.generation-toolbar {
+  view-transition-name: sheet-toolbar;
+}
+
+.sheet-navigation {
+  view-transition-name: sheet-navigation;
+}
+
+:root:is(
+  [data-sheet-transition],
+  :active-view-transition-type(sheet-out),
+  :active-view-transition-type(sheet-in)
+) {
+  view-transition-name: none;
+
+  & .loaded-image-figure img {
+    transition: none;
+  }
+
+  &::view-transition-group(*),
+  &::view-transition-old(*),
+  &::view-transition-new(*) {
+    animation-duration: var(--motion-sheet-duration);
+    animation-timing-function: var(--motion-sheet-easing);
+    animation-delay: 0s;
+  }
+
+  &::view-transition-old(sheet-content) {
+    transform-origin: var(--sheet-from-origin);
+    animation-name: sheet-leave, sheet-fade-out;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-new(sheet-content) {
+    transform-origin: var(--sheet-to-origin);
+    animation-name: sheet-enter, sheet-fade-in;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-old(sheet-guides),
+  &::view-transition-old(sheet-references),
+  &::view-transition-old(sheet-presets),
+  &::view-transition-old(sheet-toolbar),
+  &::view-transition-old(sheet-navigation) {
+    animation-name: sheet-fade-out;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-new(sheet-guides),
+  &::view-transition-new(sheet-references),
+  &::view-transition-new(sheet-presets),
+  &::view-transition-new(sheet-toolbar),
+  &::view-transition-new(sheet-navigation) {
+    animation-name: sheet-fade-in;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-group(sheet-image) {
+    z-index: 3;
+  }
+
+  &::view-transition-old(sheet-image),
+  &::view-transition-new(sheet-image) {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  &::view-transition-group(sheet-grid) {
+    animation: none;
+  }
+
+  &::view-transition-group(sheet-grid),
+  &::view-transition-group(sheet-content) {
+    clip-path: inset(21px 0 0 21px);
+  }
+
+  &::view-transition-old(sheet-grid),
+  &::view-transition-new(sheet-grid) {
+    transform-origin: 0 0;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-old(sheet-grid) {
+    animation-name: sheet-grid-out;
+  }
+
+  &::view-transition-new(sheet-grid) {
+    animation-name: sheet-grid-in;
+  }
+}
+
+:root:is([data-sheet-transition='sheet-out'], :active-view-transition-type(sheet-out)) {
+  --sheet-grid-out-scale: 0.5;
+  --sheet-grid-in-scale: 2;
+}
+
+:root:is([data-sheet-transition='sheet-in'], :active-view-transition-type(sheet-in)) {
+  --sheet-grid-out-scale: 2;
+  --sheet-grid-in-scale: 0.5;
+}
+
+@keyframes sheet-leave {
+  to {
+    transform: var(--sheet-from-transform);
+  }
+}
+
+@keyframes sheet-enter {
+  from {
+    transform: var(--sheet-to-transform);
+  }
+  to {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes sheet-grid-out {
+  to {
+    opacity: 0;
+    transform: scale(var(--sheet-grid-out-scale));
+  }
+}
+
+@keyframes sheet-grid-in {
+  from {
+    opacity: 0;
+    transform: scale(var(--sheet-grid-in-scale));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -6,5 +172,11 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

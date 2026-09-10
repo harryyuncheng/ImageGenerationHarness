@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
 import type { KeyboardEvent, SyntheticEvent } from 'react';
+import { requestedImageAspectRatio } from '@harness/contracts';
 import { useStudioNavigate } from '../../app/use-studio-navigate.js';
-import type { Notify } from '../../shared/hooks/use-toasts.js';
+import { useInlineError } from '../../shared/hooks/use-inline-error.js';
+import { matchesShortcut, type ShortcutBinding } from '../../shared/shortcuts.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import type { RunsController } from '../history/use-runs.js';
 import { queueRun } from './api.js';
 import { capabilityLabel, needsImage, requiresPrompt } from './capabilities.js';
 import { buildGenerationSubmission } from './request.js';
 import type { AttachmentsController } from './use-attachments.js';
-import type { DestinationController } from './use-destination.js';
 import type { GenerationSettingsController } from './use-generation-settings.js';
 import type { PromptDraftController } from './use-prompt-draft.js';
 
@@ -16,43 +17,37 @@ interface GenerationOptions {
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
   attachments: AttachmentsController;
-  destination: DestinationController;
   runs: RunsController;
-  notify: Notify;
+  createShortcut: ShortcutBinding | null;
   requireRepository: (action: string) => boolean;
 }
 
 export function useGeneration(options: GenerationOptions) {
-  const { promptDraft, settings, attachments, destination, runs, notify } = options;
+  const { promptDraft, settings, attachments, runs } = options;
   const navigate = useStudioNavigate();
+  const feedback = useInlineError();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { prompt } = promptDraft;
   const { selectedCapability } = settings;
 
   const requestBody = useMemo(
     () =>
-      buildGenerationSubmission(
-        selectedCapability,
-        prompt,
-        settings.settings,
-        attachments.inputs,
-        destination.destination,
-      ),
-    [attachments.inputs, destination.destination, prompt, selectedCapability, settings.settings],
+      buildGenerationSubmission(selectedCapability, prompt, settings.settings, attachments.inputs),
+    [attachments.inputs, prompt, selectedCapability, settings.settings],
   );
 
   function draftIsIncomplete(): boolean {
     if (attachments.blockedReason) {
-      notify(attachments.blockedReason, 'error');
+      feedback.reportError(attachments.blockedReason);
       return true;
     }
     if (!prompt.trim() && requiresPrompt(selectedCapability)) {
-      notify('Describe the image you want to create.', 'error');
+      feedback.reportError('Describe the image you want to create.');
       promptDraft.focusPrompt();
       return true;
     }
     if (needsImage(selectedCapability) && !attachments.inputs.source) {
-      notify('Add a source image for this tool.', 'error');
+      feedback.reportError('Add a source image for this tool.');
       attachments.chooseFiles('source');
       return true;
     }
@@ -60,7 +55,7 @@ export function useGeneration(options: GenerationOptions) {
       selectedCapability.canonicalId === 'service/style-transfer' &&
       attachments.inputs.references.length === 0
     ) {
-      notify('Style Transfer needs a source image and a style reference.', 'error');
+      feedback.reportError('Style Transfer needs a source image and a style reference.');
       attachments.chooseFiles('references');
       return true;
     }
@@ -68,14 +63,14 @@ export function useGeneration(options: GenerationOptions) {
       selectedCapability.canonicalId === 'service/search-recolor' &&
       !settings.settings.selectPrompt.trim()
     ) {
-      notify('Describe the object or area to recolor in Run settings.', 'error');
+      feedback.reportError('Describe the object or area to recolor in Run settings.');
       return true;
     }
     if (
       selectedCapability.canonicalId === 'service/search-replace' &&
       !settings.settings.searchPrompt.trim()
     ) {
-      notify('Describe the object to replace in Run settings.', 'error');
+      feedback.reportError('Describe the object to replace in Run settings.');
       return true;
     }
     return false;
@@ -83,11 +78,14 @@ export function useGeneration(options: GenerationOptions) {
 
   async function generate(event?: SyntheticEvent<HTMLFormElement>) {
     event?.preventDefault();
+    feedback.clearError();
+    runs.feedback.clearError();
     if (!options.requireRepository('generate images')) return;
     if (draftIsIncomplete()) return;
 
     const localId = crypto.randomUUID();
     const createdAt = new Date().toISOString();
+    const aspectRatio = requestedImageAspectRatio(requestBody.request);
     const baseRun: StudioRun = {
       id: localId,
       createdAt,
@@ -95,7 +93,7 @@ export function useGeneration(options: GenerationOptions) {
       prompt,
       targetId: selectedCapability.canonicalId,
       targetName: capabilityLabel(selectedCapability),
-      aspectRatio: settings.settings.aspectRatio,
+      ...(aspectRatio === undefined ? {} : { aspectRatio }),
       outputCount: settings.settings.outputCount,
       attachmentNames: [
         attachments.inputs.source,
@@ -104,10 +102,12 @@ export function useGeneration(options: GenerationOptions) {
       ]
         .filter((attachment) => attachment !== undefined)
         .map((attachment) => attachment.name),
-      outputImageIds: [],
-      destination: destination.destination,
+      jobs: Array.from({ length: settings.settings.outputCount }, () => ({
+        id: crypto.randomUUID(),
+        status: 'submitting',
+        outputImageIds: [],
+      })),
       status: 'submitting',
-      favorite: false,
     };
     runs.addOptimisticRun(baseRun);
     navigate.openRun(localId);
@@ -116,29 +116,33 @@ export function useGeneration(options: GenerationOptions) {
     try {
       const { runId: remoteId } = await queueRun(requestBody);
       runs.markRunQueued(localId, remoteId);
-      navigate.readdressRun(remoteId);
+      navigate.readdressRun(localId, remoteId);
       void runs.invalidateRuns();
-      const { outputCount } = settings.settings;
-      notify(`${String(outputCount)} image${outputCount === 1 ? '' : 's'} queued.`, 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Generation could not be queued.';
       runs.discardOptimisticRun(localId);
       navigate.goToCreate();
       promptDraft.focusPromptSoon();
-      notify(message, 'error');
+      feedback.reportError(message);
     } finally {
       setIsSubmitting(false);
     }
   }
 
   function handlePromptKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    if (!isSubmitting && matchesShortcut(event.nativeEvent, options.createShortcut)) {
       event.preventDefault();
       event.currentTarget.form?.requestSubmit();
     }
   }
 
-  return { isSubmitting, generate, handlePromptKeyDown };
+  return {
+    isSubmitting,
+    generate,
+    handlePromptKeyDown,
+    createShortcut: options.createShortcut,
+    feedback,
+  };
 }
 
 export type GenerationController = ReturnType<typeof useGeneration>;

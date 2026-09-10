@@ -1,7 +1,8 @@
 import { Settings, X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { shortcutAriaKeys } from '../shared/shortcuts.js';
 import {
   SETTINGS_DIALOG_ID as dialogId,
   SettingsPanels,
@@ -20,7 +21,14 @@ const focusableSelector = [
 ].join(',');
 
 export function AppSettings() {
-  const { settingsTab, setSettingsTab } = useStudioShell();
+  const {
+    settingsOpen,
+    setSettingsOpen,
+    settingsTab,
+    setSettingsTab,
+    settingsScrollPositions,
+    shortcuts,
+  } = useStudioShell();
 
   return (
     <div className="app-settings">
@@ -28,20 +36,28 @@ export function AppSettings() {
         type="button"
         className="icon-button studio-corner-icon app-settings__trigger"
         aria-label="Settings"
+        aria-keyshortcuts={shortcutAriaKeys(shortcuts.bindings.openSettings)}
         aria-haspopup="dialog"
-        aria-expanded={settingsTab !== null}
-        aria-controls={settingsTab ? dialogId : undefined}
+        aria-expanded={settingsOpen}
+        aria-controls={settingsOpen ? dialogId : undefined}
         title="Settings"
         onClick={() => {
-          setSettingsTab(settingsTab ? null : 'repository');
+          setSettingsOpen(!settingsOpen);
         }}
       >
-        <Settings size={18} />
+        <Settings size={20} aria-hidden="true" />
       </button>
 
-      {settingsTab &&
+      {settingsOpen &&
         createPortal(
-          <SettingsDialog activeTab={settingsTab} onTabChange={setSettingsTab} />,
+          <SettingsDialog
+            activeTab={settingsTab}
+            onTabChange={setSettingsTab}
+            scrollPositions={settingsScrollPositions}
+            onClose={() => {
+              setSettingsOpen(false);
+            }}
+          />,
           document.body,
         )}
     </div>
@@ -51,11 +67,22 @@ export function AppSettings() {
 function SettingsDialog({
   activeTab,
   onTabChange,
+  onClose,
+  scrollPositions,
 }: {
   activeTab: SettingsTab;
-  onTabChange: (tab: SettingsTab | null) => void;
+  onTabChange: (tab: SettingsTab) => void;
+  onClose: () => void;
+  scrollPositions: RefObject<Partial<Record<SettingsTab, number>>>;
 }) {
   const dialogRef = useRef<HTMLElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = scrollPositions.current[activeTab] ?? 0;
+    }
+  }, [activeTab, scrollPositions]);
 
   useEffect(() => {
     const previouslyFocused =
@@ -95,7 +122,13 @@ function SettingsDialog({
     event.currentTarget.querySelector<HTMLButtonElement>(`#${dialogId}-${nextTab.id}-tab`)?.focus();
   }
 
-  function trapDialogFocus(event: ReactKeyboardEvent<HTMLElement>) {
+  function handleDialogKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape' && !event.defaultPrevented) {
+      event.preventDefault();
+      event.stopPropagation();
+      onClose();
+      return;
+    }
     if (event.key !== 'Tab') return;
     const focusableElements = Array.from(
       event.currentTarget.querySelectorAll<HTMLElement>(focusableSelector),
@@ -117,7 +150,7 @@ function SettingsDialog({
     <div
       className="settings-dialog-backdrop surface-enter"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onTabChange(null);
+        if (event.target === event.currentTarget) onClose();
       }}
     >
       <section
@@ -127,7 +160,7 @@ function SettingsDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={`${dialogId}-title`}
-        onKeyDown={trapDialogFocus}
+        onKeyDown={handleDialogKeyDown}
       >
         <header className="settings-dialog__header">
           <div>
@@ -137,9 +170,7 @@ function SettingsDialog({
           <button
             type="button"
             className="icon-button"
-            onClick={() => {
-              onTabChange(null);
-            }}
+            onClick={onClose}
             aria-label="Close settings"
           >
             <X size={18} />
@@ -173,7 +204,13 @@ function SettingsDialog({
             <p>Preferences are saved on this device.</p>
           </div>
 
-          <div className="settings-dialog__content">
+          <div
+            ref={contentRef}
+            className="settings-dialog__content"
+            onScroll={(event) => {
+              scrollPositions.current[activeTab] = event.currentTarget.scrollTop;
+            }}
+          >
             <SettingsPanels activeTab={activeTab} />
           </div>
         </div>

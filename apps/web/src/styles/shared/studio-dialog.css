@@ -65,10 +65,6 @@
   font-size: 13px;
 }
 
-.studio-dialog__field input:focus-visible {
-  border-color: var(--accent);
-}
-
 .studio-dialog__actions {
   display: flex;
   align-items: center;

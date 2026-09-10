@@ -1,29 +1,26 @@
 import { randomUUID } from 'node:crypto';
 import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilities';
-import { outputFormatSchema } from '@harness/contracts';
+import { outputFormatSchema, type GenerationFailure } from '@harness/contracts';
 import { generatedImageSidecarSchema, localJobSchema } from '@harness/domain';
 import { characterizeImageData, imageSidecarPath, mediaTypeForOutputFormat } from '@harness/image';
 import type { ImageProviders } from '../providers/image-provider.js';
 import { hydrateInputs } from './input-stager.js';
 import { jobRecordPath, promptSlug } from './run-helpers.js';
 import type { RunStore } from './run-store.js';
-import type { PendingGenerationFailure, PublishedOutput, RunQueueItem } from './run-types.js';
+import type { PublishedOutput, RunQueueItem } from './run-types.js';
 
 export class GenerationWorker {
   readonly #providers: ImageProviders;
   readonly #runs: RunStore;
   readonly #recordFailure: (
     repository: RunQueueItem['repository'],
-    failure: PendingGenerationFailure,
+    failure: GenerationFailure,
   ) => void;
 
   constructor(options: {
     providers: ImageProviders;
     runStore: RunStore;
-    recordFailure: (
-      repository: RunQueueItem['repository'],
-      failure: PendingGenerationFailure,
-    ) => void;
+    recordFailure: (repository: RunQueueItem['repository'], failure: GenerationFailure) => void;
   }) {
     this.#providers = options.providers;
     this.#runs = options.runStore;
@@ -78,15 +75,11 @@ export class GenerationWorker {
           throw new Error('Provider output format did not match the request');
         }
         const imageId = randomUUID();
-        const imagePath = `${item.destinationDirectory}/${new Date().toISOString().slice(0, 10)}--${promptSlug(job.request)}--${imageId}.${imageData.extension}`;
+        const imagePath = `images/${new Date().toISOString().slice(0, 10)}--${promptSlug(job.request)}--${imageId}.${imageData.extension}`;
         const sidecar = generatedImageSidecarSchema.parse({
           schemaVersion: 1,
           imageId,
           repositoryRelativePath: imagePath,
-          ...(job.destination.kind === 'main' ? {} : { projectId: job.destination.projectId }),
-          ...(job.destination.kind === 'project-asset'
-            ? { projectAssetId: job.destination.projectAssetId }
-            : {}),
           createdAt: new Date().toISOString(),
           runId: job.runId,
           jobId: job.jobId,
@@ -163,7 +156,6 @@ export class GenerationWorker {
         runId: job.runId,
         error: errorMessage,
         discarded,
-        destination: job.destination,
       });
       return;
     }

@@ -1,6 +1,6 @@
 import { Bookmark, Image as ImageIcon, ImagePlus } from 'lucide-react';
 import { hasParameter, supportsImageShape } from '../capabilities.js';
-import { mainImageInputs } from '../model-presentation.js';
+import { mainSourceImage } from '../model-presentation.js';
 import { aspectRatios, outputCounts } from '../settings.js';
 import type { AttachmentsController } from '../use-attachments.js';
 import { CapabilitySettings } from './CapabilitySettings.js';
@@ -37,7 +37,6 @@ export function ComposerTools({
             menuId="image-dimensions-menu"
             label="Aspect ratio"
             menuLabel="Image dimensions"
-            menuDescription="Choose the shape of generated images"
             value={current.aspectRatio}
             open={settingMenu === 'dimensions'}
             variant="dimensions"
@@ -78,7 +77,6 @@ export function ComposerTools({
           menuId="image-count-menu"
           label="Number of images"
           menuLabel="Image count"
-          menuDescription="Choose how many variations to generate"
           value={String(current.outputCount)}
           open={settingMenu === 'count'}
           variant="count"
@@ -111,8 +109,7 @@ export function ComposerTools({
       </div>
       <div className="toolbar-control-group" role="group" aria-label="Model settings">
         {hasParameter(capability, 'mask') &&
-          (!attachments.inputs.source ||
-            mainImageInputs(attachments.inputs).some((input) => input.role === 'source')) && (
+          (!attachments.inputs.source || mainSourceImage(attachments.inputs) !== undefined) && (
             <MaskChip
               key={`${capability.canonicalId}:${attachments.inputs.source?.id ?? ''}`}
               capability={capability}
@@ -133,6 +130,36 @@ export function ComposerTools({
           onSettingMenuChange={onSettingMenuChange}
         />
       </div>
+      {hasParameter(capability, 'negative_prompt') && (
+        <ComposerSettingPicker
+          menuId="negative-prompt-menu"
+          label="Negative prompt"
+          menuLabel="Negative prompt"
+          value={current.negativePrompt}
+          open={settingMenu === 'negative-prompt'}
+          variant="negative"
+          triggerContent="Negative prompt"
+          onOpenChange={(open) => {
+            onSettingMenuChange('negative-prompt', open);
+          }}
+        >
+          {() => (
+            <div className="composer-setting-field negative-prompt-editor">
+              <textarea
+                value={current.negativePrompt}
+                onChange={(event) => {
+                  settings.updateSettings('negativePrompt', event.target.value);
+                }}
+                rows={4}
+                maxLength={10_000}
+                placeholder="What should not appear?"
+                aria-label="Negative prompt"
+                spellCheck="true"
+              />
+            </div>
+          )}
+        </ComposerSettingPicker>
+      )}
       <div className="toolbar-control-group" role="group" aria-label="Prompt resources">
         {attachments.roles.length > 0 && (
           <button

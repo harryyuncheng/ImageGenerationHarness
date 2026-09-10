@@ -15,7 +15,6 @@ export function OutpaintSettings({
       menuId="expand-canvas-menu"
       label="Expand canvas"
       menuLabel="Expand canvas (px)"
-      menuDescription="Choose how far each edge grows before painting"
       value={outpaintDirections
         .map(({ label, key }) => `${label} ${String(current[key])}`)
         .join(', ')}

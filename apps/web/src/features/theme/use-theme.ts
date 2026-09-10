@@ -1,11 +1,18 @@
 import { useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import { usePersistentState } from '../../shared/hooks/use-persistent-state.js';
-import { applyResolvedTheme, resolveTheme, type ThemePreference } from './theme.js';
+import {
+  applyResolvedTheme,
+  resolveTheme,
+  type FontPreference,
+  type ThemePreference,
+} from './theme.js';
 
 export interface ThemeController {
   theme: ThemePreference;
   changeTheme: (value: ThemePreference) => void;
+  font: FontPreference;
+  changeFont: (value: FontPreference) => void;
 }
 
 /**
@@ -14,6 +21,11 @@ export interface ThemeController {
  */
 export function useTheme(): ThemeController {
   const [theme, setTheme] = usePersistentState<ThemePreference>('harness-theme', 'system');
+  const [font, setFont] = usePersistentState<FontPreference>('harness-font', 'sans');
+
+  useEffect(() => {
+    document.documentElement.dataset['font'] = font;
+  }, [font]);
 
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -50,5 +62,5 @@ export function useTheme(): ThemeController {
     document.startViewTransition(updateTheme);
   };
 
-  return { theme, changeTheme };
+  return { theme, changeTheme, font, changeFont: setFont };
 }

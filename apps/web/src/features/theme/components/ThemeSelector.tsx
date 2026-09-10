@@ -10,11 +10,10 @@ export function ThemeSelector({
 }) {
   return (
     <div className="theme-selector">
-      {themeGroups.map(({ id, label, hint, options }) => (
+      {themeGroups.map(({ id, label, options }) => (
         <div key={id} className="theme-group" role="group" aria-label={label}>
           <header className="theme-group__header">
             <strong>{label}</strong>
-            <small>{hint}</small>
           </header>
           <div className="theme-group__tiles">
             {options.map(({ value, label: optionLabel, Icon }) => {
@@ -23,7 +22,7 @@ export function ThemeSelector({
                 <button
                   type="button"
                   key={value}
-                  className={`theme-tile ${theme === value ? 'selected' : ''}`}
+                  className={`appearance-tile ${theme === value ? 'selected' : ''}`}
                   aria-pressed={theme === value}
                   onClick={() => {
                     onSelect(value);
@@ -32,9 +31,9 @@ export function ThemeSelector({
                   <span className="theme-tile__preview" aria-hidden="true">
                     <span className="theme-tile__face" data-theme={front} />
                     <span className="theme-tile__face theme-tile__face--back" data-theme={back} />
-                    {theme === value && <Check className="theme-tile__check" size={13} />}
+                    {theme === value && <Check className="appearance-tile__check" size={13} />}
                   </span>
-                  <span className="theme-tile__label">
+                  <span className="appearance-tile__label">
                     <Icon size={13} aria-hidden="true" />
                     <span>{optionLabel}</span>
                   </span>
