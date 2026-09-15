@@ -1,8 +1,9 @@
+import type { QueuedRunResponse } from '@harness/contracts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
-import { useInlineError } from '../../shared/hooks/use-inline-error.js';
+import { useAlert } from '../../shared/hooks/use-alert.js';
 import type { Capability } from '../../shared/types/domain.js';
 import { cancelRun, getRuns } from './api.js';
 import { collectRunFailures, mergeRuns, toStudioRuns, type StudioRun } from './run-presentation.js';
@@ -22,7 +23,7 @@ interface RunsOptions {
  */
 export function useRuns(options: RunsOptions) {
   const { activeRepositoryId, capabilities, focusedRunId } = options;
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const queryClient = useQueryClient();
   const [optimisticRuns, setOptimisticRuns] = useState<StudioRun[]>([]);
   const handledFailureIds = useRef(new Set<string>());
@@ -36,6 +37,11 @@ export function useRuns(options: RunsOptions) {
     retry: false,
     refetchInterval: pollingIntervalMs,
   });
+
+  const { reportError } = feedback;
+  useEffect(() => {
+    if (runsQuery.error) reportError(`Run status unavailable: ${runsQuery.error.message}`);
+  }, [runsQuery.error, reportError]);
 
   const runFailures = useMemo(() => collectRunFailures(runsQuery.data), [runsQuery.data]);
   const durableRuns = useMemo(
@@ -79,20 +85,26 @@ export function useRuns(options: RunsOptions) {
   }, [focusedRunId]);
 
   function addOptimisticRun(run: StudioRun) {
+    submittedRunIds.current.clear();
     submittedRunIds.current.add(run.id);
     setOptimisticRuns((current) => [run, ...current].slice(0, 20));
   }
 
-  function markRunQueued(localId: string, remoteId: string) {
-    submittedRunIds.current.add(remoteId);
+  function markRunQueued(localId: string, queued: QueuedRunResponse) {
+    if (submittedRunIds.current.has(localId)) submittedRunIds.current.add(queued.runId);
     setOptimisticRuns((current) =>
       current.map((run) =>
         run.id === localId
           ? {
               ...run,
-              remoteId,
+              remoteId: queued.runId,
               status: 'queued',
-              jobs: run.jobs.map((job) => ({ ...job, status: 'queued' })),
+              jobs: queued.jobs.map((job) => ({
+                id: job.jobId,
+                status: 'queued',
+                requestedOutputCount: job.requestedOutputCount,
+                outputImageIds: [],
+              })),
             }
           : run,
       ),
@@ -120,7 +132,7 @@ export function useRuns(options: RunsOptions) {
 
   async function cancel(run: StudioRun) {
     if (!run.remoteId) return;
-    feedback.clearError();
+    feedback.clearAlert();
     const result = await runMutation(
       () => cancelRun(run.remoteId ?? ''),
       'Could not cancel the run.',
@@ -137,6 +149,9 @@ export function useRuns(options: RunsOptions) {
     addOptimisticRun,
     markRunQueued,
     wasSubmittedHere,
+    releaseDraft: () => {
+      submittedRunIds.current.clear();
+    },
     discardOptimisticRun,
     invalidateRuns,
     cancel,

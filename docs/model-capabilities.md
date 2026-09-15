@@ -56,6 +56,8 @@ Azure documents PNG/JPEG inputs under 50 MB each; the harness retains its strict
 
 Image Services use JPEG, PNG, or WebP output. Seed-capable services accept 0–4,294,967,294. Fast Upscale and Remove Background do not accept seeds, so the harness uses provider-random planning without injecting a seed field.
 
+For every seeded Stability target, native seed `0` requests provider randomness. The harness therefore draws only positive seeds for harness-random plans and requires positive seeds for new fixed-repeat, sequential, and explicit-list plans. Sequential plans wrap from the target's maximum back to `1`, never `0`. The browser's Fixed and Sequential controls follow the same rule; native schemas and historical records still accept `0`.
+
 Image Services use US Geo inference profiles. The pinned `us-west-2` endpoint is a supported source region for every registered profile.
 
 The complete style preset set is available where supported: 3D model, analog film, anime, cinematic, comic book, digital art, enhance, fantasy art, isometric, line art, low poly, modeling compound, neon punk, origami, photographic, pixel art, and tile texture.

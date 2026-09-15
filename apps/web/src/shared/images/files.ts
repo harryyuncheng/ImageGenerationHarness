@@ -2,6 +2,8 @@ import { MAX_IMAGE_BYTES, isMediaType } from '@harness/contracts';
 import type { Attachment, UploadAttachment } from '../types/attachments.js';
 import type { GalleryImage } from '../types/domain.js';
 
+export const unsupportedImageMessage = 'Use PNG, JPEG, or WebP images up to 10 MB.';
+
 export const decodedImageRatios = new Map<string, number>();
 
 export function generatedImageContentUrl(imageId: string): string {

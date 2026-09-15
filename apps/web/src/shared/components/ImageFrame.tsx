@@ -1,5 +1,4 @@
-import { useLayoutEffect, useRef, type ReactNode } from 'react';
-import { connectSheetImage } from '../../app/sheet-transition.js';
+import type { ReactNode } from 'react';
 import type { StudioImage } from '../images/studio-image.js';
 
 export function ImageFrame({
@@ -13,16 +12,10 @@ export function ImageFrame({
   surface: 'canvas' | 'gallery';
   children: ReactNode;
 }) {
-  const frameRef = useRef<HTMLDivElement>(null);
-
-  useLayoutEffect(() => {
-    connectSheetImage(frameRef.current, surface);
-  });
-
   return (
     <div
-      ref={frameRef}
       className="image-frame"
+      data-sheet-surface={surface}
       data-sheet-image-id={image?.id}
       data-image-id={image?.saved?.imageId}
       data-run-id={image?.runId}

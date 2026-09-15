@@ -1,4 +1,4 @@
-import type { MediaType } from '@harness/contracts';
+import type { GenerationInputReference, MediaType } from '@harness/contracts';
 
 interface AttachmentBase {
   id: string;
@@ -6,6 +6,7 @@ interface AttachmentBase {
   mediaType: MediaType;
   byteLength: number;
   previewUrl: string;
+  snapshot?: GenerationInputReference;
 }
 
 export interface UploadAttachment extends AttachmentBase {
@@ -27,11 +28,15 @@ export interface StyleGuideAttachment extends AttachmentBase {
 }
 
 export type Attachment = UploadAttachment | RepositoryAttachment | StyleGuideAttachment;
+export type MaskAttachment = (UploadAttachment | RepositoryAttachment) & {
+  maskSourceId?: string;
+  maskEncoding?: 'alpha' | 'luminance';
+};
 
 export interface ImageInputs {
   source: Attachment | undefined;
   references: readonly Attachment[];
-  mask: UploadAttachment | undefined;
+  mask: MaskAttachment | undefined;
 }
 
 export type ImageInputRole = keyof ImageInputs;

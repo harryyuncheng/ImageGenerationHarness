@@ -1,13 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { CAPABILITY_REGISTRY_VERSION, getCapability } from '@harness/capabilities';
 import { outputFormatSchema, type GenerationFailure } from '@harness/contracts';
-import { generatedImageSidecarSchema, localJobSchema } from '@harness/domain';
+import { generatedImageSidecarSchema, localJobSchema, type LocalJob } from '@harness/domain';
 import { characterizeImageData, imageSidecarPath, mediaTypeForOutputFormat } from '@harness/image';
+import { publicErrorMessage } from '../app/api-error.js';
 import type { ImageProviders } from '../providers/image-provider.js';
 import { hydrateInputs } from './input-stager.js';
 import { jobRecordPath, promptSlug } from './run-helpers.js';
 import type { RunStore } from './run-store.js';
-import type { PublishedOutput, RunQueueItem } from './run-types.js';
+import type { RunQueueItem } from './run-types.js';
 
 export class GenerationWorker {
   readonly #providers: ImageProviders;
@@ -30,31 +31,38 @@ export class GenerationWorker {
   async process(item: RunQueueItem): Promise<void> {
     const repository = item.repository;
     const jobPath = jobRecordPath(item.jobId);
-    let job = await repository.readJson(jobPath, localJobSchema);
-    if (job.runId !== item.runId || job.status !== 'queued') return;
+    let job: LocalJob | undefined;
     const attemptId = randomUUID();
-    const startedAt = new Date().toISOString();
-    job = localJobSchema.parse({
-      ...job,
-      status: 'running',
-      attempts: [
-        ...job.attempts,
-        {
-          attemptId,
-          ordinal: job.attempts.length + 1,
-          status: 'started',
-          startedAt,
-        },
-      ],
-      updatedAt: startedAt,
-    });
-    await repository.writeJson(jobPath, job, localJobSchema);
-    await this.#runs.refreshRun(repository, job.runId);
-    const publishedOutputs: PublishedOutput[] = [];
-
+    let savingCompletion = false;
     try {
+      await repository.withMutation(async () => {
+        const snapshot = await this.#runs.getSnapshot(repository, item.runId);
+        const queued = snapshot?.jobs.find((candidate) => candidate.jobId === item.jobId);
+        if (queued?.status !== 'queued') return;
+        const startedAt = new Date().toISOString();
+        job = localJobSchema.parse({
+          ...queued,
+          status: 'running',
+          attempts: [
+            ...queued.attempts,
+            {
+              attemptId,
+              ordinal: queued.attempts.length + 1,
+              status: 'started',
+              startedAt,
+            },
+          ],
+          updatedAt: startedAt,
+        });
+        await repository.writeJson(jobPath, job, localJobSchema);
+        await this.#runs.refreshRun(repository, job.runId);
+      });
+      if (!job) return;
       const capability = getCapability(job.targetId);
       const request = capability.requestSchema.parse(job.request) as Record<string, unknown>;
+      const requestedMediaType = mediaTypeForOutputFormat(
+        outputFormatSchema.parse(request['output_format']),
+      );
       const payload = await hydrateInputs(repository, request, job.inputs);
       const validatedPayload = capability.requestSchema.parse(payload) as Record<string, unknown>;
       const result = await this.#providers[capability.providerId].invoke(
@@ -68,9 +76,6 @@ export class GenerationWorker {
         const imageData = await characterizeImageData(output.base64, {
           label: 'Provider image data',
         });
-        const requestedMediaType = mediaTypeForOutputFormat(
-          outputFormatSchema.parse(job.request['output_format']),
-        );
         if (imageData.mediaType !== requestedMediaType) {
           throw new Error('Provider output format did not match the request');
         }
@@ -91,7 +96,8 @@ export class GenerationWorker {
           ...(typeof job.request['negative_prompt'] === 'string'
             ? { negativePrompt: job.request['negative_prompt'] }
             : {}),
-          normalizedRequest: job.request,
+          normalizedRequest: request,
+          ...(snapshot.run.settings === undefined ? {} : { settings: snapshot.run.settings }),
           seed: {
             strategy: snapshot.run.seedPlan.strategy,
             planned: job.plannedSeed,
@@ -111,6 +117,8 @@ export class GenerationWorker {
             repositoryRelativePath: input.repositoryRelativePath,
             sha256: input.sha256,
             mediaType: input.mediaType,
+            ...(input.name === undefined ? {} : { name: input.name }),
+            ...(input.styleGuide === undefined ? {} : { styleGuide: input.styleGuide }),
           })),
           provider: {
             finishReason: output.finishReason,
@@ -126,7 +134,6 @@ export class GenerationWorker {
           sidecar,
           generatedImageSidecarSchema,
         );
-        publishedOutputs.push({ imagePath, sidecarPath });
         outputImageIds.push(imageId);
       }
       const finishedAt = new Date().toISOString();
@@ -147,19 +154,44 @@ export class GenerationWorker {
         ),
         updatedAt: finishedAt,
       });
+      savingCompletion = true;
+      const completed = job;
+      await repository.withMutation(async () => {
+        await repository.writeJson(jobPath, completed, localJobSchema);
+        await this.#runs.refreshRun(repository, completed.runId);
+      });
     } catch (error) {
-      const errorMessage = (
-        error instanceof Error ? error.message : 'Unknown generation failure'
-      ).slice(0, 2000);
-      const discarded = await this.#runs.discardFailedJob(repository, job, publishedOutputs);
+      let errorMessage = publicErrorMessage(error);
+      let discarded = false;
+      let needsRecovery = !job || savingCompletion;
+      if (job && !savingCompletion) {
+        try {
+          discarded = await this.#runs.discardFailedJob(repository, job);
+        } catch (cleanupError) {
+          needsRecovery = true;
+          errorMessage =
+            `Cleanup also failed: ${publicErrorMessage(cleanupError)}\n${errorMessage}`.slice(
+              0,
+              2000,
+            );
+        }
+      }
+      if (needsRecovery) {
+        try {
+          await this.#runs.interruptJob(repository, item.jobId);
+        } catch (recoveryError) {
+          errorMessage =
+            `The interrupted state could not be saved: ${publicErrorMessage(recoveryError)}\n${errorMessage}`.slice(
+              0,
+              2000,
+            );
+        }
+      }
       this.#recordFailure(repository, {
-        runId: job.runId,
+        runId: item.runId,
         error: errorMessage,
         discarded,
       });
-      return;
     }
-    await repository.writeJson(jobPath, job, localJobSchema);
-    await this.#runs.refreshRun(repository, job.runId);
   }
 }

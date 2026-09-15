@@ -82,10 +82,6 @@
   height: 100%;
 }
 
-.cutting-mat__grid {
-  view-transition-name: sheet-grid;
-}
-
 .cutting-mat__cell,
 .cutting-mat__major,
 .cutting-mat__bias,
@@ -110,18 +106,6 @@
   stroke: color-mix(in srgb, var(--sheet-ink) 13%, transparent);
 }
 
-@property --ruler-scale {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 1;
-}
-
-@property --ruler-offset-y {
-  syntax: '<length>';
-  inherits: true;
-  initial-value: 0px;
-}
-
 .cutting-mat__rulers {
   --ruler-ink: color-mix(in srgb, var(--sheet-ink) 30%, transparent);
   --ruler-band: color-mix(in srgb, var(--sheet-alt) 42%, var(--sheet-bg));
@@ -130,6 +114,7 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
+  contain: layout paint;
 }
 
 .cutting-mat__ruler-x,
@@ -145,12 +130,24 @@
   width: 100%;
   height: 21px;
   border-bottom: 1px solid var(--ruler-edge);
+}
+
+.cutting-mat__ticks-x,
+.cutting-mat__ticks-y {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+.cutting-mat__ticks-x {
+  bottom: 0;
+  left: 0;
+  height: 11px;
   background-image:
     linear-gradient(to right, var(--ruler-ink) 1px, transparent 1px),
     linear-gradient(to right, var(--ruler-ink) 1px, transparent 1px);
   background-size:
-    calc(48px * var(--ruler-scale)) 5px,
-    calc(240px * var(--ruler-scale)) 11px;
+    48px 5px,
+    240px 11px;
   background-position: 0 100%;
   background-repeat: repeat-x;
 }
@@ -159,13 +156,19 @@
   width: 21px;
   height: 100%;
   border-right: 1px solid var(--ruler-edge);
+}
+
+.cutting-mat__ticks-y {
+  top: 0;
+  right: 0;
+  width: 11px;
   background-image:
     linear-gradient(to bottom, var(--ruler-ink) 1px, transparent 1px),
     linear-gradient(to bottom, var(--ruler-ink) 1px, transparent 1px);
   background-size:
-    5px calc(48px * var(--ruler-scale)),
-    11px calc(240px * var(--ruler-scale));
-  background-position: 100% var(--ruler-offset-y);
+    5px 48px,
+    11px 240px;
+  background-position: 100% 0;
   background-repeat: repeat-y;
 }
 
@@ -209,6 +212,32 @@
 .studio-main--overview .cutting-mat__major,
 .studio-main--overview .cutting-mat__bias {
   opacity: 0.65;
+}
+
+/* Preblended inks keep grid contrast consistent across canvas, gallery, and previews. */
+:is([data-theme='mat-dark'], [data-theme='mat-build'], [data-theme='mat-craft']) {
+  & .cutting-mat__cell,
+  & .cutting-mat__guide {
+    stroke: var(--mat-alt);
+    opacity: 1;
+  }
+
+  & .cutting-mat__major,
+  & .cutting-mat__bias {
+    stroke: var(--mat-ink);
+    opacity: 1;
+  }
+
+  & .cutting-mat__rulers {
+    --ruler-ink: var(--mat-ink);
+    --ruler-band: var(--mat-bg);
+    --ruler-edge: var(--mat-alt);
+  }
+
+  & .cutting-mat__measure,
+  & .cutting-mat__corner {
+    color: var(--mat-ink);
+  }
 }
 
 .studio-main--overview .workspace {

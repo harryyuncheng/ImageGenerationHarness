@@ -1,4 +1,5 @@
 import { randomInt } from 'node:crypto';
+import { jobDtoSchema } from '@harness/contracts';
 import type { LocalJob, LocalRun, SeedPlan } from '@harness/domain';
 import { z } from 'zod';
 import { safeSlug } from '../repository/slug.js';
@@ -10,7 +11,11 @@ export function validateSeedPlan(seedPlan: SeedPlan, seedMaximum: number | undef
     }).parse(seedPlan.strategy);
     return;
   }
-  const seedSchema = z.number().int().min(0).max(seedMaximum);
+  const seedSchema = z
+    .number()
+    .int()
+    .min(1, { error: 'Seed 0 requests provider randomness. Use a seed of at least 1.' })
+    .max(seedMaximum);
   if (seedPlan.strategy === 'fixed-repeat') seedSchema.parse(seedPlan.seed);
   if (seedPlan.strategy === 'sequential') seedSchema.parse(seedPlan.start);
   if (seedPlan.strategy === 'explicit-list') {
@@ -28,14 +33,20 @@ export function plannedSeed(
     case 'provider-random':
       return null;
     case 'harness-random':
-      return randomInt(0, seedMaximum + 1);
+      return randomInt(1, seedMaximum + 1);
     case 'fixed-repeat':
       return seedPlan.seed;
     case 'sequential':
-      return (seedPlan.start + index) % (seedMaximum + 1);
+      return ((seedPlan.start + index - 1) % seedMaximum) + 1;
     case 'explicit-list':
       return seedPlan.seeds[index % seedPlan.seeds.length] ?? null;
   }
+}
+
+export function requestedOutputCount(job: LocalJob): number {
+  return jobDtoSchema.shape.requestedOutputCount.parse(
+    job.request['n'] === undefined ? 1 : job.request['n'],
+  );
 }
 
 export function runRecordPath(runId: string): string {

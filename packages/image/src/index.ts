@@ -6,18 +6,6 @@ function sha256Hex(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-async function inspectImage(bytes: Uint8Array) {
-  const metadata = await sharp(bytes, { failOn: 'error' }).metadata();
-  if (!metadata.width || !metadata.height)
-    throw new Error('Image dimensions and format are required');
-  return {
-    width: metadata.width,
-    height: metadata.height,
-    format: metadata.format,
-    hasAlpha: metadata.hasAlpha,
-  };
-}
-
 function decodeCanonicalBase64(
   value: string,
   options: { maxBytes?: number; label?: string } = {},
@@ -77,9 +65,14 @@ export async function characterizeImageData(
 ): Promise<CharacterizedImage> {
   const label = options.label ?? 'Image data';
   const bytes = decodeCanonicalBase64(value, options);
-  const inspected = await inspectImage(bytes);
+  const image = sharp(bytes, { failOn: 'error' });
+  const inspected = await image.metadata();
+  if (!inspected.width || !inspected.height) {
+    throw new Error('Image dimensions and format are required');
+  }
   const mediaType = mediaTypeFromImageFormat(inspected.format);
   if (!mediaType) throw new Error(`${label} is not a supported PNG, JPEG, or WebP image`);
+  await image.stats();
   const output = outputFileForMediaType(mediaType);
   return {
     bytes,

@@ -1,0 +1,71 @@
+.alert-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-stack:not(:empty) {
+  margin: 12px 0;
+}
+
+.alert-stack > .studio-alert {
+  margin: 0;
+}
+
+.studio-alert {
+  --alert-ink: var(--text-secondary);
+
+  display: flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0;
+  border: 1px solid var(--border-soft);
+  border-left: 2px solid var(--alert-ink);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-soft) 68%, transparent);
+  padding: 9px 8px 9px 11px;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.studio-alert[data-tone='error'] {
+  --alert-ink: var(--danger);
+}
+
+.studio-alert[data-tone='warning'] {
+  --alert-ink: var(--warning);
+}
+
+.studio-alert__icon {
+  margin-top: 2px;
+  flex: 0 0 auto;
+  color: var(--alert-ink);
+}
+
+.studio-alert > span {
+  min-width: 0;
+  flex: 1;
+  padding-top: 1px;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.studio-alert > button {
+  display: inline-flex;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.studio-alert > button.is-pointer-hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}

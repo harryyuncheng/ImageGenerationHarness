@@ -19,6 +19,10 @@ export const repositoryRelativePathSchema = z
   .max(1024)
   .refine((value) => !value.startsWith('/') && !value.startsWith('\\'), 'Path must be relative')
   .refine(
+    (value) => !value.includes('\\') && !value.includes('\0') && !/^[A-Za-z]:/u.test(value),
+    'Path must use safe forward-slash relative segments',
+  )
+  .refine(
     (value) => !value.split(/[\\/]/u).some((part) => part === '' || part === '.' || part === '..'),
     'Path contains an unsafe segment',
   );

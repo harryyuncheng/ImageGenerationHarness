@@ -10,7 +10,7 @@ import {
   type FanOrigin,
 } from '../features/style-guide/components/StyleGuideStack.js';
 import { CuttingMat } from '../features/theme/components/CuttingMat.js';
-import { InlineError } from '../shared/components/InlineError.js';
+import { Alert, AlertStack } from '../shared/components/Alert.js';
 import { AppSettings } from './AppSettings.js';
 import { StudioOverlays } from './StudioOverlays.js';
 import { StudioProvider, useStudio, useStudioShell } from './studio-context.js';
@@ -25,20 +25,20 @@ function CreateWorkspace() {
       attachments={studio.attachments}
       generation={studio.generation}
       feedback={
-        <>
-          <InlineError feedback={studio.generation.feedback} />
-          <InlineError feedback={studio.attachments.feedback} />
-          <InlineError feedback={studio.savedPrompts.feedback} />
-          <InlineError feedback={studio.runs.feedback} />
-        </>
+        <AlertStack>
+          <Alert feedback={studio.generation.feedback} />
+          <Alert feedback={studio.attachments.feedback} />
+          <Alert feedback={studio.savedPrompts.feedback} />
+          <Alert feedback={studio.runs.feedback} />
+        </AlertStack>
       }
       capabilities={studio.capabilities}
       providers={studio.providers}
       {...(studio.viewer === undefined ? {} : { loaded: studio.viewer })}
       onResetSettings={() => {
-        studio.generation.feedback.clearError();
-        studio.savedPrompts.feedback.clearError();
-        studio.runs.feedback.clearError();
+        studio.generation.feedback.clearAlert();
+        studio.savedPrompts.feedback.clearAlert();
+        studio.runs.feedback.clearAlert();
         studio.draftActions.resetDraft();
       }}
       onSavePrompt={() => {
@@ -56,12 +56,13 @@ function StudioLayout() {
   const [fanOrigins, setFanOrigins] = useState<readonly FanOrigin[]>([]);
   const fanRef = useRef<HTMLButtonElement>(null);
   const canvasRef = useRef<HTMLElement>(null);
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  // The URL changes before capture; only committed matches may switch the visible sheet.
+  const pathname = useRouterState({ select: (state) => state.matches.at(-1)?.pathname });
 
   const styleGuideOpen = pathname === '/style-guide';
   const presetsOpen = pathname === '/presets';
   const showCreateWorkspace = pathname === '/' || styleGuideOpen || presetsOpen;
-  const isGallery = pathname.startsWith('/gallery');
+  const isGallery = pathname?.startsWith('/gallery') ?? false;
 
   useGlobalShortcuts({
     bindings: shortcuts.bindings,
@@ -119,7 +120,7 @@ function StudioLayout() {
           className="icon-button studio-corner-icon sheet-navigation"
           aria-label={isGallery ? 'Create' : 'Gallery'}
           title={isGallery ? 'Create' : 'Gallery'}
-          onClick={isGallery ? studio.navigate.returnToCanvas : studio.navigate.goToHistory}
+          onClick={isGallery ? studio.navigate.returnToCanvas : studio.navigate.goToGallery}
         >
           {isGallery ? (
             <Cloud size={20} aria-hidden="true" />
@@ -152,11 +153,11 @@ function StudioLayout() {
           fanRef={fanRef}
           isLoading={studio.styleGuide.styleGuideQuery.isLoading}
           isMutating={studio.styleGuide.isMutating}
-          feedback={<InlineError feedback={studio.styleGuide.feedback} />}
+          feedback={<Alert feedback={studio.styleGuide.feedback} />}
           {...(studio.styleGuide.styleGuideQuery.error instanceof Error
             ? { error: studio.styleGuide.styleGuideQuery.error.message }
             : {})}
-          onClose={studio.navigate.goToCreate}
+          onClose={studio.navigate.returnToCanvas}
           onCreateFolder={() => {
             void studio.styleGuide.createFolder();
           }}
@@ -195,6 +196,7 @@ export function StudioShell() {
     <StudioProvider
       focusedImageId={search.image}
       focusedRunId={search.run}
+      focusedJobId={search.job}
       focusedOutputIndex={search.output}
     >
       <StudioLayout />

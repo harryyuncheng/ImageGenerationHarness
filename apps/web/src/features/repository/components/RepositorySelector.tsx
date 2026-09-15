@@ -1,5 +1,5 @@
 import { FolderOpen, HardDrive } from 'lucide-react';
-import { InlineError } from '../../../shared/components/InlineError.js';
+import { Alert } from '../../../shared/components/Alert.js';
 import { activateRepositoryEndpoint, chooseRepositoryEndpoint } from '../api.js';
 import type { RepositoryController } from '../use-repository.js';
 
@@ -45,7 +45,7 @@ export function RepositorySelector({ repository }: { repository: RepositoryContr
           {repositoryQuery.error.message}
         </p>
       )}
-      <InlineError feedback={repository.feedback} />
+      <Alert feedback={repository.feedback} />
 
       {alternatives.length > 0 && (
         <div className="repository-recents">

@@ -158,7 +158,7 @@ export function StyleGuideFolderPanel({
   onToggleImage,
 }: {
   folder: StyleGuideFolder;
-  appliedImages: readonly StyleGuideImage[];
+  appliedImages: readonly Pick<StyleGuideImage, 'imageId'>[];
   isMutating: boolean;
   onAddImages: (folderId: string) => void;
   onRenameImage: (image: StyleGuideImage, name: string) => void;

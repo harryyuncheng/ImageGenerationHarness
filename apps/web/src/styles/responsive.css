@@ -83,7 +83,7 @@
     padding: calc(44px + var(--top-bar-height)) 14px 24px;
   }
   .prompt-canvas-input {
-    min-height: 3em;
+    min-height: min(3em, var(--prompt-height-limit));
   }
   .image-reference-stack {
     --reference-top: 16px;
@@ -159,14 +159,6 @@
   .gallery-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 26px 20px;
-  }
-  .sheet-activity button {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .sheet-activity strong {
-    max-width: 100%;
   }
   .library-heading h2 {
     font-size: 23px;

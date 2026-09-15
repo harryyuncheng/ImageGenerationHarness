@@ -1,12 +1,4 @@
-import {
-  createContext,
-  use,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from 'react';
+import { createContext, use, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useLoadedImage } from '../features/editor/use-loaded-image.js';
 import { useAttachments } from '../features/generation/use-attachments.js';
 import { useCapabilities } from '../features/generation/use-capabilities.js';
@@ -37,9 +29,11 @@ interface ScopeProps {
   repository: RepositoryController;
   capabilities: readonly Capability[];
   providers: readonly ProviderDescriptor[];
+  capabilityBlockedReason: string | undefined;
   createShortcut: ShortcutBinding | null;
   focusedImageId: string | undefined;
   focusedRunId: string | undefined;
+  focusedJobId: string | undefined;
   focusedOutputIndex: number | undefined;
 }
 
@@ -49,9 +43,11 @@ function useStudioValue({
   repository,
   capabilities,
   providers,
+  capabilityBlockedReason,
   createShortcut,
   focusedImageId,
   focusedRunId,
+  focusedJobId,
   focusedOutputIndex,
 }: ScopeProps) {
   const navigate = useStudioNavigate();
@@ -76,19 +72,9 @@ function useStudioValue({
       promptDraft.focusPromptSoon();
     },
   });
-  const generation = useGeneration({
-    promptDraft,
-    settings,
-    attachments,
-    runs,
-    createShortcut,
-    requireRepository: repository.requireRepository,
-  });
-  const draftActions = useDraftActions({
-    promptDraft,
-    settings,
-    attachments,
-  });
+  const selectedProvider = providers.find(
+    (provider) => provider.providerId === settings.selectedCapability.providerId,
+  );
   const styleGuide = useStyleGuide({
     activeRepositoryId,
     confirm,
@@ -97,41 +83,41 @@ function useStudioValue({
     attachments,
     settings,
   });
+  const draftActions = useDraftActions({
+    activeRepositoryId,
+    promptDraft,
+    settings,
+    attachments,
+    styleGuide,
+    releaseRunDraft: runs.releaseDraft,
+  });
   const viewer = useLoadedImage({
     activeRepositoryId,
     imageId: focusedImageId,
     runId: focusedRunId,
+    jobId: focusedJobId,
     outputIndex: focusedOutputIndex,
     runs: runs.allRuns,
-    onLoadImage: draftActions.loadImageDraft,
-    onLoadRun: (run) => {
-      if (!runs.wasSubmittedHere(run)) draftActions.loadRunDraft(run);
-    },
+    runsLoading: runs.runsQuery.isLoading,
+    shouldRestoreRun: (run) => !runs.wasSubmittedHere(run),
+    onLoadSetup: draftActions.loadSetup,
     onCancelRun: (run) => {
       void runs.cancel(run);
     },
   });
-  const output = viewer?.selectedOutput;
-  const { setSource } = attachments;
-  useLayoutEffect(() => {
-    if (!output) return;
-    setSource({
-      source: 'repository',
-      id: output.imageId,
-      imageId: output.imageId,
-      name: output.name,
-      previewUrl: output.url,
-      mediaType: output.mediaType,
-      byteLength: output.byteLength,
-    });
-  }, [
-    output?.imageId,
-    output?.url,
-    output?.name,
-    output?.mediaType,
-    output?.byteLength,
-    setSource,
-  ]);
+  const generation = useGeneration({
+    activeRepositoryId,
+    promptDraft,
+    settings,
+    attachments,
+    runs,
+    createShortcut,
+    capabilityBlockedReason:
+      viewer?.setupBlockedReason ??
+      capabilityBlockedReason ??
+      (selectedProvider && !selectedProvider.configured ? selectedProvider.setupHint : undefined),
+    requireRepository: repository.requireRepository,
+  });
 
   return {
     navigate,
@@ -187,6 +173,7 @@ function RepositoryScope({ children, ...scope }: ScopeProps & { children: ReactN
 interface StudioProviderProps {
   focusedImageId: string | undefined;
   focusedRunId: string | undefined;
+  focusedJobId: string | undefined;
   focusedOutputIndex: number | undefined;
   children: ReactNode;
 }
@@ -206,7 +193,7 @@ export function StudioProvider({ children, ...scope }: StudioProviderProps) {
     if (open) setSettingsTab('repository');
     setSettingsOpen(open);
   });
-  const { capabilities, providers } = useCapabilities();
+  const { capabilities, providers, capabilitiesQuery } = useCapabilities();
 
   return (
     <ShellContext
@@ -228,6 +215,10 @@ export function StudioProvider({ children, ...scope }: StudioProviderProps) {
         repository={repository}
         capabilities={capabilities}
         providers={providers}
+        capabilityBlockedReason={
+          capabilitiesQuery.error?.message ??
+          (capabilitiesQuery.isPending ? 'Loading model configuration.' : undefined)
+        }
         createShortcut={shortcuts.bindings.create}
         {...scope}
       >

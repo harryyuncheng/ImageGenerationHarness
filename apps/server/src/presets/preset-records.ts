@@ -15,7 +15,6 @@ export const presetsCollection: DirectoryManifestCollection<Preset> = {
   root: 'presets',
   manifestName: 'preset.json',
   schema: presetSchema,
-  identifier: (preset) => preset.presetId,
   validateBinding: (preset, directory, directoryName) => {
     const suffix = `--${preset.presetId}`;
     const slug = directoryName.slice(0, -suffix.length);
@@ -36,16 +35,11 @@ export async function loadPresetCover(
   const files = (await repository.listFiles(preset.directory)).filter(
     (file) => file.startsWith('cover--') || file.endsWith('.image.json'),
   );
-  if (!preset.coverImageId) {
-    if (files.length > 0) {
-      throw new ApiError(409, 'A preset contains cover files not referenced by its manifest.');
-    }
-    return undefined;
-  }
+  if (!preset.coverImageId) return undefined;
 
   const sidecarName = `cover--${preset.coverImageId}.image.json`;
-  if (files.length !== 2 || !files.includes(sidecarName)) {
-    throw new ApiError(409, 'A preset cover is missing or has unexpected files.');
+  if (!files.includes(sidecarName)) {
+    throw new ApiError(409, 'A preset cover is missing.');
   }
   const sidecarPath = `${preset.directory}/${sidecarName}`;
   let cover: PresetCoverImage;

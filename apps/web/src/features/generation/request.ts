@@ -5,7 +5,7 @@ import type { Capability } from '../../shared/types/domain.js';
 import { effectiveSeed, hasParameter } from './capabilities.js';
 import type { GenerationSettings } from './settings.js';
 
-type GenerationSubmission = CreateRunRequest;
+type GenerationSubmission = Omit<CreateRunRequest, 'repositoryId'>;
 
 function assertNeverCapability(value: never): never {
   throw new Error(`Unhandled capability: ${String(value)}`);
@@ -18,6 +18,10 @@ function buildGenerationRequest(
   inputs: ImageInputs,
 ): Record<string, unknown> {
   const attachmentValue = (attachment: Attachment): string => {
+    if (attachment.snapshot) {
+      const { kind, id, inputIndex } = attachment.snapshot;
+      return `repo-input://${kind}/${id}/${String(inputIndex)}`;
+    }
     return attachment.source === 'upload' ? attachment.data : `repo-image://${attachment.imageId}`;
   };
   const image = inputs.source ? attachmentValue(inputs.source) : undefined;
@@ -177,5 +181,6 @@ export function buildGenerationSubmission(
     request: buildGenerationRequest(capability, prompt, settings, inputs),
     requestedJobCount: settings.outputCount,
     seedPlan: makeSeedPlan(settings, capability),
+    settings: { ...settings, targetId: capability.canonicalId },
   };
 }

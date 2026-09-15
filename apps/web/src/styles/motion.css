@@ -1,33 +1,41 @@
-.app-settings {
-  view-transition-name: sheet-settings;
-}
-
-.style-guide-stack {
-  view-transition-name: sheet-guides;
-}
-
-.image-reference-stack {
-  view-transition-name: sheet-references;
-}
-
-.presets-button {
-  view-transition-name: sheet-presets;
-}
-
-.generation-toolbar {
-  view-transition-name: sheet-toolbar;
-}
-
-.sheet-navigation {
-  view-transition-name: sheet-navigation;
-}
-
-:root:is(
-  [data-sheet-transition],
-  :active-view-transition-type(sheet-out),
-  :active-view-transition-type(sheet-in)
-) {
+:root:is(:active-view-transition-type(sheet-out), :active-view-transition-type(sheet-in)) {
   view-transition-name: none;
+
+  & .app-settings {
+    view-transition-name: sheet-settings;
+  }
+
+  & .style-guide-stack {
+    view-transition-name: sheet-guides;
+  }
+
+  & .image-reference-stack {
+    view-transition-name: sheet-references;
+  }
+
+  & .presets-button {
+    view-transition-name: sheet-presets;
+  }
+
+  & .generation-toolbar {
+    view-transition-name: sheet-toolbar;
+  }
+
+  & .sheet-navigation {
+    view-transition-name: sheet-navigation;
+  }
+
+  & .canvas {
+    view-transition-name: sheet-content;
+  }
+
+  & .cutting-mat__grid {
+    view-transition-name: sheet-grid;
+  }
+
+  & [data-sheet-transition-image] {
+    view-transition-name: sheet-image;
+  }
 
   & .loaded-image-figure img {
     transition: none;
@@ -82,6 +90,26 @@
     object-fit: contain;
   }
 
+  &[data-sheet-image-connected] {
+    &::view-transition-group(sheet-image) {
+      width: var(--sheet-image-width);
+      height: var(--sheet-image-height);
+      transform-origin: 0 0;
+      animation-name: sheet-image-move;
+    }
+
+    &::view-transition-old(sheet-image) {
+      animation: none;
+      opacity: 1;
+      mix-blend-mode: normal;
+    }
+
+    &::view-transition-new(sheet-image) {
+      animation-name: sheet-fade-in;
+      mix-blend-mode: normal;
+    }
+  }
+
   &::view-transition-group(sheet-grid) {
     animation: none;
   }
@@ -106,14 +134,23 @@
   }
 }
 
-:root:is([data-sheet-transition='sheet-out'], :active-view-transition-type(sheet-out)) {
+:root:active-view-transition-type(sheet-out) {
   --sheet-grid-out-scale: 0.5;
   --sheet-grid-in-scale: 2;
 }
 
-:root:is([data-sheet-transition='sheet-in'], :active-view-transition-type(sheet-in)) {
+:root:active-view-transition-type(sheet-in) {
   --sheet-grid-out-scale: 2;
   --sheet-grid-in-scale: 0.5;
+}
+
+@keyframes sheet-image-move {
+  from {
+    transform: var(--sheet-image-from);
+  }
+  to {
+    transform: var(--sheet-image-to);
+  }
 }
 
 @keyframes sheet-leave {

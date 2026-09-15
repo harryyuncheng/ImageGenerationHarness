@@ -33,11 +33,13 @@ function readFrame(element: HTMLElement): ImageFrame {
 export function useStyleGuideTransition({
   fanRef,
   origins,
+  activeFolderId,
   viewedFolderId,
   onClose,
 }: {
   fanRef: RefObject<HTMLButtonElement | null>;
   origins: readonly FanOrigin[];
+  activeFolderId: string | null;
   viewedFolderId: string | undefined;
   onClose: () => void;
 }) {
@@ -97,30 +99,30 @@ export function useStyleGuideTransition({
       ]),
     );
     const opacity = motion.current ? getComputedStyle(backdrop).opacity : closing ? '1' : '0';
-    motion.current?.cancel();
-
-    const flights = new Map<string, HTMLElement>();
-    const hidden = new Map<HTMLElement, string>();
     const duration = closing ? 240 : 280;
     const viewport = backdrop.querySelector('.style-guide-dialog__body')?.getBoundingClientRect();
-    const previews = new Map(
-      Array.from(
-        backdrop.querySelectorAll<HTMLElement>('.style-guide-preview[data-image-id]'),
-        (preview) => [preview.dataset['imageId'], preview],
-      ),
-    );
-    let completion = backdrop.animate([{ opacity }, { opacity: closing ? 0 : 1 }], {
-      duration: duration - 40,
-      easing,
-      fill: 'both',
-    });
-    const animations = [completion];
-    const fanOrigins = closing && fanRef.current ? readFanOrigins(fanRef.current) : origins;
+    const previews = backdrop.querySelectorAll<HTMLElement>('.style-guide-preview[data-image-id]');
+    const fanOrigins =
+      viewedFolderId === activeFolderId
+        ? closing && fanRef.current
+          ? readFanOrigins(fanRef.current)
+          : origins
+        : [];
+    const originsById = new Map(fanOrigins.map((origin) => [origin.imageId, origin]));
+    const centerOrigin = fanOrigins[1];
+    const offscreenOrigin = centerOrigin && {
+      ...centerOrigin,
+      centerX: Math.min(0, centerOrigin.centerX - centerOrigin.width / 2) - centerOrigin.width / 2,
+    };
 
-    for (const origin of fanOrigins) {
-      const preview = previews.get(origin.imageId);
-      const image = preview?.querySelector('img');
-      if (!origin.imageId || !preview || !image || !viewport) continue;
+    const transfers = Array.from(previews).flatMap((preview) => {
+      const imageId = preview.dataset['imageId'];
+      const origin =
+        previews.length < 3
+          ? (originsById.get(imageId) ?? fanOrigins.find((frame) => !frame.imageId))
+          : offscreenOrigin;
+      const image = preview.querySelector('img');
+      if (!imageId || !origin || !image || !viewport) return [];
       const bounds = preview.getBoundingClientRect();
       if (
         bounds.width === 0 ||
@@ -130,7 +132,7 @@ export function useStyleGuideTransition({
         bounds.right <= viewport.left ||
         bounds.left >= viewport.right
       )
-        continue;
+        return [];
       const insets = [
         Math.max(0, viewport.top - bounds.top) / bounds.height,
         Math.max(0, bounds.right - viewport.right) / bounds.width,
@@ -142,11 +144,18 @@ export function useStyleGuideTransition({
         clip: `inset(${insets.map((part) => `${String(part * 100)}%`).join(' ')})`,
       };
       const fanFrame = { ...origin, clip: unclipped };
-      const from = closing ? (currentFrames.get(origin.imageId) ?? gridFrame) : fanFrame;
+      const from = closing ? (currentFrames.get(imageId) ?? gridFrame) : fanFrame;
       const to = closing ? fanFrame : gridFrame;
+      return [{ imageId, image, preview, from, to }];
+    });
+    motion.current?.cancel();
+    const flights = new Map<string, HTMLElement>();
+    const hidden = new Map<HTMLElement, string>();
+    const fragment = document.createDocumentFragment();
+    const tiles = transfers.map(({ imageId, image, preview, from, to }) => {
       const tile = document.createElement('div');
       tile.className = 'style-guide-flight';
-      tile.dataset['imageId'] = origin.imageId;
+      tile.dataset['imageId'] = imageId;
       tile.setAttribute('aria-hidden', 'true');
       Object.assign(tile.style, {
         left: `${String(to.centerX - to.width / 2)}px`,
@@ -155,12 +164,22 @@ export function useStyleGuideTransition({
         height: `${String(to.height)}px`,
       });
       tile.append(image.cloneNode(true));
-      // The scroll body and blurred scrim must not clip or dim a tile in flight.
-      document.body.append(tile);
-      flights.set(origin.imageId, tile);
+      fragment.append(tile);
+      flights.set(imageId, tile);
       hidden.set(preview, preview.style.visibility);
       preview.style.visibility = 'hidden';
+      return { tile, from, to };
+    });
+    // Measure every endpoint before mounting flights outside the clipped, blurred scroll body.
+    document.body.append(fragment);
+    let completion = backdrop.animate([{ opacity }, { opacity: closing ? 0 : 1 }], {
+      duration: duration - 40,
+      easing,
+      fill: 'both',
+    });
+    const animations = [completion];
 
+    for (const [index, { tile, from, to }] of tiles.entries()) {
       completion = tile.animate(
         [from, to].map((frame) => {
           const scale = frame.width / to.width;
@@ -173,7 +192,7 @@ export function useStyleGuideTransition({
             clipPath: frame.clip,
           };
         }),
-        { duration, delay: (flights.size - 1) * 12, easing, fill: 'both' },
+        { duration, delay: index * 12, easing, fill: 'both' },
       );
       animations.push(completion);
     }
@@ -194,7 +213,7 @@ export function useStyleGuideTransition({
       }
     };
     motion.current = { closing, flights, cancel };
-  }, [closing, fanRef, origins, viewedFolderId]);
+  }, [activeFolderId, closing, fanRef, origins, viewedFolderId]);
 
   return { backdropRef, closing, close };
 }

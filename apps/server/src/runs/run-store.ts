@@ -1,9 +1,8 @@
 import { localJobSchema, localRunSchema, type LocalJob } from '@harness/domain';
-import { imageSidecarPath } from '@harness/image';
 import type { GeneratedImageStore } from '../images/generated-image-store.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import { jobRecordPath, runRecordPath, summarizeRunStatus } from './run-helpers.js';
-import type { PublishedOutput, RunSnapshot } from './run-types.js';
+import type { RunSnapshot } from './run-types.js';
 
 export class RunStore {
   constructor(private readonly images: GeneratedImageStore) {}
@@ -12,12 +11,17 @@ export class RunStore {
   async forEachJob(
     repository: LocalImageRepository,
     visit: (job: LocalJob) => Promise<boolean> | boolean,
-  ): Promise<void> {
+  ): Promise<boolean> {
     for (const file of await repository.listFiles('.image-harness/jobs')) {
       if (!file.endsWith('.json')) continue;
-      const job = await repository.readJson(`.image-harness/jobs/${file}`, localJobSchema);
-      if (!(await visit(job))) return;
+      const path = `.image-harness/jobs/${file}`;
+      const job = await repository.readJson(path, localJobSchema);
+      if (jobRecordPath(job.jobId) !== path) {
+        throw new Error('A job record has an invalid file binding.');
+      }
+      if (!(await visit(job))) return false;
     }
+    return true;
   }
 
   async listJobs(repository: LocalImageRepository): Promise<LocalJob[]> {
@@ -33,18 +37,8 @@ export class RunStore {
     const snapshots: RunSnapshot[] = [];
     for (const file of await repository.listFiles('.image-harness/runs')) {
       if (!file.endsWith('.json')) continue;
-      const run = await repository.readJson(`.image-harness/runs/${file}`, localRunSchema);
-      const jobs: LocalJob[] = [];
-      let complete = true;
-      for (const jobId of run.jobIds) {
-        const path = jobRecordPath(jobId);
-        if (!(await repository.exists(path))) {
-          complete = false;
-          break;
-        }
-        jobs.push(await repository.readJson(path, localJobSchema));
-      }
-      if (complete) snapshots.push({ run, jobs });
+      const snapshot = await this.getSnapshot(repository, file.slice(0, -5));
+      if (snapshot) snapshots.push(snapshot);
     }
     return snapshots;
   }
@@ -53,52 +47,85 @@ export class RunStore {
     repository: LocalImageRepository,
     runId: string,
   ): Promise<RunSnapshot | undefined> {
-    const path = runRecordPath(runId);
-    if (!(await repository.exists(path))) return undefined;
-    const run = await repository.readJson(path, localRunSchema);
-    const jobs: LocalJob[] = [];
-    for (const jobId of run.jobIds) {
-      const path = jobRecordPath(jobId);
+    return repository.withMutation(async () => {
+      const path = runRecordPath(runId);
       if (!(await repository.exists(path))) return undefined;
-      jobs.push(await repository.readJson(path, localJobSchema));
-    }
-    return { run, jobs };
+      const run = await repository.readJson(path, localRunSchema);
+      if (run.runId !== runId || new Set(run.jobIds).size !== run.jobIds.length) {
+        throw new Error('A run record has an invalid file or job binding.');
+      }
+      const jobs: LocalJob[] = [];
+      for (const jobId of run.jobIds) {
+        const path = jobRecordPath(jobId);
+        if (!(await repository.exists(path))) return undefined;
+        const job = await repository.readJson(path, localJobSchema);
+        if (job.jobId !== jobId || job.runId !== runId || job.targetId !== run.targetId) {
+          throw new Error('A job record has an invalid run or file binding.');
+        }
+        jobs.push(job);
+      }
+      const updatedAt = jobs.reduce(
+        (latest, job) => (Date.parse(job.updatedAt) > Date.parse(latest) ? job.updatedAt : latest),
+        run.updatedAt,
+      );
+      return { run: { ...run, status: summarizeRunStatus(jobs), updatedAt }, jobs };
+    });
   }
 
   async refreshRun(repository: LocalImageRepository, runId: string): Promise<void> {
-    const snapshot = await this.getSnapshot(repository, runId);
-    if (!snapshot) return;
-    const updated = localRunSchema.parse({
-      ...snapshot.run,
-      status: summarizeRunStatus(snapshot.jobs),
-      updatedAt: new Date().toISOString(),
+    await repository.withMutation(async () => {
+      const snapshot = await this.getSnapshot(repository, runId);
+      if (!snapshot) return;
+      const updated = localRunSchema.parse({
+        ...snapshot.run,
+        updatedAt: new Date().toISOString(),
+      });
+      await repository.writeJson(runRecordPath(runId), updated, localRunSchema);
     });
-    await repository.writeJson(runRecordPath(runId), updated, localRunSchema);
   }
 
-  async discardFailedJob(
-    repository: LocalImageRepository,
-    job: LocalJob,
-    publishedOutputs: readonly PublishedOutput[] = [],
-  ): Promise<boolean> {
-    const inputPaths = new Set(job.inputs.map((input) => input.repositoryRelativePath));
+  async interruptJob(repository: LocalImageRepository, jobId: string): Promise<void> {
+    await repository.withMutation(async () => {
+      const path = jobRecordPath(jobId);
+      if (!(await repository.exists(path))) return;
+      const job = await repository.readJson(path, localJobSchema);
+      if (job.jobId !== jobId) throw new Error('A job record has an invalid file binding.');
+      if (job.status === 'running') {
+        const now = new Date().toISOString();
+        const errorMessage =
+          'Processing stopped before the attempt could be finalized. The provider outcome and billing may be ambiguous. Retry explicitly.';
+        const interrupted = localJobSchema.parse({
+          ...job,
+          status: 'interrupted',
+          attempts: job.attempts.map((attempt) =>
+            attempt.status === 'started'
+              ? {
+                  ...attempt,
+                  status: 'ambiguous',
+                  finishedAt: now,
+                  errorCode: 'Interrupted',
+                  errorMessage,
+                }
+              : attempt,
+          ),
+          errorCode: 'Interrupted',
+          errorMessage,
+          updatedAt: now,
+        });
+        await repository.writeJson(path, interrupted, localJobSchema);
+      }
+      await this.refreshRun(repository, job.runId);
+    });
+  }
+
+  async discardFailedJob(repository: LocalImageRepository, job: LocalJob): Promise<boolean> {
+    const inputPaths = new Set(
+      job.inputs
+        .map((input) => input.repositoryRelativePath)
+        .filter((path) => path.startsWith('.image-harness/inputs/')),
+    );
     let discarded = true;
     await repository.withMutation(async () => {
-      const outputs = new Map(
-        publishedOutputs.map((output) => [output.imagePath, output] as const),
-      );
-      await this.images.walk(repository, (sidecar) => {
-        if (sidecar.jobId !== job.jobId) return;
-        outputs.set(sidecar.repositoryRelativePath, {
-          imagePath: sidecar.repositoryRelativePath,
-          sidecarPath: imageSidecarPath(sidecar.repositoryRelativePath),
-        });
-      });
-      for (const output of [...outputs.values()].reverse()) {
-        await repository.removeRelative(output.sidecarPath, { missingOk: true });
-        await repository.removeRelative(output.imagePath, { missingOk: true });
-      }
-
       const runPath = runRecordPath(job.runId);
       if (await repository.exists(runPath)) {
         const run = await repository.readJson(runPath, localRunSchema);

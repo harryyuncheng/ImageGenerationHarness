@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { KeyboardEvent } from 'react';
-import type { Attachment, UploadAttachment } from '../../shared/types/attachments.js';
+import type {
+  Attachment,
+  MaskAttachment,
+  UploadAttachment,
+} from '../../shared/types/attachments.js';
 import type { Capability } from '../../shared/types/domain.js';
 import {
   SELECTION_COLOR,
@@ -24,7 +28,7 @@ export function handleMaskShortcut(event: KeyboardEvent<HTMLElement>, undo: () =
 export function useMaskEditor(
   image: HTMLImageElement | null,
   source: Attachment | undefined,
-  mask: UploadAttachment | undefined,
+  mask: MaskAttachment | undefined,
   capability: Capability,
   onChange: (source: Attachment, mask: UploadAttachment | undefined) => void,
   onStatusChange: (sourceId: string, message: string | undefined) => void,

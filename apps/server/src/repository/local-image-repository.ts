@@ -1,25 +1,18 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { randomUUID } from 'node:crypto';
 import { constants } from 'node:fs';
-import {
-  access,
-  lstat,
-  mkdir,
-  readFile,
-  readdir,
-  realpath,
-  rename,
-  rm,
-  stat,
-} from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { access, lstat, mkdir, readFile, readdir, realpath, rename, rm } from 'node:fs/promises';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import {
   assertSafeRepositoryRelativePath,
   repositoryDescriptorSchema,
   REPOSITORY_SCHEMA_VERSION,
+  styleGuideFolderSchema,
+  styleGuideImageSchema,
   type RepositoryDescriptor,
 } from '@harness/domain';
 import type { ZodType } from 'zod';
+import { assertImageBinding, styleGuideSidecarPath } from '../style-guide/style-guide-records.js';
 import {
   atomicWriteAbsolute,
   cleanupTempsRecursively,
@@ -42,42 +35,15 @@ const REPOSITORY_DESCRIPTOR_PATH = '.image-harness/repository.json';
 const LEGACY_STYLE_GUIDE_DIRECTORY = 'references';
 const STYLE_GUIDE_DIRECTORY = 'style-guide';
 
-/**
- * Manifests embed their own repository-relative paths, so the stored prefix is rewritten
- * before the directory moves. Matching on the trailing slash keeps folder names untouched.
- */
-async function rewriteLegacyStyleGuidePaths(absolutePath: string): Promise<void> {
-  const original = await readFile(absolutePath, 'utf8');
-  const rewritten = original.replaceAll(
-    `"${LEGACY_STYLE_GUIDE_DIRECTORY}/`,
-    `"${STYLE_GUIDE_DIRECTORY}/`,
-  );
-  if (rewritten === original) return;
-  await atomicWriteAbsolute(absolutePath, new TextEncoder().encode(rewritten), 0o600);
-}
-
 export function isContained(root: string, candidate: string): boolean {
   return candidate === root || candidate.startsWith(`${root}${sep}`);
-}
-
-function safeRelativePath(value: string): string {
-  const validated = assertSafeRepositoryRelativePath(value);
-  if (
-    validated.includes('\\') ||
-    validated.includes('\0') ||
-    isAbsolute(validated) ||
-    /^[A-Za-z]:\//u.test(validated)
-  ) {
-    throw new Error('Repository paths must use safe forward-slash relative paths.');
-  }
-  return validated;
 }
 
 export async function canonicalWritableDirectory(selectedRoot: string): Promise<string> {
   let canonicalRoot: string;
   try {
     canonicalRoot = await realpath(resolve(selectedRoot));
-    const metadata = await stat(canonicalRoot);
+    const metadata = await lstat(canonicalRoot);
     if (!metadata.isDirectory()) {
       throw new RepositoryUnavailableError('The selected repository must be a directory.');
     }
@@ -103,6 +69,7 @@ async function assertDescriptorPathIsNotSymlink(canonicalRoot: string): Promise<
 }
 
 export class LocalImageRepository {
+  static readonly #repositories = new Map<string, LocalImageRepository>();
   readonly #canonicalRoot: string;
   #descriptor: RepositoryDescriptor;
   #mutationTail: Promise<void> = Promise.resolve();
@@ -126,11 +93,10 @@ export class LocalImageRepository {
     } catch (error) {
       if (!isMissing(error)) throw error;
       const now = new Date().toISOString();
-      const directoryName = basename(canonicalRoot).trim() || 'Image Repository';
       descriptor = repositoryDescriptorSchema.parse({
         schemaVersion: REPOSITORY_SCHEMA_VERSION,
         repositoryId: randomUUID(),
-        name: directoryName.slice(0, 120),
+        name: (basename(canonicalRoot).trim() || 'Image Repository').slice(0, 120),
         createdAt: now,
         updatedAt: now,
       });
@@ -163,21 +129,53 @@ export class LocalImageRepository {
     descriptor: RepositoryDescriptor,
     ensureDescriptor: boolean,
   ): Promise<LocalImageRepository> {
-    const repository = new LocalImageRepository(canonicalRoot, descriptor);
-    await repository.withMutation(async () => {
-      await repository.#migrateLegacyStyleGuideUnlocked();
-      for (const directory of REQUIRED_DIRECTORIES) {
-        await repository.#ensureDirectoryUnlocked(directory);
+    const existing = this.#repositories.get(canonicalRoot);
+    if (existing && existing.#descriptor.repositoryId !== descriptor.repositoryId) {
+      throw new RepositoryUnavailableError('The repository identity changed while it was open.');
+    }
+    const previousRepositories = [...this.#repositories.values()];
+    const repository = existing ?? new LocalImageRepository(canonicalRoot, descriptor);
+    this.#repositories.set(canonicalRoot, repository);
+    try {
+      // Reused instances must still honor earlier owners while their first open is in flight.
+      for (const previous of previousRepositories) {
+        if (previous === repository) break;
+        if (previous.#descriptor.repositoryId !== descriptor.repositoryId) continue;
+        if (
+          (await previous.exists(REPOSITORY_DESCRIPTOR_PATH)) &&
+          (await previous.readJson(REPOSITORY_DESCRIPTOR_PATH, repositoryDescriptorSchema))
+            .repositoryId === descriptor.repositoryId
+        ) {
+          throw new RepositoryUnavailableError(
+            'Another available folder already uses this repository identity. Choose the original repository instead.',
+          );
+        }
+        if (this.#repositories.get(previous.#canonicalRoot) === previous) {
+          this.#repositories.delete(previous.#canonicalRoot);
+        }
       }
-      if (ensureDescriptor && !(await repository.exists(REPOSITORY_DESCRIPTOR_PATH))) {
-        await repository.writeJson(
-          REPOSITORY_DESCRIPTOR_PATH,
-          descriptor,
-          repositoryDescriptorSchema,
-        );
-      }
-      await repository.#cleanupManagedTempsUnlocked();
-    });
+      await repository.withMutation(async () => {
+        await repository.#migrateLegacyStyleGuideUnlocked();
+        for (const directory of REQUIRED_DIRECTORIES) {
+          await repository.#ensureDirectoryUnlocked(directory);
+        }
+        if (ensureDescriptor && !(await repository.exists(REPOSITORY_DESCRIPTOR_PATH))) {
+          await repository.writeJson(
+            REPOSITORY_DESCRIPTOR_PATH,
+            descriptor,
+            repositoryDescriptorSchema,
+          );
+        }
+        for (const directory of ['.image-harness', 'images', 'style-guide', 'presets']) {
+          const absoluteDirectory = await repository.#resolveExisting(directory);
+          await cleanupTempsRecursively(absoluteDirectory);
+        }
+        repository.#descriptor = descriptor;
+      });
+    } catch (error) {
+      if (!existing) this.#repositories.delete(canonicalRoot);
+      throw error;
+    }
     return repository;
   }
 
@@ -281,7 +279,10 @@ export class LocalImageRepository {
       try {
         await this.writeImmutable(imagePath, bytes);
         wroteImage = true;
-        await this.writeJson(sidecarPath, validated, schema);
+        await this.writeImmutable(
+          sidecarPath,
+          new TextEncoder().encode(`${JSON.stringify(validated, null, 2)}\n`),
+        );
       } catch (error) {
         if (wroteImage) await this.removeRelative(imagePath, { missingOk: true });
         throw error;
@@ -327,38 +328,66 @@ export class LocalImageRepository {
 
   /** Repositories created before the style guide rename keep their folders under `references/`. */
   async #migrateLegacyStyleGuideUnlocked(): Promise<void> {
-    const legacyRoot = join(this.#canonicalRoot, LEGACY_STYLE_GUIDE_DIRECTORY);
-    try {
-      if (!(await lstat(legacyRoot)).isDirectory()) return;
-    } catch (error) {
-      if (isMissing(error)) return;
-      throw error;
-    }
-
+    if (!(await this.exists(LEGACY_STYLE_GUIDE_DIRECTORY))) return;
+    const legacyRoot = await this.#resolveExisting(LEGACY_STYLE_GUIDE_DIRECTORY);
+    if (!(await lstat(legacyRoot)).isDirectory()) return;
     await this.#ensureDirectoryUnlocked(STYLE_GUIDE_DIRECTORY);
-    const styleGuideRoot = join(this.#canonicalRoot, STYLE_GUIDE_DIRECTORY);
-    for (const folderName of await readdir(legacyRoot)) {
-      const legacyFolder = join(legacyRoot, folderName);
-      if (!(await lstat(legacyFolder)).isDirectory()) continue;
-      for (const fileName of await readdir(legacyFolder)) {
-        if (!fileName.endsWith('.json')) continue;
-        await rewriteLegacyStyleGuidePaths(join(legacyFolder, fileName));
+    for (const folderName of await this.listDirectories(LEGACY_STYLE_GUIDE_DIRECTORY)) {
+      const source = `${LEGACY_STYLE_GUIDE_DIRECTORY}/${folderName}`;
+      const destination = `${STYLE_GUIDE_DIRECTORY}/${folderName}`;
+      const manifestPath = `${source}/folder.json`;
+      if (!(await this.exists(manifestPath))) continue;
+      const folder = await this.readJson(manifestPath, styleGuideFolderSchema);
+      if (
+        (folder.directory !== source && folder.directory !== destination) ||
+        !folderName.endsWith(`--${folder.folderId}`)
+      ) {
+        throw new Error('A legacy style guide has an invalid directory binding.');
       }
-      await rename(legacyFolder, join(styleGuideRoot, folderName));
+      if (await this.exists(destination)) {
+        throw new Error('A legacy style guide conflicts with an existing style guide directory.');
+      }
+      const images = [];
+      for (const fileName of await this.listFiles(source)) {
+        if (!fileName.endsWith('.image.json')) continue;
+        const image = await this.readJson(`${source}/${fileName}`, styleGuideImageSchema);
+        const directory = image.repositoryRelativePath.startsWith(`${source}/`)
+          ? source
+          : destination;
+        assertImageBinding(image, { ...folder, directory });
+        if (styleGuideSidecarPath(image.repositoryRelativePath) !== `${directory}/${fileName}`) {
+          throw new Error('A legacy style guide image has an invalid sidecar binding.');
+        }
+        images.push({
+          path: `${source}/${fileName}`,
+          image: {
+            ...image,
+            repositoryRelativePath: `${destination}/${image.repositoryRelativePath.slice(directory.length + 1)}`,
+          },
+        });
+      }
+      for (const { path, image } of images)
+        await this.writeJson(path, image, styleGuideImageSchema);
+      await this.writeJson(
+        manifestPath,
+        { ...folder, directory: destination },
+        styleGuideFolderSchema,
+      );
+      await rename(await this.#resolveExisting(source), await this.#resolveForWrite(destination));
     }
-    await rm(legacyRoot, { recursive: true, force: true });
+    await syncDirectory(legacyRoot);
+    if ((await readdir(legacyRoot)).length === 0) await rm(legacyRoot, { recursive: true });
+    await syncDirectory(await this.#resolveExisting(STYLE_GUIDE_DIRECTORY));
     await syncDirectory(this.#canonicalRoot);
   }
 
-  async #cleanupManagedTempsUnlocked(): Promise<void> {
-    for (const directory of ['.image-harness', 'images', 'style-guide', 'presets']) {
-      const absoluteDirectory = await this.#resolveExisting(directory);
-      await cleanupTempsRecursively(absoluteDirectory);
-    }
-  }
-
   #lexicalPath(relativePath: string): { relativePath: string; absolutePath: string } {
-    const validated = safeRelativePath(relativePath);
+    if (LocalImageRepository.#repositories.get(this.#canonicalRoot) !== this) {
+      throw new RepositoryUnavailableError(
+        'The repository moved. Select its current folder again.',
+      );
+    }
+    const validated = assertSafeRepositoryRelativePath(relativePath);
     const absolutePath = resolve(this.#canonicalRoot, ...validated.split('/'));
     if (!isContained(this.#canonicalRoot, absolutePath) || absolutePath === this.#canonicalRoot) {
       throw new Error('Repository path escapes the selected root.');

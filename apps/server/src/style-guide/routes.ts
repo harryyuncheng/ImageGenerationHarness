@@ -7,7 +7,7 @@ import {
   styleGuideResponseSchema,
 } from '@harness/contracts';
 import type { FastifyInstance } from 'fastify';
-import { ApiError, requireService } from '../app/api-error.js';
+import { requireService } from '../app/api-error.js';
 import { sendImmutableImage } from '../app/image-response.js';
 import { styleGuideFolderDto, styleGuideImageDto } from './style-guide-dto.js';
 import type { StyleGuideService } from './style-guide-service.js';
@@ -57,8 +57,7 @@ export function registerStyleGuideRoutes(
   });
   app.get('/api/style-guide/folders/:folderId/images/:imageId/content', async (request, reply) => {
     const { folderId, imageId } = styleGuideImageParamsSchema.parse(request.params);
-    const image = await service().getImage(folderId, imageId);
-    if (!image) throw new ApiError(404, 'Style guide image not found.');
-    return sendImmutableImage(reply, image.mediaType, await service().readImage(image));
+    const { image, bytes } = await service().readImage(folderId, imageId);
+    return sendImmutableImage(reply, image.mediaType, bytes);
   });
 }

@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, CloudOff } from 'lucide-react';
-import { useCallback, useState, type ReactNode } from 'react';
+import { ChevronLeft, ChevronRight, CloudOff, X } from 'lucide-react';
+import { useCallback, useState, type DragEventHandler } from 'react';
 import { ImageFrame, ImageSkeleton } from '../../../shared/components/ImageFrame.js';
 import { decodedImageRatios } from '../../../shared/images/files.js';
 import type { Attachment } from '../../../shared/types/attachments.js';
@@ -25,12 +25,16 @@ export function progressMessage(status: RunStatus, hasOutput: boolean): string {
 
 export function ImageViewer({
   image,
-  children,
+  onRemove,
   onImageReady,
+  onDragStart,
+  onDragEnd,
 }: {
   image: LoadedImage | Attachment;
-  children?: ReactNode;
+  onRemove: () => void;
   onImageReady?: (image: HTMLImageElement | null) => void;
+  onDragStart?: DragEventHandler<HTMLImageElement>;
+  onDragEnd?: DragEventHandler<HTMLImageElement>;
 }) {
   const [settled, setSettled] = useState<SettledImage>();
   const loaded = 'status' in image ? image : undefined;
@@ -63,7 +67,15 @@ export function ImageViewer({
     >
       {/* The measured ratio keeps the mask canvas aligned with the artwork. */}
       <div className={`loaded-image-figure ${unavailable ? 'loaded-image-figure--error' : ''}`}>
-        {children}
+        <button
+          type="button"
+          className="image-input-remove"
+          title="Remove image"
+          aria-label="Remove image"
+          onClick={onRemove}
+        >
+          <X size={20} aria-hidden="true" />
+        </button>
         <ImageFrame image={loaded?.image} aspectRatio={ratio} surface="canvas">
           {imageUrl && (
             <img
@@ -72,7 +84,9 @@ export function ImageViewer({
               className={visible ? 'is-loaded' : ''}
               src={imageUrl}
               alt={description || 'Generated image'}
-              draggable={false}
+              draggable={onDragStart !== undefined}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
               onLoad={(event) => {
                 const { naturalWidth, naturalHeight } = event.currentTarget;
                 decodedImageRatios.set(imageUrl, naturalWidth / naturalHeight);

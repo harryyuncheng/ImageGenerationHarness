@@ -8,6 +8,7 @@ import {
   timestampSchema,
   uuidSchema,
 } from './common.js';
+import { generationSettingsSchema } from './generation.js';
 
 export const seedStrategySchema = z.enum([
   'provider-random',
@@ -53,12 +54,23 @@ export type RunStatus = z.infer<typeof runStatusSchema>;
 
 export const createRunRequestSchema = z
   .object({
+    repositoryId: uuidSchema,
     targetId: nonEmptyStringSchema,
     request: z.record(z.string(), z.unknown()),
     requestedJobCount: z.number().int().min(1).max(MAX_REQUEST_IMAGES),
     seedPlan: seedPlanSchema,
+    settings: generationSettingsSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((submission, context) => {
+    if (
+      submission.settings &&
+      (submission.settings.targetId !== submission.targetId ||
+        submission.settings.outputCount !== submission.requestedJobCount)
+    ) {
+      context.addIssue({ code: 'custom', message: 'Saved settings must match the submitted run.' });
+    }
+  });
 
 export const runDtoSchema = z
   .object({
@@ -97,6 +109,7 @@ export const jobDtoSchema = z
     jobId: uuidSchema,
     status: jobStatusSchema,
     targetId: nonEmptyStringSchema,
+    requestedOutputCount: z.number().int().min(1).max(MAX_REQUEST_IMAGES),
     plannedSeed: uint32Schema.nullable(),
     providerSeed: uint32Schema.nullable(),
     outputImageIds: z.array(uuidSchema),
@@ -125,11 +138,19 @@ export const runsResponseSchema = z
   })
   .strict();
 export const queuedRunResponseSchema = z
-  .object({ runId: uuidSchema, status: z.literal('queued') })
+  .object({
+    runId: uuidSchema,
+    status: z.literal('queued'),
+    jobs: z
+      .array(jobDtoSchema.pick({ jobId: true, requestedOutputCount: true }))
+      .min(1)
+      .max(MAX_REQUEST_IMAGES),
+  })
   .strict();
 
 export const runParamsSchema = z.object({ runId: uuidSchema }).strict();
 
 export type CreateRunRequest = z.infer<typeof createRunRequestSchema>;
+export type QueuedRunResponse = z.infer<typeof queuedRunResponseSchema>;
 export type GenerationFailure = z.infer<typeof generationFailureSchema>;
 export type RunsResponse = z.infer<typeof runsResponseSchema>;

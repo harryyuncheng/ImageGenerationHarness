@@ -2,7 +2,7 @@ import { ArrowLeft, Bookmark, Check, CloudOff, Pencil, Plus, Trash2, X } from 'l
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { EmptyState } from '../../../shared/components/EmptyState.js';
-import { InlineError } from '../../../shared/components/InlineError.js';
+import { Alert } from '../../../shared/components/Alert.js';
 import { LibraryInfo } from '../../../shared/components/LibraryInfo.js';
 import { useModalDialog } from '../../../shared/hooks/use-modal-dialog.js';
 import type { Preset } from '../../../shared/types/domain.js';
@@ -102,7 +102,7 @@ export function PresetsView({
           </div>
         </header>
         <div className="style-guide-dialog__body">
-          <InlineError feedback={controller.feedback} />
+          <Alert feedback={controller.feedback} />
           {editor ? (
             <PresetEditor
               key={editor.preset?.presetId ?? 'new'}

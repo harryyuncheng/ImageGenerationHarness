@@ -28,7 +28,7 @@
 @import './features/presets.css';
 @import './features/style-guide.css';
 @import './shared/shortcuts.css';
-@import './shared/inline-error.css';
+@import './shared/alert.css';
 @import './shared/studio-dialog.css';
 @import './shared/accessibility.css';
 @import './responsive.css';

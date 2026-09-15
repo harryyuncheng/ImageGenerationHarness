@@ -1,4 +1,9 @@
-import { galleryResponseSchema, imageParamsSchema } from '@harness/contracts';
+import {
+  galleryResponseSchema,
+  generationInputIndexSchema,
+  generationSetupSchema,
+  imageParamsSchema,
+} from '@harness/contracts';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { ApiError, requireService } from '../app/api-error.js';
@@ -26,5 +31,19 @@ export function registerImageRoutes(app: FastifyInstance, runService: RunService
     const image = await service().getImage(imageId);
     if (!image) throw new ApiError(404, 'Image not found.');
     return sendGeneratedImage(reply, service(), image);
+  });
+  app.get('/api/images/:imageId/setup', async (request) => {
+    const { imageId } = imageParamsSchema.parse(request.params);
+    return generationSetupSchema.parse(
+      await service().getGenerationSetup({ kind: 'images', id: imageId }),
+    );
+  });
+  app.get('/api/images/:imageId/inputs/:inputIndex/content', async (request, reply) => {
+    const { imageId, inputIndex } = imageParamsSchema
+      .extend({ inputIndex: generationInputIndexSchema })
+      .strict()
+      .parse(request.params);
+    const input = await service().readGenerationInput({ kind: 'images', id: imageId, inputIndex });
+    return sendImmutableImage(reply, input.mediaType, input.bytes);
   });
 }

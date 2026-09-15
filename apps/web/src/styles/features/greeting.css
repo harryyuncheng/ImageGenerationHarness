@@ -36,13 +36,15 @@
 }
 
 .prompt-canvas-input {
+  --prompt-height-limit: min(46dvh, 420px);
+
   field-sizing: content;
   width: 100%;
   min-width: 0;
   /* Five lines of writing room at the 1.12 line height above. */
-  min-height: 5.6em;
-  max-height: min(46dvh, 420px);
-  overflow-y: auto;
+  min-height: min(5.6em, var(--prompt-height-limit));
+  max-height: var(--prompt-height-limit);
+  overflow-y: hidden;
   resize: none;
   border: 0;
   outline: 0;
@@ -54,6 +56,8 @@
   line-height: inherit;
   text-align: left;
   caret-color: var(--text);
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-muted) transparent;
 }
 
 .prompt-canvas-field.is-empty .prompt-canvas-input {

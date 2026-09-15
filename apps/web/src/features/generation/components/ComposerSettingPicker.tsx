@@ -66,6 +66,7 @@ export function ComposerSettingPicker({
 
     const viewportMargin = 12;
     const menuGap = 8;
+    let positionFrame: number | undefined;
     const positionMenu = () => {
       const triggerBounds = trigger.getBoundingClientRect();
       const menuWidth = menu.offsetWidth;
@@ -87,10 +88,10 @@ export function ComposerSettingPicker({
         (variant === 'model' ? spaceAbove : Math.max(spaceAbove, spaceBelow)) -
         viewportMargin -
         menuGap;
-      menu.style.setProperty(
-        '--popover-available-height',
-        `${String(Math.max(0, Math.min(availableHeight, viewportHeight - viewportMargin * 2)))}px`,
-      );
+      const heightLimit = `${String(Math.max(0, Math.min(availableHeight, viewportHeight - viewportMargin * 2)))}px`;
+      if (menu.style.getPropertyValue('--popover-available-height') !== heightLimit) {
+        menu.style.setProperty('--popover-available-height', heightLimit);
+      }
       const menuHeight = menu.offsetHeight;
       const openAbove =
         variant === 'model' ||
@@ -110,6 +111,16 @@ export function ComposerSettingPicker({
         left: `${String(left)}px`,
         top: `${String(top)}px`,
       });
+    };
+    const schedulePosition = () => {
+      positionFrame ??= window.requestAnimationFrame(() => {
+        positionFrame = undefined;
+        positionMenu();
+      });
+    };
+    const positionOnScroll = (event: Event) => {
+      if (event.target instanceof Node && menu.contains(event.target)) return;
+      schedulePosition();
     };
     const closeFromOutside = (event: PointerEvent) => {
       if (event.defaultPrevented) return;
@@ -137,23 +148,24 @@ export function ComposerSettingPicker({
       menu;
     initialFocus.focus({ preventScroll: true });
     if (initialFocus.matches('[role="option"]')) initialFocus.scrollIntoView({ block: 'nearest' });
-    const resizeObserver = new ResizeObserver(positionMenu);
+    const resizeObserver = new ResizeObserver(schedulePosition);
     resizeObserver.observe(trigger);
     resizeObserver.observe(menu);
     document.addEventListener('pointerdown', closeFromOutside);
     window.addEventListener('keydown', closeFromEscape);
-    window.addEventListener('resize', positionMenu);
-    window.addEventListener('scroll', positionMenu, true);
-    window.visualViewport?.addEventListener('resize', positionMenu);
-    window.visualViewport?.addEventListener('scroll', positionMenu);
+    window.addEventListener('resize', schedulePosition);
+    window.addEventListener('scroll', positionOnScroll, true);
+    window.visualViewport?.addEventListener('resize', schedulePosition);
+    window.visualViewport?.addEventListener('scroll', schedulePosition);
     return () => {
       resizeObserver.disconnect();
+      if (positionFrame !== undefined) window.cancelAnimationFrame(positionFrame);
       document.removeEventListener('pointerdown', closeFromOutside);
       window.removeEventListener('keydown', closeFromEscape);
-      window.removeEventListener('resize', positionMenu);
-      window.removeEventListener('scroll', positionMenu, true);
-      window.visualViewport?.removeEventListener('resize', positionMenu);
-      window.visualViewport?.removeEventListener('scroll', positionMenu);
+      window.removeEventListener('resize', schedulePosition);
+      window.removeEventListener('scroll', positionOnScroll, true);
+      window.visualViewport?.removeEventListener('resize', schedulePosition);
+      window.visualViewport?.removeEventListener('scroll', schedulePosition);
     };
   }, [open, variant]);
 

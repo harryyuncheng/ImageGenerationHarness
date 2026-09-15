@@ -63,6 +63,17 @@
   display: none;
 }
 
+.image-reference-stack--drop-target {
+  min-width: min(240px, 35vw);
+  height: calc(100% - var(--reference-top) - 20px);
+  background: linear-gradient(
+    to left,
+    color-mix(in srgb, var(--text) 7%, transparent),
+    transparent
+  );
+  pointer-events: auto;
+}
+
 .image-reference {
   position: relative;
   flex: 0 0 auto;

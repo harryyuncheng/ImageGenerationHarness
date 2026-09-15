@@ -11,7 +11,7 @@ export function isMissing(error: unknown): boolean {
 }
 
 export function isTemporaryName(name: string): boolean {
-  return name.includes('.tmp-');
+  return /^\..+\.tmp-[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/iu.test(name);
 }
 
 export async function syncDirectory(directory: string): Promise<void> {
@@ -35,7 +35,7 @@ export async function cleanupTargetTemps(directory: string, targetName?: string)
   await Promise.all(
     entries.map(async (entry) => {
       if (!entry.isFile() && !entry.isSymbolicLink()) return;
-      if (!(targetPrefix ? entry.name.startsWith(targetPrefix) : isTemporaryName(entry.name))) {
+      if (!isTemporaryName(entry.name) || (targetPrefix && !entry.name.startsWith(targetPrefix))) {
         return;
       }
       await rm(join(directory, entry.name), { force: true });
@@ -71,7 +71,6 @@ export async function atomicWriteAbsolute(
   const parent = dirname(targetPath);
   const targetName = basename(targetPath);
   await mkdir(parent, { recursive: true, mode: 0o700 });
-  await cleanupTargetTemps(parent, targetName);
   const temporaryPath = join(parent, `.${targetName}.tmp-${randomUUID()}`);
   let handle;
   try {
@@ -97,9 +96,9 @@ export async function writeImmutableAbsolute(
 ): Promise<void> {
   const parent = dirname(targetPath);
   const targetName = basename(targetPath);
-  await cleanupTargetTemps(parent, targetName);
   const temporaryPath = join(parent, `.${targetName}.tmp-${randomUUID()}`);
   let handle;
+  let published = false;
   try {
     handle = await open(temporaryPath, 'wx', mode);
     await handle.writeFile(bytes);
@@ -107,7 +106,11 @@ export async function writeImmutableAbsolute(
     await handle.close();
     handle = undefined;
     await link(temporaryPath, targetPath);
+    published = true;
     await syncDirectory(parent);
+  } catch (error) {
+    if (published) await unlink(targetPath);
+    throw error;
   } finally {
     if (handle) await handle.close().catch(() => undefined);
     await unlink(temporaryPath).catch((error: unknown) => {

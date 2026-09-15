@@ -8,6 +8,8 @@ import type { GalleryImage } from '../types/domain.js';
 export interface StudioImage {
   id: string;
   runId: string;
+  jobId: string | undefined;
+  jobOutputIndex: number;
   outputIndex: number;
   description: string;
   createdAt: string;
@@ -19,7 +21,7 @@ export interface StudioImage {
 export function toStudioImages(
   images: readonly GalleryImage[],
   runs: readonly StudioRun[],
-  imagesUpdatedAt: number,
+  imagesRequestedAt: number,
 ): StudioImage[] {
   const savedByJob = new Map<string, GalleryImage[]>();
   for (const image of [...images].sort((left, right) =>
@@ -44,12 +46,8 @@ export function toStudioImages(
           .filter((image) => !knownIds.has(image.imageId))
           .map((image) => image.imageId),
       ];
-      if (
-        outputIds.length === 0 &&
-        job.status !== 'completed' &&
-        !isTerminalWithoutOutputStatus(job.status)
-      ) {
-        outputIds.push(undefined);
+      if (job.status !== 'completed' && !isTerminalWithoutOutputStatus(job.status)) {
+        while (outputIds.length < job.requestedOutputCount) outputIds.push(undefined);
       }
       for (const [jobOutputIndex, imageId] of outputIds.entries()) {
         const index = outputIndex++;
@@ -58,13 +56,15 @@ export function toStudioImages(
         if (
           !saved &&
           (job.status === 'completed' || isTerminalWithoutOutputStatus(job.status)) &&
-          imagesUpdatedAt >= Date.parse(run.updatedAt)
+          imagesRequestedAt >= Date.parse(run.updatedAt)
         )
           continue;
         if (saved) included.add(saved.imageId);
         result.push({
           id: `${job.id}:${String(jobOutputIndex)}`,
           runId: run.remoteId ?? run.id,
+          jobId: run.remoteId === undefined ? undefined : job.id,
+          jobOutputIndex,
           outputIndex: index,
           description: (saved?.prompt ?? run.prompt) || run.targetName,
           createdAt: saved?.createdAt ?? run.createdAt,
@@ -81,6 +81,8 @@ export function toStudioImages(
       result.push({
         id: `${jobId}:${String(index)}`,
         runId: saved.runId,
+        jobId,
+        jobOutputIndex: index,
         outputIndex: index,
         description: saved.prompt?.length ? saved.prompt : 'Generated image',
         createdAt: saved.createdAt,

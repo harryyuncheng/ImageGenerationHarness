@@ -12,7 +12,7 @@ import {
   type ShortcutAction,
   type ShortcutBinding,
 } from '../shortcuts.js';
-import { InlineError } from './InlineError.js';
+import { Alert } from './Alert.js';
 
 function focusShortcut(action: ShortcutAction) {
   window.requestAnimationFrame(() => {
@@ -94,7 +94,7 @@ export function ShortcutList({
         </button>
       </div>
       <div className="settings-card settings-card--shortcuts">
-        <InlineError feedback={shortcuts.feedback} />
+        <Alert feedback={shortcuts.feedback} />
         <ul className="shortcut-list" aria-label="Keyboard shortcuts">
           {shortcutActions.map(({ id, label, scope }) => (
             <li key={id} className="shortcut-row">

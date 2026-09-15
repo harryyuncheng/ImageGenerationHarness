@@ -27,6 +27,21 @@ export {
 } from './media.js';
 export type { AspectRatio, ImageQuality, MediaType, OutputFormat } from './media.js';
 export {
+  defaultGenerationSettings,
+  generationInputIndexSchema,
+  generationInputReferenceSchema,
+  generationSettingsSchema,
+  generationSetupSchema,
+  generationStyleGuideSchema,
+} from './generation.js';
+export type {
+  GenerationInputReference,
+  GenerationSettings,
+  GenerationSetup,
+  GenerationSetupSource,
+  GenerationStyleGuide,
+} from './generation.js';
+export {
   attemptStatusSchema,
   createRunRequestSchema,
   generationFailureSchema,
@@ -44,6 +59,7 @@ export {
 export type {
   CreateRunRequest,
   GenerationFailure,
+  QueuedRunResponse,
   RunStatus,
   RunsResponse,
   SeedPlan,

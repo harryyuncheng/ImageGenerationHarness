@@ -72,7 +72,7 @@ export function SeedValueInput({
         disabled={disabled}
         onChange={(event) => {
           if (!/^\d*$/.test(event.target.value)) return;
-          onChange(Math.min(Number(event.target.value || '0'), seedMaximum));
+          onChange(Math.max(1, Math.min(Number(event.target.value || '1'), seedMaximum)));
         }}
       />
       <button

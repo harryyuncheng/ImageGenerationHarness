@@ -7,7 +7,7 @@ export function getRepository(): Promise<RepositoryStatus> {
     '/api/repository',
     repositoryStatusSchema,
     {},
-    'Repository status unavailable',
+    'Repository status unavailable.',
   );
 }
 

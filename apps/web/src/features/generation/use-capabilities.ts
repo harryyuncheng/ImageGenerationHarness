@@ -7,7 +7,6 @@ export function useCapabilities() {
   const capabilitiesQuery = useQuery({
     queryKey: queryKeys.capabilities(),
     queryFn: getCapabilities,
-    staleTime: Infinity,
   });
   return {
     capabilitiesQuery,

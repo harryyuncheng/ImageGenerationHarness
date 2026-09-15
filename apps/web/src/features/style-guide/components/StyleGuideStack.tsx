@@ -1,7 +1,7 @@
 import { Plus } from 'lucide-react';
 import type { RefObject } from 'react';
-import type { StyleGuideFolder, StyleGuideImage } from '../../../shared/types/domain.js';
-import { styleGuideImageContentUrl } from '../api.js';
+import type { GenerationStyleGuide } from '@harness/contracts';
+import type { StyleGuideAttachment } from '../../../shared/types/attachments.js';
 
 const PREVIEW_SLOTS = [0, 1, 2];
 
@@ -40,8 +40,8 @@ export function StyleGuideStack({
   stackRef,
   onOpen,
 }: {
-  activeFolder: StyleGuideFolder | undefined;
-  appliedImages: readonly StyleGuideImage[];
+  activeFolder: GenerationStyleGuide | undefined;
+  appliedImages: readonly StyleGuideAttachment[];
   stackRef: RefObject<HTMLButtonElement | null>;
   onOpen: (origins: FanOrigin[]) => void;
 }) {
@@ -70,9 +70,7 @@ export function StyleGuideStack({
               data-image-id={image?.imageId}
               key={slot}
             >
-              {image && (
-                <img src={styleGuideImageContentUrl(image.folderId, image.imageId)} alt="" />
-              )}
+              {image && <img src={image.previewUrl} alt="" />}
               {!image && slot === PREVIEW_SLOTS.length - 1 && (
                 <span className="style-guide-tile__add">
                   <Plus size={22} strokeWidth={1.5} />

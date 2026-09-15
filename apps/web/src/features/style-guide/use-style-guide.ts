@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import type { GenerationStyleGuide } from '@harness/contracts';
 import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { runMutation, type MutationOutcome } from '../../shared/api/mutation.js';
@@ -8,10 +9,11 @@ import {
   readAsData,
   revokeUploadPreviews,
   supportedImageFiles,
+  unsupportedImageMessage,
 } from '../../shared/images/files.js';
 import type { Confirm, Prompt } from '../../shared/hooks/use-dialogs.js';
-import { useInlineError } from '../../shared/hooks/use-inline-error.js';
-import type { UploadAttachment } from '../../shared/types/attachments.js';
+import { useAlert } from '../../shared/hooks/use-alert.js';
+import type { StyleGuideAttachment, UploadAttachment } from '../../shared/types/attachments.js';
 import type { StyleGuideFolder, StyleGuideImage } from '../../shared/types/domain.js';
 import type { AttachmentsController } from '../generation/use-attachments.js';
 import type { GenerationSettingsController } from '../generation/use-generation-settings.js';
@@ -35,7 +37,7 @@ export function useStyleGuide({
   attachments,
   settings,
 }: StyleGuideOptions) {
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const guideCapability =
     settings.selectedCapability.canonicalId === 'generation/core'
       ? resolveCapability(defaultCapabilities, 'generation/sd3.5-large')
@@ -47,6 +49,7 @@ export function useStyleGuide({
     `harness-active-style-guide:${activeRepositoryId ?? 'none'}`,
     null,
   );
+  const [restoredGuide, setRestoredGuide] = useState<GenerationStyleGuide | null>();
 
   const styleGuideQuery = useQuery({
     queryKey: queryKeys.styleGuide(activeRepositoryId),
@@ -59,48 +62,42 @@ export function useStyleGuide({
   const activeFolder = folders.find((folder) => folder.folderId === activeFolderId);
   const activeImages = activeFolder?.images;
   const { setStyleGuideImages } = attachments;
-  const appliedImages =
-    activeImages?.filter((image) =>
-      [attachments.inputs.source, ...attachments.inputs.references].some(
-        (input) => input?.source === 'style-guide' && input.imageId === image.imageId,
-      ),
-    ) ?? [];
+  const appliedImages = [attachments.inputs.source, ...attachments.inputs.references].filter(
+    (input): input is StyleGuideAttachment => input?.source === 'style-guide',
+  );
 
   useEffect(() => {
-    setStyleGuideImages(activeImages ?? []);
-  }, [activeImages, setStyleGuideImages]);
+    if (restoredGuide === undefined) setStyleGuideImages(activeImages ?? []);
+  }, [activeImages, restoredGuide, setStyleGuideImages]);
 
   useEffect(() => {
-    if (attachments.styleGuideFolderId === activeFolderId && appliedImages.length === 0)
+    if (attachments.styleGuideFolderId === activeFolderId && appliedImages.length === 0) {
       setActiveFolderId(null);
+      setRestoredGuide(undefined);
+    }
   }, [activeFolderId, attachments.styleGuideFolderId, appliedImages.length, setActiveFolderId]);
 
-  function activateFolder(folderId: string) {
-    setActiveFolderId(folderId);
-    if (guideCapability.canonicalId !== settings.selectedCapability.canonicalId) {
-      settings.updateSettings('targetId', guideCapability.canonicalId);
-    }
-  }
-
-  function toggleActiveFolder(folder: StyleGuideFolder) {
-    if (folder.folderId === activeFolderId) {
+  function toggleGuide(guide: StyleGuideFolder | StyleGuideImage): boolean {
+    feedback.clearAlert();
+    if ('images' in guide && guide.folderId === activeFolderId) {
+      setRestoredGuide(undefined);
       setActiveFolderId(null);
-      return;
+      return true;
     }
-    attachments.applyStyleGuide(folder.images);
-    activateFolder(folder.folderId);
-  }
-
-  function toggleImage(image: StyleGuideImage) {
-    feedback.clearError();
     try {
-      attachments.toggleStyleGuideImage(image, guideCapability);
+      if ('images' in guide) attachments.applyStyleGuide(guide.images, guideCapability);
+      else attachments.toggleStyleGuideImage(guide, guideCapability);
     } catch (error) {
       if (!(error instanceof Error)) throw error;
       feedback.reportError(error.message);
-      return;
+      return false;
     }
-    activateFolder(image.folderId);
+    if ('images' in guide || guide.folderId !== activeFolderId) setRestoredGuide(undefined);
+    setActiveFolderId(guide.folderId);
+    if (guideCapability.canonicalId !== settings.selectedCapability.canonicalId) {
+      settings.updateSettings('targetId', guideCapability.canonicalId);
+    }
+    return true;
   }
 
   async function refresh() {
@@ -111,7 +108,7 @@ export function useStyleGuide({
     operation: () => Promise<T>,
     fallback: string,
   ): Promise<MutationOutcome<T>> {
-    feedback.clearError();
+    feedback.clearAlert();
     setIsMutating(true);
     try {
       return await runMutation(operation, fallback, feedback.reportError);
@@ -162,7 +159,10 @@ export function useStyleGuide({
       await refresh();
     }, 'Could not delete the guide.');
     if (!result.ok) return;
-    if (folder.folderId === activeFolderId) setActiveFolderId(null);
+    if (folder.folderId === activeFolderId) {
+      setActiveFolderId(null);
+      setRestoredGuide(undefined);
+    }
   }
 
   function chooseUploads(folderId: string) {
@@ -177,7 +177,7 @@ export function useStyleGuide({
     if (!folderId || files.length === 0) return;
     const accepted = supportedImageFiles(files);
     if (accepted.length === 0) {
-      feedback.reportError('Use PNG, JPEG, or WebP images up to 10 MB.');
+      feedback.reportWarning(unsupportedImageMessage);
       return;
     }
     const result = await performLibraryMutation(async () => {
@@ -198,7 +198,7 @@ export function useStyleGuide({
       return;
     }
     if (accepted.length !== files.length) {
-      feedback.reportError('Some files were not added. Use PNG, JPEG, or WebP images up to 10 MB.');
+      feedback.reportWarning(`Some files were not added. ${unsupportedImageMessage}`);
     }
   }
 
@@ -222,9 +222,14 @@ export function useStyleGuide({
     folders,
     activeFolderId,
     appliedImages,
-    ...(activeFolder ? { activeFolder } : {}),
-    toggleActiveFolder,
-    toggleImage,
+    activeFolder: restoredGuide ?? activeFolder,
+    restoreGuide: (guide: GenerationStyleGuide | null) => {
+      feedback.clearAlert();
+      setRestoredGuide(guide);
+      setActiveFolderId(guide?.folderId ?? null);
+    },
+    toggleActiveFolder: toggleGuide,
+    toggleImage: toggleGuide,
     isMutating,
     fileInput,
     refresh,

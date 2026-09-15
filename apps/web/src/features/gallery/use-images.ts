@@ -6,7 +6,11 @@ import { getImages } from './api.js';
 export function useImages(activeRepositoryId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: queryKeys.allImages(activeRepositoryId),
-    queryFn: () => getImages(),
+    queryFn: async () => {
+      // A slow, older snapshot must not remove frames for outputs completed during its request.
+      const requestedAt = Date.now();
+      return { ...(await getImages()), requestedAt };
+    },
     enabled: Boolean(activeRepositoryId) && enabled,
     retry: false,
     refetchInterval: 3000,

@@ -1,5 +1,6 @@
 const hoverTargetSelector = 'button, a[href], [role="button"]';
 const hoverClass = 'is-pointer-hover';
+const movingProperties = new Set(['transform', 'translate', 'rotate', 'scale']);
 
 interface PointerPosition {
   x: number;
@@ -10,7 +11,7 @@ export function installPointerHoverTracking(): () => void {
   let pointer: PointerPosition | undefined;
   let hovered = new Set<HTMLElement>();
   let animationFrame: number | undefined;
-  let activeTransitions = 0;
+  const activeTransitions = new Map<CSSTransition, HTMLElement>();
 
   const clearHovered = () => {
     for (const element of hovered) element.classList.remove(hoverClass);
@@ -43,8 +44,15 @@ export function installPointerHoverTracking(): () => void {
 
   const runFrame = () => {
     animationFrame = undefined;
+    for (const [transition, element] of activeTransitions) {
+      if (!element.isConnected || (transition.playState !== 'running' && !transition.pending)) {
+        activeTransitions.delete(transition);
+      }
+    }
     reconcileHovered();
-    if (activeTransitions > 0) animationFrame = window.requestAnimationFrame(runFrame);
+    if (pointer && document.visibilityState === 'visible' && activeTransitions.size > 0) {
+      animationFrame = window.requestAnimationFrame(runFrame);
+    }
   };
 
   const scheduleReconciliation = () => {
@@ -66,14 +74,21 @@ export function installPointerHoverTracking(): () => void {
     clearHovered();
   };
 
-  const transitionStarted = () => {
-    activeTransitions += 1;
+  const transitionStarted = (event: TransitionEvent) => {
+    if (!movingProperties.has(event.propertyName) || !(event.target instanceof HTMLElement)) return;
+    for (const animation of event.target.getAnimations()) {
+      if (
+        animation instanceof CSSTransition &&
+        animation.transitionProperty === event.propertyName
+      ) {
+        activeTransitions.set(animation, event.target);
+      }
+    }
     scheduleReconciliation();
   };
 
-  const transitionFinished = () => {
-    activeTransitions = Math.max(0, activeTransitions - 1);
-    scheduleReconciliation();
+  const transitionFinished = (event: TransitionEvent) => {
+    if (movingProperties.has(event.propertyName)) scheduleReconciliation();
   };
 
   const mutations = new MutationObserver(scheduleReconciliation);
@@ -85,6 +100,8 @@ export function installPointerHoverTracking(): () => void {
   document.addEventListener('transitionrun', transitionStarted, true);
   document.addEventListener('transitionend', transitionFinished, true);
   document.addEventListener('transitioncancel', transitionFinished, true);
+  document.addEventListener('animationend', scheduleReconciliation, true);
+  document.addEventListener('animationcancel', scheduleReconciliation, true);
   document.addEventListener('visibilitychange', scheduleReconciliation);
   window.addEventListener('blur', clearPointer);
   window.addEventListener('resize', scheduleReconciliation);
@@ -93,6 +110,7 @@ export function installPointerHoverTracking(): () => void {
   return () => {
     mutations.disconnect();
     if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
+    activeTransitions.clear();
     clearHovered();
     document.removeEventListener('pointermove', updatePointer);
     document.removeEventListener('pointerdown', updatePointer);
@@ -100,6 +118,8 @@ export function installPointerHoverTracking(): () => void {
     document.removeEventListener('transitionrun', transitionStarted, true);
     document.removeEventListener('transitionend', transitionFinished, true);
     document.removeEventListener('transitioncancel', transitionFinished, true);
+    document.removeEventListener('animationend', scheduleReconciliation, true);
+    document.removeEventListener('animationcancel', scheduleReconciliation, true);
     document.removeEventListener('visibilitychange', scheduleReconciliation);
     window.removeEventListener('blur', clearPointer);
     window.removeEventListener('resize', scheduleReconciliation);

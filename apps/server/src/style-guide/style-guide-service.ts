@@ -3,7 +3,6 @@ import {
   createStyleGuideImageRequestSchema,
   styleGuideFolderNameRequestSchema,
   styleGuideImageNameRequestSchema,
-  uuidSchema,
   type CreateStyleGuideImageRequest,
 } from '@harness/contracts';
 import {
@@ -14,12 +13,7 @@ import {
   type StyleGuideImage,
 } from '@harness/domain';
 import { characterizeImageData, imageBytesMatch, type CharacterizedImage } from '@harness/image';
-import {
-  findDirectoryManifest,
-  hasNameConflict,
-  loadDirectoryManifests,
-  requireDirectoryManifest,
-} from '../repository/manifest-collection.js';
+import { hasNameConflict, loadDirectoryManifests } from '../repository/manifest-collection.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { LocalRepositoryManager } from '../repository/repository-manager.js';
 import { safeSlug } from '../repository/slug.js';
@@ -36,18 +30,22 @@ interface StyleGuideFolderWithImages {
   images: StyleGuideImage[];
 }
 
+type StyleGuideImageWithFolder = StyleGuideImage & { folderName: string };
+
 export interface StyleGuideService {
   list(): Promise<StyleGuideFolderWithImages[]>;
   createFolder(name: string): Promise<StyleGuideFolder>;
   renameFolder(folderId: string, name: string): Promise<void>;
   deleteFolder(folderId: string): Promise<void>;
   createImage(folderId: string, input: CreateStyleGuideImageRequest): Promise<StyleGuideImage>;
-  getImage(folderId: string, imageId: string): Promise<StyleGuideImage | undefined>;
   getImageById(
     repository: LocalImageRepository,
     imageId: string,
-  ): Promise<StyleGuideImage | undefined>;
-  readImage(imageOrRelativePath: StyleGuideImage | string): Promise<Uint8Array>;
+  ): Promise<StyleGuideImageWithFolder | undefined>;
+  readImage(
+    folderId: string,
+    imageId: string,
+  ): Promise<{ image: StyleGuideImage; bytes: Uint8Array }>;
   renameImage(folderId: string, imageId: string, name: string): Promise<void>;
   deleteImage(folderId: string, imageId: string): Promise<void>;
 }
@@ -56,20 +54,22 @@ export class LocalStyleGuideService implements StyleGuideService {
   constructor(private readonly manager: LocalRepositoryManager) {}
 
   async list(): Promise<StyleGuideFolderWithImages[]> {
-    return this.manager.withRepository(async (repository) => {
-      const folders = await this.#loadFolders(repository);
-      const result = await Promise.all(
-        folders.map(async (folder) => ({
-          folder,
-          images: (await this.#loadImages(repository, folder)).sort((left, right) =>
-            right.createdAt.localeCompare(left.createdAt),
-          ),
-        })),
-      );
-      return result.sort((left, right) =>
-        left.folder.createdAt.localeCompare(right.folder.createdAt),
-      );
-    });
+    return this.manager.withRepository((repository) =>
+      repository.withMutation(async () => {
+        const folders = await this.#loadFolders(repository);
+        const result = await Promise.all(
+          folders.map(async (folder) => ({
+            folder,
+            images: (await this.#loadImages(repository, folder)).sort((left, right) =>
+              right.createdAt.localeCompare(left.createdAt),
+            ),
+          })),
+        );
+        return result.sort((left, right) =>
+          left.folder.createdAt.localeCompare(right.folder.createdAt),
+        );
+      }),
+    );
   }
 
   async createFolder(name: string): Promise<StyleGuideFolder> {
@@ -152,6 +152,7 @@ export class LocalStyleGuideService implements StyleGuideService {
     } catch {
       throw new StyleGuideError('Invalid style guide image.', 400);
     }
+    const repository = this.manager.getActiveRepository();
     let imageData: CharacterizedImage;
     try {
       imageData = await characterizeImageData(validated.data, { label: 'Style guide image data' });
@@ -162,78 +163,71 @@ export class LocalStyleGuideService implements StyleGuideService {
       throw new StyleGuideError('The image content does not match its declared media type.', 400);
     }
 
-    return this.manager.withRepository((repository) =>
-      repository.withMutation(async () => {
-        const folder = await this.#requireFolder(repository, folderId);
-        const imageId = randomUUID();
-        const now = new Date().toISOString();
-        const repositoryRelativePath = `${folder.directory}/${imageSlug(validated.name)}--${imageId}.${imageData.extension}`;
-        const image = styleGuideImageSchema.parse({
-          schemaVersion: SCHEMA_VERSION,
-          folderId,
-          imageId,
-          name: validated.name,
-          repositoryRelativePath,
-          sha256: imageData.sha256,
-          mediaType: imageData.mediaType,
-          byteLength: imageData.byteLength,
-          width: imageData.width,
-          height: imageData.height,
-          createdAt: now,
-          updatedAt: now,
-        });
-        await repository.publishImmutableWithSidecar(
-          repositoryRelativePath,
-          imageData.bytes,
-          styleGuideSidecarPath(repositoryRelativePath),
-          image,
-          styleGuideImageSchema,
-        );
-        return image;
-      }),
-    );
-  }
-
-  async getImage(folderId: string, imageId: string): Promise<StyleGuideImage | undefined> {
-    return this.manager.withRepository(async (repository) => {
-      const folder = await this.#findFolder(repository, folderId);
-      if (!folder) return undefined;
-      return (await this.#loadImages(repository, folder)).find(
-        (image) => image.imageId === imageId,
+    return repository.withMutation(async () => {
+      const folder = await this.#requireFolder(repository, folderId);
+      const imageId = randomUUID();
+      const now = new Date().toISOString();
+      const repositoryRelativePath = `${folder.directory}/${imageSlug(validated.name)}--${imageId}.${imageData.extension}`;
+      const image = styleGuideImageSchema.parse({
+        schemaVersion: SCHEMA_VERSION,
+        folderId,
+        imageId,
+        name: validated.name,
+        repositoryRelativePath,
+        sha256: imageData.sha256,
+        mediaType: imageData.mediaType,
+        byteLength: imageData.byteLength,
+        width: imageData.width,
+        height: imageData.height,
+        createdAt: now,
+        updatedAt: now,
+      });
+      await repository.publishImmutableWithSidecar(
+        repositoryRelativePath,
+        imageData.bytes,
+        styleGuideSidecarPath(repositoryRelativePath),
+        image,
+        styleGuideImageSchema,
       );
+      return image;
     });
   }
 
   async getImageById(
     repository: LocalImageRepository,
     imageId: string,
-  ): Promise<StyleGuideImage | undefined> {
-    return this.#findUniqueImage(
-      repository,
-      (image) => image.imageId === imageId,
-      'Duplicate style guide image identifiers were found.',
-    );
+  ): Promise<StyleGuideImageWithFolder | undefined> {
+    return repository.withMutation(async () => {
+      const found: StyleGuideImageWithFolder[] = [];
+      for (const folder of await this.#loadFolders(repository)) {
+        found.push(
+          ...(await this.#loadImages(repository, folder))
+            .filter((image) => image.imageId === imageId)
+            .map((image) => ({ ...image, folderName: folder.name })),
+        );
+      }
+      if (found.length > 1) {
+        throw new StyleGuideError('Duplicate style guide image identifiers were found.', 409);
+      }
+      return found.at(0);
+    });
   }
 
-  async readImage(imageOrRelativePath: StyleGuideImage | string): Promise<Uint8Array> {
-    const image =
-      typeof imageOrRelativePath === 'string'
-        ? await this.#findImageForRead(imageOrRelativePath)
-        : await this.getImage(imageOrRelativePath.folderId, imageOrRelativePath.imageId);
-    if (!image) throw new StyleGuideError('Style guide image not found.', 404);
-    if (
-      typeof imageOrRelativePath !== 'string' &&
-      image.repositoryRelativePath !== imageOrRelativePath.repositoryRelativePath
-    ) {
-      throw new StyleGuideError('Style guide image record does not match the repository.', 409);
-    }
-    return this.manager.withRepository(async (repository) => {
-      const bytes = await repository.readBytes(image.repositoryRelativePath);
-      if (!imageBytesMatch(bytes, image.sha256, image.byteLength)) {
-        throw new StyleGuideError('Style guide image integrity verification failed.', 409);
-      }
-      return bytes;
-    });
+  async readImage(
+    folderId: string,
+    imageId: string,
+  ): Promise<{ image: StyleGuideImage; bytes: Uint8Array }> {
+    return this.manager.withRepository((repository) =>
+      repository.withMutation(async () => {
+        const folder = await this.#requireFolder(repository, folderId);
+        const image = await this.#requireImage(repository, folder, imageId);
+        const bytes = await repository.readBytes(image.repositoryRelativePath);
+        if (!imageBytesMatch(bytes, image.sha256, image.byteLength)) {
+          throw new StyleGuideError('Style guide image integrity verification failed.', 409);
+        }
+        return { image, bytes };
+      }),
+    );
   }
 
   async renameImage(folderId: string, imageId: string, name: string): Promise<void> {
@@ -272,37 +266,23 @@ export class LocalStyleGuideService implements StyleGuideService {
     );
   }
 
-  async #findImageForRead(identifier: string): Promise<StyleGuideImage | undefined> {
-    if (uuidSchema.safeParse(identifier).success) {
-      return this.getImageById(this.manager.getActiveRepository(), identifier);
+  async #loadFolders(repository: LocalImageRepository): Promise<StyleGuideFolder[]> {
+    const folders = await loadDirectoryManifests(repository, styleGuideFoldersCollection);
+    if (new Set(folders.map((folder) => folder.folderId)).size !== folders.length) {
+      throw new StyleGuideError('Duplicate style guide identifiers were found.', 409);
     }
-    return this.manager.withRepository((repository) =>
-      this.#findUniqueImage(
-        repository,
-        (image) => image.repositoryRelativePath === identifier,
-        'Duplicate style guide image paths were found.',
-      ),
-    );
+    return folders;
   }
 
-  #loadFolders(repository: LocalImageRepository): Promise<StyleGuideFolder[]> {
-    return loadDirectoryManifests(repository, styleGuideFoldersCollection);
-  }
-
-  #findFolder(
+  async #requireFolder(
     repository: LocalImageRepository,
     folderId: string,
-  ): Promise<StyleGuideFolder | undefined> {
-    return findDirectoryManifest(repository, styleGuideFoldersCollection, folderId);
-  }
-
-  #requireFolder(repository: LocalImageRepository, folderId: string): Promise<StyleGuideFolder> {
-    return requireDirectoryManifest(
-      repository,
-      styleGuideFoldersCollection,
-      folderId,
-      () => new StyleGuideError('Style guide not found.', 404),
+  ): Promise<StyleGuideFolder> {
+    const folder = (await this.#loadFolders(repository)).find(
+      (candidate) => candidate.folderId === folderId,
     );
+    if (!folder) throw new StyleGuideError('Style guide not found.', 404);
+    return folder;
   }
 
   async #loadImages(
@@ -317,22 +297,16 @@ export class LocalStyleGuideService implements StyleGuideService {
         styleGuideImageSchema,
       );
       assertImageBinding(image, folder);
+      if (
+        styleGuideSidecarPath(image.repositoryRelativePath) !== `${folder.directory}/${fileName}` ||
+        !files.includes(image.repositoryRelativePath.slice(folder.directory.length + 1)) ||
+        images.some((candidate) => candidate.imageId === image.imageId)
+      ) {
+        throw new StyleGuideError('A style guide image has an invalid sidecar binding.', 409);
+      }
       images.push(image);
     }
     return images;
-  }
-
-  async #findUniqueImage(
-    repository: LocalImageRepository,
-    matches: (image: StyleGuideImage) => boolean,
-    duplicateMessage: string,
-  ): Promise<StyleGuideImage | undefined> {
-    const found: StyleGuideImage[] = [];
-    for (const folder of await this.#loadFolders(repository)) {
-      found.push(...(await this.#loadImages(repository, folder)).filter(matches));
-    }
-    if (found.length > 1) throw new StyleGuideError(duplicateMessage, 409);
-    return found.at(0);
   }
 
   async #requireImage(

@@ -37,8 +37,7 @@ export function assertImageBinding(image: StyleGuideImage, folder: StyleGuideFol
     image.folderId !== folder.folderId ||
     !image.repositoryRelativePath.startsWith(expectedPrefix) ||
     fileName.includes('/') ||
-    !fileName.includes(`--${image.imageId}.`) ||
-    !image.repositoryRelativePath.endsWith(`.${extension}`)
+    !fileName.endsWith(`--${image.imageId}.${extension}`)
   ) {
     throw new StyleGuideError(
       'A style guide image manifest has an invalid guide or file binding.',
@@ -51,7 +50,6 @@ export const styleGuideFoldersCollection: DirectoryManifestCollection<StyleGuide
   root: 'style-guide',
   manifestName: 'folder.json',
   schema: styleGuideFolderSchema,
-  identifier: (folder) => folder.folderId,
   validateBinding: (folder, directory, directoryName) => {
     if (folder.directory !== directory || !directoryName.endsWith(`--${folder.folderId}`)) {
       throw new StyleGuideError('A style guide manifest has an invalid directory binding.', 409);

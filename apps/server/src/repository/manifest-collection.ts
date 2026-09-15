@@ -5,7 +5,6 @@ export interface DirectoryManifestCollection<T> {
   root: string;
   manifestName: string;
   schema: ZodType<T>;
-  identifier: (record: T) => string;
   validateBinding: (record: T, directory: string, directoryName: string) => void;
 }
 
@@ -23,27 +22,6 @@ export async function loadDirectoryManifests<T>(
     records.push(record);
   }
   return records;
-}
-
-export async function findDirectoryManifest<T>(
-  repository: LocalImageRepository,
-  collection: DirectoryManifestCollection<T>,
-  identifier: string,
-): Promise<T | undefined> {
-  return (await loadDirectoryManifests(repository, collection)).find(
-    (record) => collection.identifier(record) === identifier,
-  );
-}
-
-export async function requireDirectoryManifest<T>(
-  repository: LocalImageRepository,
-  collection: DirectoryManifestCollection<T>,
-  identifier: string,
-  notFound: () => Error,
-): Promise<T> {
-  const record = await findDirectoryManifest(repository, collection, identifier);
-  if (!record) throw notFound();
-  return record;
 }
 
 export function hasNameConflict<T extends { name: string }>(

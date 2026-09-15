@@ -1,13 +1,13 @@
 import { createRootRoute, createRoute, createRouter, Navigate } from '@tanstack/react-router';
-import { InlineError } from '../shared/components/InlineError.js';
+import { Alert } from '../shared/components/Alert.js';
 import { useImages } from '../features/gallery/use-images.js';
 import { HistoryView } from '../features/history/components/HistoryView.js';
 import { useStudio } from './studio-context.js';
 import { studioSearchSchema } from './studio-search.js';
 import { StudioShell } from './StudioShell.js';
-import { sheetTransitionTypes } from './sheet-transition.js';
+import { connectSheetImage, sheetTransitionTypes } from './sheet-transition.js';
 
-function HistoryRoute() {
+function GalleryRoute() {
   const studio = useStudio();
   const imagesQuery = useImages(studio.activeRepositoryId);
   const { repositoryQuery } = studio.repository;
@@ -17,8 +17,8 @@ function HistoryRoute() {
     <HistoryView
       runs={studio.runs.allRuns}
       images={imagesQuery.data?.images ?? []}
-      imagesUpdatedAt={imagesQuery.dataUpdatedAt}
-      feedback={<InlineError feedback={studio.runs.feedback} />}
+      imagesRequestedAt={imagesQuery.data?.requestedAt ?? 0}
+      feedback={<Alert feedback={studio.runs.feedback} />}
       hasRepository={studio.activeRepositoryId !== undefined}
       isLoading={repositoryQuery.isLoading || imagesQuery.isLoading}
       {...(error instanceof Error ? { error: error.message } : {})}
@@ -30,10 +30,7 @@ function HistoryRoute() {
         if (repositoryQuery.isError) void repositoryQuery.refetch();
         else void imagesQuery.refetch();
       }}
-      onOpenRun={(run) => {
-        studio.navigate.openRun(run.remoteId ?? run.id);
-      }}
-      onOpenImage={studio.navigate.openImage}
+      onOpenImage={studio.draftActions.openImage}
     />
   );
 }
@@ -51,13 +48,13 @@ const indexRoute = createRoute({
 const galleryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/gallery',
-  component: () => <Navigate to="/gallery/history" search={(previous) => previous} replace />,
+  component: GalleryRoute,
 });
 
-const historyRoute = createRoute({
+const legacyGalleryRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/gallery/history',
-  component: HistoryRoute,
+  component: () => <Navigate to="/gallery" search={(previous) => previous} replace />,
 });
 
 // Libraries render as shell overlays, keeping the current canvas behind them.
@@ -74,7 +71,7 @@ const presetsRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   galleryRoute,
-  historyRoute,
+  legacyGalleryRoute,
   styleGuideRoute,
   presetsRoute,
 ]);
@@ -88,6 +85,9 @@ export const router = createRouter({
     types: sheetTransitionTypes,
   },
 });
+
+// Measure only after draft restoration, frame replacement, and the router's scroll restoration.
+router.subscribe('onRendered', connectSheetImage);
 
 declare module '@tanstack/react-router' {
   interface Register {

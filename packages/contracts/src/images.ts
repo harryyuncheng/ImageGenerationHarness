@@ -8,6 +8,7 @@ import {
   timestampSchema,
   uuidSchema,
 } from './common.js';
+import { generationSettingsSchema, generationStyleGuideSchema } from './generation.js';
 import { mediaTypeSchema, outputFormatSchema } from './media.js';
 import { seedStrategySchema, uint32Schema } from './runs.js';
 
@@ -18,6 +19,8 @@ export const generatedImageInputSchema = z
     repositoryRelativePath: repositoryRelativePathSchema,
     sha256: sha256Schema,
     mediaType: mediaTypeSchema,
+    name: nonEmptyStringSchema.max(160).optional(),
+    styleGuide: generationStyleGuideSchema.optional(),
   })
   .strict();
 export const generatedImageSidecarSchema = z
@@ -35,6 +38,7 @@ export const generatedImageSidecarSchema = z
     prompt: z.string().max(10_000).optional(),
     negativePrompt: z.string().max(10_000).optional(),
     normalizedRequest: z.record(z.string(), z.unknown()),
+    settings: generationSettingsSchema.optional(),
     seed: z
       .object({
         strategy: seedStrategySchema,

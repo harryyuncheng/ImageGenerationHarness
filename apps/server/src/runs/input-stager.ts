@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import type { GeneratedImageSidecar, LocalInputReference, StyleGuideImage } from '@harness/domain';
+import { generationInputReferenceSchema } from '@harness/contracts';
+import type { GeneratedImageSidecar, LocalInputReference } from '@harness/domain';
 import { characterizeImageData, imageBytesMatch, outputFileForMediaType } from '@harness/image';
 import type { GeneratedImageStore } from '../images/generated-image-store.js';
 import type { StyleGuideService } from '../style-guide/style-guide-service.js';
 import type { LocalImageRepository } from '../repository/local-image-repository.js';
 import type { StagedRequest } from './run-types.js';
+import type { GenerationSetupStore } from './generation-setup.js';
 
 const imageFields = new Set(['image', 'init_image', 'style_image', 'mask']);
 const referencePattern = /^repo-image:\/\/([0-9a-f-]{36})$/iu;
+const inputReferencePattern = /^repo-input:\/\/(images|runs)\/([0-9a-f-]{36})\/(\d+)$/u;
 
 export async function hydrateInputs(
   repository: LocalImageRepository,
@@ -46,6 +49,7 @@ export class InputStager {
   constructor(
     private readonly styleGuide: StyleGuideService,
     private readonly images: GeneratedImageStore,
+    private readonly setups: GenerationSetupStore,
   ) {}
 
   async stage(
@@ -62,8 +66,22 @@ export class InputStager {
         const references: string[] = [];
         for (const encoded of values) {
           if (typeof encoded !== 'string') throw new Error('Invalid image input');
+          const savedInput = inputReferencePattern.exec(encoded);
+          if (savedInput) {
+            const { input } = await this.setups.readInput(
+              repository,
+              generationInputReferenceSchema.parse({
+                kind: savedInput[1],
+                id: savedInput[2],
+                inputIndex: savedInput[3],
+              }),
+            );
+            references.push(`repo-image://${input.imageId}`);
+            inputs.push({ ...input, field, role: field });
+            continue;
+          }
           const reference = referencePattern.exec(encoded);
-          let image: StyleGuideImage | GeneratedImageSidecar | undefined;
+          let image: Awaited<ReturnType<StyleGuideService['getImageById']>> | GeneratedImageSidecar;
           if (reference?.[1]) {
             image =
               (await this.styleGuide.getImageById(repository, reference[1])) ??
@@ -97,10 +115,16 @@ export class InputStager {
               repositoryRelativePath: snapshotPath,
               sha256: output.sha256,
               mediaType: output.mediaType,
+              ...('folderId' in image
+                ? {
+                    name: image.name,
+                    styleGuide: { folderId: image.folderId, name: image.folderName },
+                  }
+                : {}),
             });
             continue;
           }
-          if (encoded.startsWith('repo-image://')) {
+          if (encoded.startsWith('repo-image://') || encoded.startsWith('repo-input://')) {
             throw new Error('Invalid repository image identifier');
           }
           const imageData = await characterizeImageData(encoded, { label: 'Input image data' });

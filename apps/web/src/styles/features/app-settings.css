@@ -240,25 +240,25 @@
 }
 
 .theme-tile__face[data-theme^='mat-'] {
+  --preview-major-ink: color-mix(in srgb, var(--mat-ink) 22%, transparent);
+  --preview-minor-ink: color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg));
+
   background-color: var(--mat-bg);
   background-image:
-    linear-gradient(color-mix(in srgb, var(--mat-ink) 22%, transparent) 1px, transparent 1px),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--mat-ink) 22%, transparent) 1px,
-      transparent 1px
-    ),
-    linear-gradient(color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg)) 1px, transparent 1px),
-    linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--mat-alt) 70%, var(--mat-bg)) 1px,
-      transparent 1px
-    );
+    linear-gradient(var(--preview-major-ink) 1px, transparent 1px),
+    linear-gradient(90deg, var(--preview-major-ink) 1px, transparent 1px),
+    linear-gradient(var(--preview-minor-ink) 1px, transparent 1px),
+    linear-gradient(90deg, var(--preview-minor-ink) 1px, transparent 1px);
   background-size:
     25px 25px,
     25px 25px,
     5px 5px,
     5px 5px;
+}
+
+.theme-tile__face:is([data-theme='mat-dark'], [data-theme='mat-build'], [data-theme='mat-craft']) {
+  --preview-major-ink: var(--mat-ink);
+  --preview-minor-ink: var(--mat-alt);
 }
 
 .appearance-tile__check {

@@ -2,12 +2,12 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys, repositoryScopedQueryPrefixes } from '../../shared/api/query-keys.js';
-import { useInlineError } from '../../shared/hooks/use-inline-error.js';
+import { useAlert } from '../../shared/hooks/use-alert.js';
 import { getRepository, postRepositorySelection } from './api.js';
 
 export function useRepository(setRepositorySettingsOpen: (open: boolean) => void) {
   const queryClient = useQueryClient();
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const repositoryQuery = useQuery({
     queryKey: queryKeys.repository(),
     queryFn: getRepository,
@@ -25,7 +25,7 @@ export function useRepository(setRepositorySettingsOpen: (open: boolean) => void
   }
 
   async function selectRepository(endpoint: string) {
-    feedback.clearError();
+    feedback.clearAlert();
     setIsMutating(true);
     try {
       const result = await runMutation(
@@ -33,14 +33,16 @@ export function useRepository(setRepositorySettingsOpen: (open: boolean) => void
         'Could not select the repository.',
         feedback.reportError,
       );
-      if (!result.ok) return;
-      const status = result.value;
-      clearRepositoryQueries();
-      queryClient.setQueryData(queryKeys.repository(), status);
-      // A cancelled native picker resolves with the unchanged status, which must not read as a switch.
-      if (status.active && status.active.repositoryId !== activeRepositoryId) {
-        setRepositorySettingsOpen(false);
+      if (!result.ok) {
+        await repositoryQuery.refetch();
+        return;
       }
+      const status = result.value;
+      // A cancelled native picker returns the unchanged status, not a repository switch.
+      const switched = status.active?.repositoryId !== activeRepositoryId;
+      if (switched) clearRepositoryQueries();
+      queryClient.setQueryData(queryKeys.repository(), status);
+      if (status.active && switched) setRepositorySettingsOpen(false);
     } finally {
       setIsMutating(false);
     }

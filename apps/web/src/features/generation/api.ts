@@ -9,7 +9,7 @@ export async function getCapabilities(): Promise<CapabilitiesResponse> {
     '/api/capabilities',
     capabilitiesResponseSchema,
     {},
-    'Capability registry unavailable',
+    'Capability registry unavailable.',
   );
   if (response.registryVersion !== CAPABILITY_REGISTRY_VERSION) {
     throw new Error('The browser and server capability registries do not match.');

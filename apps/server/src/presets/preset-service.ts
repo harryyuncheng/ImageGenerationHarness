@@ -89,9 +89,12 @@ export class LocalPresetService implements PresetService {
         });
         let cover: PresetCoverImage | undefined;
         try {
-          if (imageData) cover = await this.#publishCover(repository, preset, imageData);
-          preset = presetSchema.parse({ ...preset, coverImageId: cover?.imageId });
           await repository.writeJson(`${preset.directory}/preset.json`, preset, presetSchema);
+          if (imageData) {
+            cover = await this.#publishCover(repository, preset, imageData);
+            preset = presetSchema.parse({ ...preset, coverImageId: cover.imageId });
+            await repository.writeJson(`${preset.directory}/preset.json`, preset, presetSchema);
+          }
         } catch (error) {
           await repository.removeRelative(preset.directory, { recursive: true, missingOk: true });
           throw error;
@@ -180,11 +183,18 @@ export class LocalPresetService implements PresetService {
       }
       throw error;
     }
-    if (
-      presets.length !== (await repository.listDirectories('presets')).length ||
-      new Set(presets.map((preset) => preset.presetId)).size !== presets.length
-    ) {
-      throw new ApiError(409, 'The preset library contains missing or duplicate preset manifests.');
+    if (new Set(presets.map((preset) => preset.presetId)).size !== presets.length) {
+      throw new ApiError(409, 'The preset library contains duplicate preset manifests.');
+    }
+    for (const name of await repository.listDirectories('presets')) {
+      const directory = `presets/${name}`;
+      if (presets.some((preset) => preset.directory === directory)) continue;
+      if (
+        (await repository.listFiles(directory)).length > 0 ||
+        (await repository.listDirectories(directory)).length > 0
+      ) {
+        throw new ApiError(409, 'The preset library contains a missing preset manifest.');
+      }
     }
     return presets;
   }
@@ -212,7 +222,7 @@ export class LocalPresetService implements PresetService {
       if (image.byteLength > MAX_IMAGE_BYTES) {
         throw new ApiError(400, 'Preset covers must be no larger than 10 MB.');
       }
-      data = Buffer.from(await this.#images.readImage(image, repository)).toString('base64');
+      data = Buffer.from(await this.#images.readImage(image)).toString('base64');
       mediaType = image.mediaType;
     } else {
       data = input.data;

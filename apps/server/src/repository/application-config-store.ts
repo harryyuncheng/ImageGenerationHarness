@@ -17,6 +17,7 @@ export type ApplicationConfig = z.infer<typeof applicationConfigSchema>;
 
 export class ApplicationConfigStore {
   readonly configPath: string;
+  #writeTail: Promise<void> = Promise.resolve();
 
   constructor(
     configPath = join(
@@ -31,6 +32,7 @@ export class ApplicationConfigStore {
   }
 
   async load(): Promise<ApplicationConfig> {
+    await this.#writeTail;
     await cleanupTargetTemps(dirname(this.configPath), basename(this.configPath));
     try {
       const contents = await readFile(this.configPath, 'utf8');
@@ -44,6 +46,8 @@ export class ApplicationConfigStore {
   async save(config: ApplicationConfig): Promise<void> {
     const validated = applicationConfigSchema.parse(config);
     const bytes = new TextEncoder().encode(`${JSON.stringify(validated, null, 2)}\n`);
-    await atomicWriteAbsolute(this.configPath, bytes, 0o600);
+    const write = this.#writeTail.then(() => atomicWriteAbsolute(this.configPath, bytes, 0o600));
+    this.#writeTail = write.catch(() => undefined);
+    await write;
   }
 }

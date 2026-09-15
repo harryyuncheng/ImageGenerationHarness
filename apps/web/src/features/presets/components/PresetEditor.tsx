@@ -1,8 +1,12 @@
 import { Images, Upload, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { InlineError } from '../../../shared/components/InlineError.js';
-import { useInlineError } from '../../../shared/hooks/use-inline-error.js';
-import { generatedImageContentUrl, supportedImageFiles } from '../../../shared/images/files.js';
+import { Alert } from '../../../shared/components/Alert.js';
+import { useAlert } from '../../../shared/hooks/use-alert.js';
+import {
+  generatedImageContentUrl,
+  supportedImageFiles,
+  unsupportedImageMessage,
+} from '../../../shared/images/files.js';
 import type { Preset } from '../../../shared/types/domain.js';
 import { presetCoverUrl } from '../api.js';
 import type { PresetDraft } from '../use-saved-prompts.js';
@@ -29,7 +33,7 @@ export function PresetEditor({
   onSave: (draft: PresetDraft) => Promise<void>;
   onCancel: () => void;
 }) {
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const fileInput = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(
     preset?.name ?? initialPrompt.trim().split(/\s+/u).slice(0, 6).join(' ').slice(0, 80),
@@ -68,7 +72,7 @@ export function PresetEditor({
       className="preset-editor"
       onSubmit={(event) => {
         event.preventDefault();
-        feedback.clearError();
+        feedback.clearAlert();
         void onSave({
           name: name.trim(),
           prompt: prompt.trim(),
@@ -102,7 +106,7 @@ export function PresetEditor({
               type="button"
               className="text-button"
               onClick={() => {
-                feedback.clearError();
+                feedback.clearAlert();
                 setChoosingGallery(true);
               }}
             >
@@ -127,9 +131,9 @@ export function PresetEditor({
               const file = event.currentTarget.files?.[0];
               event.currentTarget.value = '';
               if (!file) return;
-              feedback.clearError();
+              feedback.clearAlert();
               if (supportedImageFiles([file]).length === 0) {
-                feedback.reportError('Use a PNG, JPEG, or WebP image up to 10 MB.');
+                feedback.reportWarning(unsupportedImageMessage);
                 return;
               }
               setCover({
@@ -138,7 +142,7 @@ export function PresetEditor({
               });
             }}
           />
-          <InlineError feedback={feedback} />
+          <Alert feedback={feedback} />
         </div>
         <div className="preset-editor-text">
           <input

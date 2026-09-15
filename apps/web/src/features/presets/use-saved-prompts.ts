@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { runMutation } from '../../shared/api/mutation.js';
 import { queryKeys } from '../../shared/api/query-keys.js';
 import type { Confirm } from '../../shared/hooks/use-dialogs.js';
-import { useInlineError } from '../../shared/hooks/use-inline-error.js';
+import { useAlert } from '../../shared/hooks/use-alert.js';
 import { readAsData, revokeUploadPreviews } from '../../shared/images/files.js';
 import type { UploadAttachment } from '../../shared/types/attachments.js';
 import type { Preset, PresetsResponse } from '../../shared/types/domain.js';
@@ -33,7 +33,7 @@ export function useSavedPrompts({
   promptDraft: PromptDraftController;
 }) {
   const queryClient = useQueryClient();
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const [editor, setEditor] = useState<PresetEditorState | null>(null);
   const [isMutating, setIsMutating] = useState(false);
   const presetsQuery = useQuery({
@@ -44,28 +44,28 @@ export function useSavedPrompts({
   });
 
   function beginCreate(initialPrompt = '') {
-    feedback.clearError();
+    feedback.clearAlert();
     if (!requireRepository('save presets')) return false;
     setEditor({ initialPrompt });
     return true;
   }
 
   function beginEdit(preset: Preset) {
-    feedback.clearError();
+    feedback.clearAlert();
     setEditor({ preset, initialPrompt: preset.prompt });
   }
 
   function closeEditor() {
-    feedback.clearError();
+    feedback.clearAlert();
     setEditor(null);
   }
 
   function appendPrompt(preset: Preset) {
-    feedback.clearError();
+    feedback.clearAlert();
     const current = promptDraft.prompt;
     const next = current ? `${current}\n\n${preset.prompt}` : preset.prompt;
     if (next.length > 10_000) {
-      feedback.reportError(
+      feedback.reportWarning(
         'Adding this preset would exceed the 10,000-character prompt limit. Shorten your prompt first.',
       );
       return false;
@@ -75,7 +75,7 @@ export function useSavedPrompts({
   }
 
   async function savePreset(input: PresetDraft) {
-    feedback.clearError();
+    feedback.clearAlert();
     setIsMutating(true);
     try {
       const result = await runMutation(
@@ -124,9 +124,9 @@ export function useSavedPrompts({
         },
       );
       setEditor(null);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.presets(activeRepositoryId) });
     } finally {
       setIsMutating(false);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.presets(activeRepositoryId) });
     }
   }
 
@@ -138,7 +138,7 @@ export function useSavedPrompts({
       danger: true,
     });
     if (!confirmed) return;
-    feedback.clearError();
+    feedback.clearAlert();
     setIsMutating(true);
     try {
       const result = await runMutation(
@@ -153,9 +153,9 @@ export function useSavedPrompts({
           presets: (current?.presets ?? []).filter((item) => item.presetId !== preset.presetId),
         }),
       );
-      void queryClient.invalidateQueries({ queryKey: queryKeys.presets(activeRepositoryId) });
     } finally {
       setIsMutating(false);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.presets(activeRepositoryId) });
     }
   }
 

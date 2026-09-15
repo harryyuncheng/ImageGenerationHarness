@@ -1,16 +1,15 @@
-import { ChevronDown, Clock3, CloudOff, FolderOpen, Image as ImageIcon } from 'lucide-react';
+import { CloudOff, FolderOpen, Image as ImageIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { EmptyState } from '../../../shared/components/EmptyState.js';
 import { GeneratedImageCard } from '../../../shared/components/GeneratedImageCard.js';
 import { toStudioImages, type StudioImage } from '../../../shared/images/studio-image.js';
 import type { GalleryImage } from '../../../shared/types/domain.js';
-import { progressMessage } from '../../editor/components/ImageViewer.js';
-import { isTerminalWithoutOutputStatus, type StudioRun } from '../run-presentation.js';
+import type { StudioRun } from '../run-presentation.js';
 
 export function HistoryView({
   runs,
   images,
-  imagesUpdatedAt,
+  imagesRequestedAt,
   feedback,
   hasRepository,
   isLoading,
@@ -18,12 +17,11 @@ export function HistoryView({
   onCreate,
   onChooseRepository,
   onRetry,
-  onOpenRun,
   onOpenImage,
 }: {
   runs: StudioRun[];
   images: GalleryImage[];
-  imagesUpdatedAt: number;
+  imagesRequestedAt: number;
   feedback: ReactNode;
   hasRepository: boolean;
   isLoading: boolean;
@@ -31,40 +29,13 @@ export function HistoryView({
   onCreate: () => void;
   onChooseRepository: () => void;
   onRetry: () => void;
-  onOpenRun: (run: StudioRun) => void;
   onOpenImage: (image: StudioImage) => void;
 }) {
-  const retainedRuns = runs.filter((run) => isTerminalWithoutOutputStatus(run.status));
-  const studioImages = toStudioImages(images, runs, imagesUpdatedAt);
+  const studioImages = toStudioImages(images, runs, imagesRequestedAt);
 
   return (
     <div className="history-page gallery-page">
       {feedback}
-      {retainedRuns.length > 0 && (
-        <details className="sheet-activity">
-          <summary>
-            <Clock3 size={14} />
-            Retained runs
-            <span>{retainedRuns.length}</span>
-            <ChevronDown size={14} />
-          </summary>
-          <div>
-            {retainedRuns.map((run) => (
-              <button
-                type="button"
-                key={run.id}
-                onClick={() => {
-                  onOpenRun(run);
-                }}
-              >
-                <strong>{run.prompt || run.targetName}</strong>
-                <span>{progressMessage(run.status, false)}</span>
-              </button>
-            ))}
-          </div>
-        </details>
-      )}
-
       {error ? (
         <EmptyState
           Icon={CloudOff}

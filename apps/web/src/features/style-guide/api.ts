@@ -8,7 +8,7 @@ import type { StyleGuideResponse } from '../../shared/types/domain.js';
 import type { UploadAttachment } from '../../shared/types/attachments.js';
 
 export function getStyleGuide(): Promise<StyleGuideResponse> {
-  return requestJson('/api/style-guide', styleGuideResponseSchema, {}, 'Style guide unavailable');
+  return requestJson('/api/style-guide', styleGuideResponseSchema, {}, 'Style guide unavailable.');
 }
 
 export function createStyleGuideFolder(name: string) {

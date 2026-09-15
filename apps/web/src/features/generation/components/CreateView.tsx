@@ -57,17 +57,16 @@ export function CreateView({
   });
   const [settingMenu, setSettingMenu] = useState<ComposerSettingMenu>(null);
   const [maskImage, setMaskImage] = useState<HTMLImageElement | null>(null);
+  const [draggingOutput, setDraggingOutput] = useState(false);
   const source = attachments.inputs.source;
-  const referenceGeneration =
-    selectedCapability.maxInputImages !== undefined && selectedCapability.category === 'generation';
   const showPreview =
-    loaded !== undefined &&
-    (loaded.isPending ||
-      (loaded.selectedOutput !== undefined &&
-        (attachments.roles.length === 0 || referenceGeneration)));
+    loaded !== undefined && (loaded.isPending || loaded.selectedOutput !== undefined);
   const showImages = mainSourceImage(attachments.inputs) !== undefined || showPreview;
+  const downloadUrl = loaded?.selectedOutput?.url ?? source?.previewUrl;
+  const downloadName = loaded?.selectedOutput?.name ?? source?.name;
   const imageStatus =
-    attachments.blockedReason ??
+    generation.blockedReason ??
+    loaded?.error ??
     (loaded && !loaded.selectedOutput && !loaded.isPending
       ? progressMessage(loaded.status, false)
       : undefined);
@@ -76,6 +75,9 @@ export function CreateView({
     lastToolByCategory.current[selectedCapability.category] = selectedCapability.canonicalId;
     setSettingMenu(null);
   }, [selectedCapability.canonicalId, selectedCapability.category, source?.id]);
+  useEffect(() => {
+    setDraggingOutput(false);
+  }, [loaded?.selectedOutput?.imageId]);
 
   function updateSettingMenu(menu: Exclude<ComposerSettingMenu, null>, open: boolean) {
     setSettingMenu((current) => (open ? menu : current === menu ? null : current));
@@ -105,6 +107,8 @@ export function CreateView({
           void generation.generate(event);
         }}
         className={`prompt-workspace ${showImages ? 'prompt-workspace--loaded' : ''}`}
+        inert={loaded?.isRestoringSetup}
+        aria-busy={loaded?.isRestoringSetup}
         onDragOver={(event) => {
           event.preventDefault();
         }}
@@ -122,6 +126,7 @@ export function CreateView({
               capability={selectedCapability}
               inputRef={promptDraft.promptInput}
               value={promptDraft.prompt}
+              hasImages={showImages}
               onChange={promptDraft.setPrompt}
               onKeyDown={generation.handlePromptKeyDown}
             />
@@ -140,10 +145,16 @@ export function CreateView({
             capability={selectedCapability}
             loaded={loaded}
             onSourceImageReady={setMaskImage}
+            onOutputDrag={setDraggingOutput}
           />
         )}
 
-        <ReferenceInputs attachments={attachments} />
+        <ReferenceInputs
+          attachments={attachments}
+          loaded={loaded}
+          draggingOutput={draggingOutput}
+          onOutputDrag={setDraggingOutput}
+        />
 
         <div className="composer-dock">
           <div className="generation-toolbar" role="toolbar" aria-label="Generation toolbar">
@@ -176,12 +187,12 @@ export function CreateView({
                   onSelect={selectTool}
                 />
 
-                {activeTab.id === 'export' && source && (
+                {activeTab.id === 'export' && downloadUrl && (
                   <div className="toolbar-control-group" role="group" aria-label="Export actions">
                     <a
                       className="tool-chip"
-                      href={source.previewUrl}
-                      download={source.name}
+                      href={downloadUrl}
+                      download={downloadName}
                       title="Download image"
                       aria-label="Download image"
                     >
@@ -205,7 +216,7 @@ export function CreateView({
               <span className="toolbar-divider" aria-hidden="true" />
               <SubmitButton
                 isSubmitting={generation.isSubmitting}
-                blockedReason={attachments.blockedReason}
+                blockedReason={generation.blockedReason}
                 shortcut={generation.createShortcut}
                 {...(loaded?.cancel ? { onCancel: loaded.cancel } : {})}
               />

@@ -36,7 +36,7 @@ function normalizeEndpoint(value: string): string | undefined {
     return undefined;
   }
   const path = url.pathname.replace(
-    /\/openai(?:\/v\d+)?(?:\/images\/(?:generations|edits))?\/?$/u,
+    /\/openai(?:\/v\d+|\/deployments\/[^/]+)?(?:\/images\/(?:generations|edits))?\/?$/u,
     '/',
   );
   return `${url.origin}${path.endsWith('/') ? path : `${path}/`}`;

@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, SyntheticEvent } from 'react';
 import { requestedImageAspectRatio } from '@harness/contracts';
 import { useStudioNavigate } from '../../app/use-studio-navigate.js';
-import { useInlineError } from '../../shared/hooks/use-inline-error.js';
+import { useAlert } from '../../shared/hooks/use-alert.js';
 import { matchesShortcut, type ShortcutBinding } from '../../shared/shortcuts.js';
 import type { StudioRun } from '../history/run-presentation.js';
 import type { RunsController } from '../history/use-runs.js';
@@ -14,21 +14,32 @@ import type { GenerationSettingsController } from './use-generation-settings.js'
 import type { PromptDraftController } from './use-prompt-draft.js';
 
 interface GenerationOptions {
+  activeRepositoryId: string | undefined;
   promptDraft: PromptDraftController;
   settings: GenerationSettingsController;
   attachments: AttachmentsController;
   runs: RunsController;
   createShortcut: ShortcutBinding | null;
+  capabilityBlockedReason: string | undefined;
   requireRepository: (action: string) => boolean;
 }
 
 export function useGeneration(options: GenerationOptions) {
   const { promptDraft, settings, attachments, runs } = options;
   const navigate = useStudioNavigate();
-  const feedback = useInlineError();
+  const feedback = useAlert();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mounted = useRef(true);
   const { prompt } = promptDraft;
   const { selectedCapability } = settings;
+  const blockedReason = options.capabilityBlockedReason ?? attachments.blockedReason;
+
+  useLayoutEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const requestBody = useMemo(
     () =>
@@ -37,8 +48,8 @@ export function useGeneration(options: GenerationOptions) {
   );
 
   function draftIsIncomplete(): boolean {
-    if (attachments.blockedReason) {
-      feedback.reportError(attachments.blockedReason);
+    if (blockedReason) {
+      feedback.reportError(blockedReason);
       return true;
     }
     if (!prompt.trim() && requiresPrompt(selectedCapability)) {
@@ -78,9 +89,13 @@ export function useGeneration(options: GenerationOptions) {
 
   async function generate(event?: SyntheticEvent<HTMLFormElement>) {
     event?.preventDefault();
-    feedback.clearError();
-    runs.feedback.clearError();
-    if (!options.requireRepository('generate images')) return;
+    const repositoryId = options.activeRepositoryId;
+    feedback.clearAlert();
+    runs.feedback.clearAlert();
+    if (repositoryId === undefined) {
+      options.requireRepository('generate images');
+      return;
+    }
     if (draftIsIncomplete()) return;
 
     const localId = crypto.randomUUID();
@@ -105,6 +120,7 @@ export function useGeneration(options: GenerationOptions) {
       jobs: Array.from({ length: settings.settings.outputCount }, () => ({
         id: crypto.randomUUID(),
         status: 'submitting',
+        requestedOutputCount: 1,
         outputImageIds: [],
       })),
       status: 'submitting',
@@ -114,18 +130,20 @@ export function useGeneration(options: GenerationOptions) {
     setIsSubmitting(true);
 
     try {
-      const { runId: remoteId } = await queueRun(requestBody);
-      runs.markRunQueued(localId, remoteId);
-      navigate.readdressRun(localId, remoteId);
+      const queued = await queueRun({ ...requestBody, repositoryId });
+      if (!mounted.current) return;
+      runs.markRunQueued(localId, queued);
+      navigate.readdressRun(localId, queued);
       void runs.invalidateRuns();
     } catch (error) {
+      if (!mounted.current) return;
       const message = error instanceof Error ? error.message : 'Generation could not be queued.';
       runs.discardOptimisticRun(localId);
-      navigate.goToCreate();
+      navigate.readdressRun(localId, undefined);
       promptDraft.focusPromptSoon();
-      feedback.reportError(message);
+      runs.feedback.reportError(message);
     } finally {
-      setIsSubmitting(false);
+      if (mounted.current) setIsSubmitting(false);
     }
   }
 
@@ -138,6 +156,7 @@ export function useGeneration(options: GenerationOptions) {
 
   return {
     isSubmitting,
+    blockedReason,
     generate,
     handlePromptKeyDown,
     createShortcut: options.createShortcut,

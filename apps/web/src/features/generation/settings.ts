@@ -1,65 +1,12 @@
-import { STYLE_PRESETS, type AspectRatio, type ImageQuality } from '@harness/contracts';
+import { STYLE_PRESETS, type AspectRatio, type GenerationSettings } from '@harness/contracts';
 
-export interface GenerationSettings {
-  targetId: string;
-  aspectRatio: AspectRatio;
-  outputFormat: 'png' | 'jpeg' | 'webp';
-  outputCount: number;
-  negativePrompt: string;
-  searchPrompt: string;
-  selectPrompt: string;
-  stylePreset: string;
-  quality: ImageQuality;
-  background: 'auto' | 'transparent';
-  inputFidelity: 'low' | 'high';
-  seedMode: 'random' | 'fixed' | 'sequential';
-  seed: number;
-  strength: number;
-  controlStrength: number;
-  creativity: number;
-  fidelity: number;
-  compositionFidelity: number;
-  styleStrength: number;
-  changeStrength: number;
-  growMask: number;
-  outpaintLeft: number;
-  outpaintRight: number;
-  outpaintUp: number;
-  outpaintDown: number;
-}
+export { defaultGenerationSettings as defaultSettings } from '@harness/contracts';
+export type { GenerationSettings } from '@harness/contracts';
 
 export type UpdateSettings = <K extends keyof GenerationSettings>(
   key: K,
   value: GenerationSettings[K],
 ) => void;
-
-export const defaultSettings: GenerationSettings = {
-  targetId: 'generation/gpt-image-2',
-  aspectRatio: '1:1',
-  outputFormat: 'png',
-  outputCount: 1,
-  negativePrompt: '',
-  searchPrompt: '',
-  selectPrompt: '',
-  stylePreset: '',
-  quality: 'high',
-  background: 'auto',
-  inputFidelity: 'low',
-  seedMode: 'random',
-  seed: 0,
-  strength: 0.65,
-  controlStrength: 0.7,
-  creativity: 0.3,
-  fidelity: 0.5,
-  compositionFidelity: 0.9,
-  styleStrength: 1,
-  changeStrength: 0.9,
-  growMask: 5,
-  outpaintLeft: 256,
-  outpaintRight: 256,
-  outpaintUp: 0,
-  outpaintDown: 0,
-};
 
 export const aspectRatios = [
   { value: '1:1', label: 'Square', shape: 'square' },
@@ -93,7 +40,10 @@ const stylePresetLabels = {
   'tile-texture': 'Tile texture',
 } as const satisfies Record<(typeof STYLE_PRESETS)[number], string>;
 
-export const stylePresets: readonly (readonly [string, string])[] = [
+export const stylePresets: readonly (readonly [
+  GenerationSettings['stylePreset'] | 'none',
+  string,
+])[] = [
   ['none', 'No preset'],
   ...STYLE_PRESETS.map((value) => [value, stylePresetLabels[value]] as const),
 ];
@@ -114,11 +64,11 @@ export const outputFormatDescriptions = {
 
 export const seedStrategies = [
   { value: 'random', label: 'Random', description: 'Use a fresh random seed for each image.' },
-  { value: 'fixed', label: 'Fixed', description: 'Reuse the same seed for every image.' },
+  { value: 'fixed', label: 'Fixed', description: 'Reuse the same nonzero seed for every image.' },
   {
     value: 'sequential',
     label: 'Sequential',
-    description: 'Increase the seed by one for each image.',
+    description: 'Increase the seed for each image, wrapping from the maximum back to 1.',
   },
 ] as const satisfies readonly {
   value: GenerationSettings['seedMode'];

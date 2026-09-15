@@ -1,4 +1,5 @@
 import { repositoryStatusSchema, type RepositoryStatus } from '@harness/domain';
+import { publicErrorMessage } from '../app/api-error.js';
 import { ApplicationConfigStore, MAX_RECENT_REPOSITORIES } from './application-config-store.js';
 import { type DirectorySelector, MacOSDirectorySelector } from './directory-selector.js';
 import { RepositoryUnavailableError } from './errors.js';
@@ -18,6 +19,7 @@ export class LocalRepositoryManager {
   readonly #configStore: ApplicationConfigStore;
   #active: RecentRepository | undefined;
   #recent: RecentRepository[] = [];
+  #selectionTail: Promise<unknown> = Promise.resolve();
 
   constructor(
     selector: DirectorySelector = new MacOSDirectorySelector(),
@@ -48,10 +50,10 @@ export class LocalRepositoryManager {
       }
       if (recent.length === MAX_RECENT_REPOSITORIES) break;
     }
-    this.#recent = recent;
-    this.#active = recent.find((entry) => entry.root === config.activeRoot) ?? recent.at(0);
-    await this.#persist();
-    return this.getStatus();
+    return this.#updateSelection(() => ({
+      active: recent.find((entry) => entry.root === config.activeRoot) ?? recent.at(0),
+      recent,
+    }));
   }
 
   async choose(): Promise<RepositoryStatus> {
@@ -64,9 +66,7 @@ export class LocalRepositoryManager {
       );
     }
     const repository = await LocalImageRepository.initialize(canonicalRoot);
-    this.#activate(repository);
-    await this.#persist();
-    return this.getStatus();
+    return this.#activate(repository);
   }
 
   async activateRepository(repositoryId: string): Promise<RepositoryStatus> {
@@ -74,24 +74,26 @@ export class LocalRepositoryManager {
       (candidate) => candidate.repository.descriptor.repositoryId === repositoryId,
     );
     if (!entry) throw new RepositoryUnavailableError('The recent repository is not available.');
+    let repository: LocalImageRepository;
     try {
-      const repository = await LocalImageRepository.open(entry.root);
-      this.#activate(repository);
-      await this.#persist();
-      return this.getStatus();
+      repository = await LocalImageRepository.open(entry.root);
     } catch (error) {
-      this.#recent = this.#recent.filter((candidate) => candidate !== entry);
-      if (this.#active === entry) this.#active = undefined;
-      await this.#persist();
-      throw new RepositoryUnavailableError(
-        error instanceof Error ? error.message : 'The recent repository is not available.',
-      );
+      await this.#updateSelection(() => ({
+        active: this.#active === entry ? undefined : this.#active,
+        recent: this.#recent.filter((candidate) => candidate !== entry),
+      }));
+      throw new RepositoryUnavailableError(publicErrorMessage(error));
     }
+    return this.#activate(repository);
   }
 
   getActiveRepository(): LocalImageRepository {
     if (!this.#active) throw new RepositoryUnavailableError();
     return this.#active.repository;
+  }
+
+  getRecentRepositories(): LocalImageRepository[] {
+    return this.#recent.map((entry) => entry.repository);
   }
 
   getStatus(): RepositoryStatus {
@@ -113,24 +115,38 @@ export class LocalRepositoryManager {
     return operation(this.getActiveRepository());
   }
 
-  #activate(repository: LocalImageRepository): void {
-    const entry = { root: repository.canonicalRoot, repository };
-    this.#active = entry;
-    this.#recent = [
-      entry,
-      ...this.#recent.filter(
-        (candidate) =>
-          candidate.root !== entry.root &&
-          candidate.repository.descriptor.repositoryId !== repository.descriptor.repositoryId,
-      ),
-    ].slice(0, MAX_RECENT_REPOSITORIES);
+  #activate(repository: LocalImageRepository): Promise<RepositoryStatus> {
+    return this.#updateSelection(() => {
+      const entry = { root: repository.canonicalRoot, repository };
+      return {
+        active: entry,
+        recent: [
+          entry,
+          ...this.#recent.filter(
+            (candidate) =>
+              candidate.root !== entry.root &&
+              candidate.repository.descriptor.repositoryId !== repository.descriptor.repositoryId,
+          ),
+        ].slice(0, MAX_RECENT_REPOSITORIES),
+      };
+    });
   }
 
-  async #persist(): Promise<void> {
-    await this.#configStore.save({
-      activeRoot: this.#active?.root ?? null,
-      recentRoots: this.#recent.map(({ root }) => root),
+  #updateSelection(
+    select: () => { active: RecentRepository | undefined; recent: RecentRepository[] },
+  ): Promise<RepositoryStatus> {
+    const update = this.#selectionTail.then(async () => {
+      const selection = select();
+      await this.#configStore.save({
+        activeRoot: selection.active?.root ?? null,
+        recentRoots: selection.recent.map(({ root }) => root),
+      });
+      this.#active = selection.active;
+      this.#recent = selection.recent;
+      return this.getStatus();
     });
+    this.#selectionTail = update.catch(() => undefined);
+    return update;
   }
 }
 

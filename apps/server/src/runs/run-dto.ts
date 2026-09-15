@@ -5,6 +5,7 @@ import {
   runSnapshotSchema,
 } from '@harness/contracts';
 import type { LocalJob, LocalRun } from '@harness/domain';
+import { requestedOutputCount } from './run-helpers.js';
 import type { RunSnapshot } from './run-types.js';
 
 function localRunDto(run: LocalRun, job: LocalJob | undefined) {
@@ -32,6 +33,7 @@ function localJobDto(job: LocalJob) {
     jobId: job.jobId,
     status: job.status,
     targetId: job.targetId,
+    requestedOutputCount: requestedOutputCount(job),
     plannedSeed: job.plannedSeed,
     providerSeed: job.providerSeed,
     outputImageIds: job.outputImageIds,

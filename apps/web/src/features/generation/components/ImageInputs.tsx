@@ -1,30 +1,32 @@
 import { X } from 'lucide-react';
+import { useStudioNavigate } from '../../../app/use-studio-navigate.js';
 import type { Capability } from '../../../shared/types/domain.js';
 import { ImageViewer } from '../../editor/components/ImageViewer.js';
 import type { LoadedImage } from '../../editor/use-loaded-image.js';
 import { mainSourceImage } from '../model-presentation.js';
 import type { AttachmentsController } from '../use-attachments.js';
 
+const outputDragType = 'application/x-harness-output';
+
 export function ImageInputs({
   attachments,
   capability,
   loaded,
   onSourceImageReady,
+  onOutputDrag,
 }: {
   attachments: AttachmentsController;
   capability: Capability;
   loaded: LoadedImage | undefined;
   onSourceImageReady: (image: HTMLImageElement | null) => void;
+  onOutputDrag: (dragging: boolean) => void;
 }) {
+  const navigate = useStudioNavigate();
   const input = mainSourceImage(attachments.inputs);
+  const output = loaded?.selectedOutput;
   const label = capability.canonicalId === 'service/style-transfer' ? 'Content' : 'Source';
-  const referenceGeneration =
-    capability.maxInputImages !== undefined && capability.category === 'generation';
   const showPreview =
-    loaded !== undefined &&
-    ((loaded.isPending && input === undefined) ||
-      (loaded.selectedOutput !== undefined &&
-        (attachments.roles.length === 0 || referenceGeneration)));
+    loaded !== undefined && (loaded.isPending || loaded.selectedOutput !== undefined);
 
   return (
     <section className="image-workspace" aria-label={input ? 'Image inputs' : 'Image output'}>
@@ -41,30 +43,33 @@ export function ImageInputs({
             }}
           >
             <ImageViewer
-              image={
-                loaded && (loaded.isPending || loaded.selectedOutput?.imageId === input.id)
-                  ? loaded
-                  : input
-              }
+              image={input}
               onImageReady={onSourceImageReady}
-            >
-              <button
-                type="button"
-                className="image-input-remove"
-                title={`Remove ${label.toLowerCase()} image`}
-                aria-label={`Remove ${label.toLowerCase()} image`}
-                onClick={() => {
-                  attachments.removeInput('source', input.id);
-                }}
-              >
-                <X size={20} aria-hidden="true" />
-              </button>
-            </ImageViewer>
+              onRemove={() => {
+                attachments.removeInput('source');
+                navigate.closeFocus();
+              }}
+            />
           </section>
         )}
         {showPreview && (
           <section className="image-input-panel">
-            <ImageViewer image={loaded} />
+            <ImageViewer
+              image={loaded}
+              onRemove={navigate.closeFocus}
+              {...(output
+                ? {
+                    onDragStart: (event) => {
+                      event.dataTransfer.setData(outputDragType, output.imageId);
+                      event.dataTransfer.effectAllowed = 'move';
+                      onOutputDrag(true);
+                    },
+                    onDragEnd: () => {
+                      onOutputDrag(false);
+                    },
+                  }
+                : {})}
+            />
           </section>
         )}
       </div>
@@ -72,20 +77,60 @@ export function ImageInputs({
   );
 }
 
-export function ReferenceInputs({ attachments }: { attachments: AttachmentsController }) {
+export function ReferenceInputs({
+  attachments,
+  loaded,
+  draggingOutput,
+  onOutputDrag,
+}: {
+  attachments: AttachmentsController;
+  loaded: LoadedImage | undefined;
+  draggingOutput: boolean;
+  onOutputDrag: (dragging: boolean) => void;
+}) {
+  const navigate = useStudioNavigate();
   const references = attachments.inputs.references.filter(
     (image) => image.source !== 'style-guide',
   );
-  if (references.length === 0) return null;
+  if (references.length === 0 && !draggingOutput) return null;
 
   return (
     <section
-      className="image-reference-stack"
+      className={`image-reference-stack ${draggingOutput ? 'image-reference-stack--drop-target' : ''}`}
       data-input-role="references"
       aria-label="Reference images"
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.dataTransfer.dropEffect = event.dataTransfer.types.includes(outputDragType)
+          ? 'move'
+          : 'copy';
+      }}
       onDrop={(event) => {
         event.stopPropagation();
-        attachments.handleDrop(event, 'references');
+        if (!event.dataTransfer.types.includes(outputDragType)) {
+          attachments.handleDrop(event, 'references');
+          return;
+        }
+        event.preventDefault();
+        onOutputDrag(false);
+        const output = loaded?.selectedOutput;
+        if (event.dataTransfer.getData(outputDragType) !== output?.imageId) {
+          attachments.feedback.reportError('The displayed image changed. Drag the image again.');
+          return;
+        }
+        if (
+          attachments.moveOutputToReferences({
+            source: 'repository',
+            id: output.imageId,
+            imageId: output.imageId,
+            name: output.name,
+            previewUrl: output.url,
+            mediaType: output.mediaType,
+            byteLength: output.byteLength,
+          })
+        )
+          navigate.closeFocus();
       }}
     >
       {references.map((image) => (

@@ -8,21 +8,21 @@ import {
   type ShortcutAction,
   type ShortcutBinding,
 } from '../shortcuts.js';
-import { useInlineError } from './use-inline-error.js';
+import { useAlert } from './use-alert.js';
 import { usePersistentState } from './use-persistent-state.js';
 
 export function useShortcuts() {
   const [stored, setStored] = usePersistentState<unknown>('harness-shortcuts', defaultShortcuts);
   const parsed = useMemo(() => shortcutBindingsSchema.safeParse(stored), [stored]);
   const bindings = parsed.success ? parsed.data : defaultShortcuts;
-  const feedback = useInlineError();
-  const { reportError } = feedback;
+  const feedback = useAlert();
+  const { reportWarning } = feedback;
 
   useEffect(() => {
     if (!parsed.success) {
-      reportError('Saved shortcuts are invalid. Defaults are active; Reset all restores them.');
+      reportWarning('Saved shortcuts are invalid. Defaults are active; Reset all restores them.');
     }
-  }, [parsed, reportError]);
+  }, [parsed, reportWarning]);
 
   function setBinding(action: ShortcutAction, binding: ShortcutBinding | null): boolean {
     const error = shortcutBindingError(bindings, action, binding);
@@ -30,13 +30,13 @@ export function useShortcuts() {
       feedback.reportError(error);
       return false;
     }
-    feedback.clearError();
+    feedback.clearAlert();
     setStored({ ...bindings, [action]: binding });
     return true;
   }
 
   function resetAll() {
-    feedback.clearError();
+    feedback.clearAlert();
     setStored(defaultShortcuts);
   }
 

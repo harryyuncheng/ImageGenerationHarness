@@ -4,66 +4,6 @@
   padding: 56px 0 96px;
 }
 
-.sheet-activity {
-  margin-bottom: 28px;
-  border-block: 1px solid var(--border);
-  font-size: 11px;
-}
-
-.sheet-activity summary {
-  display: flex;
-  min-height: 42px;
-  align-items: center;
-  gap: 8px;
-  color: var(--text-secondary);
-  cursor: pointer;
-}
-
-.sheet-activity summary > span {
-  margin-left: auto;
-  color: var(--text-muted);
-}
-
-.sheet-activity[open] summary > svg:last-child {
-  transform: rotate(180deg);
-}
-
-.sheet-activity > div {
-  display: grid;
-  gap: 1px;
-  padding-bottom: 10px;
-}
-
-.sheet-activity button {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  border-radius: 4px;
-  background: transparent;
-  padding: 10px 8px;
-  text-align: left;
-}
-
-.sheet-activity button.is-pointer-hover {
-  background: var(--surface-hover);
-}
-
-.sheet-activity strong {
-  overflow: hidden;
-  font-size: 11px;
-  font-weight: 500;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.sheet-activity button > span {
-  flex-shrink: 0;
-  color: var(--text-muted);
-  font-size: 10px;
-}
-
 .gallery-page .empty-state {
   border: 0;
   background: transparent;

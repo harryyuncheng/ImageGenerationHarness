@@ -1,15 +1,8 @@
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useRouter, type NavigateOptions } from '@tanstack/react-router';
-import { flushSync } from 'react-dom';
-import { getImages } from '../features/gallery/api.js';
-import { getRepository } from '../features/repository/api.js';
-import { queryKeys } from '../shared/api/query-keys.js';
+import type { QueuedRunResponse } from '@harness/contracts';
+import { useNavigate } from '@tanstack/react-router';
 import type { StudioImage } from '../shared/images/studio-image.js';
-import type { RepositoryStatus } from '../shared/types/domain.js';
-import { connectSheetImage, sheetTransitionTypes } from './sheet-transition.js';
 
-const clearedFocus = { image: undefined, run: undefined, output: undefined };
-let activeTransition: ViewTransition | undefined;
+const clearedFocus = { image: undefined, run: undefined, job: undefined, output: undefined };
 
 /**
  * The single place that turns a studio intent into a URL change. Feature hooks call
@@ -17,120 +10,92 @@ let activeTransition: ViewTransition | undefined;
  */
 export function useStudioNavigate() {
   const navigate = useNavigate();
-  const router = useRouter();
-  const queryClient = useQueryClient();
 
-  async function go(options: NavigateOptions) {
-    const location = router.buildLocation(options);
-    if (location.pathname.startsWith('/gallery')) {
-      if (!queryClient.getQueryData<RepositoryStatus>(queryKeys.repository())) {
-        await queryClient.prefetchQuery({
-          queryKey: queryKeys.repository(),
-          queryFn: getRepository,
-        });
-      }
-      const repositoryId = queryClient.getQueryData<RepositoryStatus>(queryKeys.repository())
-        ?.active?.repositoryId;
-      if (repositoryId) {
-        await queryClient.prefetchQuery({
-          queryKey: queryKeys.allImages(repositoryId),
-          queryFn: getImages,
-        });
-      }
-    }
-    const types = sheetTransitionTypes({
-      fromLocation: router.state.location,
-      toLocation: location,
+  function openRun(runId: string, output?: StudioImage) {
+    void navigate({
+      to: '/',
+      state: (previous) => ({ ...previous, generationSetupKey: crypto.randomUUID() }),
+      search: {
+        ...clearedFocus,
+        run: runId,
+        job: output?.jobId,
+        output: output?.jobId === undefined ? output?.outputIndex : output.jobOutputIndex,
+      },
     });
-    if (!types || typeof document.startViewTransition !== 'function') {
-      await navigate(options);
-      return;
-    }
-
-    document.documentElement.dataset['sheetTransition'] = types[0];
-    const transition = document.startViewTransition(async () => {
-      await navigate({ ...options, viewTransition: false });
-      const frames = [...document.querySelectorAll<HTMLElement>('.canvas .image-frame')].filter(
-        (frame) => {
-          const bounds = frame.getBoundingClientRect();
-          return (
-            bounds.width > 0 &&
-            bounds.height > 0 &&
-            bounds.bottom > 0 &&
-            bounds.top < window.innerHeight &&
-            bounds.right > 0 &&
-            bounds.left < window.innerWidth
-          );
-        },
-      );
-      const images = frames.flatMap((frame) => [...frame.querySelectorAll('img')]);
-      // Resolve available pixels before capturing the same frame used while they are pending.
-      await Promise.all(
-        images.map(async (image) => {
-          image.loading = 'eager';
-          try {
-            await image.decode();
-          } catch (error) {
-            if (!(error instanceof DOMException) || error.name !== 'EncodingError') throw error;
-            if (image.isConnected) image.dispatchEvent(new Event('error'));
-          }
-        }),
-      );
-      flushSync(() => {
-        // Commit image load handlers before the browser takes its target snapshot.
-      });
-      for (const frame of frames) {
-        connectSheetImage(frame, location.pathname.startsWith('/gallery') ? 'gallery' : 'canvas');
-      }
-    });
-    activeTransition = transition;
-    try {
-      await transition.finished;
-    } finally {
-      if (activeTransition === transition) {
-        activeTransition = undefined;
-        delete document.documentElement.dataset['sheetTransition'];
-      }
-    }
   }
 
   return {
-    goToCreate: () => {
-      void go({ to: '/', search: clearedFocus });
-    },
     returnToCanvas: () => {
-      void go({ to: '/', search: (previous) => previous });
+      void navigate({ to: '/', search: (previous) => previous, state: (previous) => previous });
     },
     goToStyleGuide: () => {
-      void navigate({ to: '/style-guide', search: clearedFocus });
+      void navigate({
+        to: '/style-guide',
+        search: (previous) => previous,
+        state: (previous) => previous,
+      });
     },
     goToPresets: () => {
-      void navigate({ to: '/presets', search: (previous) => previous });
+      void navigate({
+        to: '/presets',
+        search: (previous) => previous,
+        state: (previous) => previous,
+      });
     },
-    goToHistory: () => {
-      void go({ to: '/gallery/history', search: (previous) => previous });
+    goToGallery: () => {
+      void navigate({
+        to: '/gallery',
+        search: (previous) => previous,
+        state: (previous) => previous,
+      });
     },
     /** Loading is always into the main area, so opening leaves the library behind. */
     openImage: (image: StudioImage) => {
-      void go({
-        to: '/',
-        search: {
-          ...clearedFocus,
-          ...(image.saved
-            ? { image: image.saved.imageId }
-            : { run: image.runId, output: image.outputIndex }),
-        },
-      });
+      if (image.saved) {
+        void navigate({
+          to: '/',
+          search: { ...clearedFocus, image: image.saved.imageId },
+          state: (previous) => ({ ...previous, generationSetupKey: crypto.randomUUID() }),
+        });
+      } else {
+        openRun(image.runId, image);
+      }
     },
-    openRun: (runId: string, outputIndex?: number) => {
-      void go({ to: '/', search: { ...clearedFocus, run: runId, output: outputIndex } });
-    },
-    /** Replaces so the pre-submission local identifier never becomes a history entry. */
-    readdressRun: (localId: string, runId: string) => {
+    openRun,
+    /** Replace temporary run/output identities without leaving the current view. */
+    readdressRun: (
+      localId: string,
+      next:
+        | Pick<QueuedRunResponse, 'runId' | 'jobs'>
+        | Pick<StudioImage, 'runId' | 'jobId' | 'jobOutputIndex' | 'outputIndex'>
+        | undefined,
+    ) => {
       void navigate({
         to: '.',
         replace: true,
-        search: (previous) => (previous.run === localId ? { ...previous, run: runId } : previous),
+        viewTransition: false,
+        state: (previous) => previous,
+        search: (previous) => {
+          if (previous.run !== localId) return previous;
+          if (!next) return { ...previous, ...clearedFocus };
+          if (
+            !('jobs' in next) &&
+            previous.job === undefined &&
+            (previous.output ?? 0) !== next.outputIndex
+          )
+            return previous;
+          const output = previous.job
+            ? { job: previous.job, output: previous.output }
+            : 'jobs' in next
+              ? next.jobs.flatMap((job) =>
+                  Array.from({ length: job.requestedOutputCount }, (_, index) => ({
+                    job: job.jobId,
+                    output: index,
+                  })),
+                )[previous.output ?? 0]
+              : { job: next.jobId, output: next.jobOutputIndex };
+          return { ...previous, run: next.runId, job: output?.job, output: output?.output };
+        },
       });
     },
     closeFocus: () => {

@@ -100,9 +100,11 @@ export function maximumSeed(capability: Capability): number | undefined {
 }
 
 export function effectiveSeed(capability: Capability, value: number): number {
-  const maximum = maximumSeed(capability) ?? 0;
-  if (!Number.isFinite(value)) return 0;
-  return Math.max(0, Math.min(Math.trunc(value), maximum));
+  const maximum = maximumSeed(capability);
+  if (maximum === undefined) return 0;
+  // Stability treats zero as provider randomness, not a reproducible seed.
+  if (!Number.isFinite(value)) return 1;
+  return Math.max(1, Math.min(Math.trunc(value), maximum));
 }
 
 /** Falls back to the first known capability so an empty server registry can never crash the studio. */

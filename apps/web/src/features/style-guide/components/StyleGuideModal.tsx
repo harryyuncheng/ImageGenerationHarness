@@ -20,7 +20,7 @@ const dialogId = 'style-guide-dialog';
 interface StyleGuideModalProps {
   folders: StyleGuideFolder[];
   activeFolderId: string | null;
-  appliedImages: readonly StyleGuideImage[];
+  appliedImages: readonly Pick<StyleGuideImage, 'imageId'>[];
   origins: readonly FanOrigin[];
   fanRef: RefObject<HTMLButtonElement | null>;
   isLoading: boolean;
@@ -32,7 +32,7 @@ interface StyleGuideModalProps {
   onRenameFolder: (folder: StyleGuideFolder, name: string) => void;
   onDeleteFolder: (folder: StyleGuideFolder) => void;
   onAddImages: (folderId: string) => void;
-  onToggleActive: (folder: StyleGuideFolder) => void;
+  onToggleActive: (folder: StyleGuideFolder) => boolean;
   onRenameImage: (image: StyleGuideImage, name: string) => void;
   onDeleteImage: (image: StyleGuideImage) => void;
   onToggleImage: (image: StyleGuideImage) => void;
@@ -47,6 +47,7 @@ export function StyleGuideModal(props: StyleGuideModalProps) {
   const transition = useStyleGuideTransition({
     fanRef: props.fanRef,
     origins,
+    activeFolderId,
     viewedFolderId: viewedFolder?.folderId,
     onClose: props.onClose,
   });
@@ -110,8 +111,9 @@ export function StyleGuideModal(props: StyleGuideModalProps) {
                 onDeleteFolder={props.onDeleteFolder}
                 onAddImages={props.onAddImages}
                 onToggleActive={(folder) => {
-                  props.onToggleActive(folder);
-                  if (folder.folderId !== activeFolderId) transition.close();
+                  if (props.onToggleActive(folder) && folder.folderId !== activeFolderId) {
+                    transition.close();
+                  }
                 }}
               />
             ) : (

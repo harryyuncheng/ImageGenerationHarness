@@ -22,6 +22,7 @@ export interface StudioRun {
   jobs: {
     id: string;
     status: RunStatus;
+    requestedOutputCount: number;
     outputImageIds: string[];
   }[];
   status: RunStatus;
@@ -76,6 +77,7 @@ export function toStudioRuns(
         jobs: jobs.map((job) => ({
           id: job.jobId,
           status: job.status,
+          requestedOutputCount: job.requestedOutputCount,
           outputImageIds: job.outputImageIds,
         })),
         status: run.status,

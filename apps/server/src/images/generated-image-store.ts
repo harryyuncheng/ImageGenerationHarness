@@ -16,6 +16,7 @@ export class GeneratedImageStore {
     const sidecar = await this.getImageMetadata(repository, imageId);
     if (!sidecar) return undefined;
     return {
+      repository,
       imageId,
       runId: sidecar.runId,
       repositoryRelativePath: sidecar.repositoryRelativePath,
@@ -36,19 +37,19 @@ export class GeneratedImageStore {
     return matches[0];
   }
 
-  async readImage(
-    image: GeneratedImageRecord,
-    repository = this.manager.getActiveRepository(),
-  ): Promise<Uint8Array> {
-    const current = await this.getImageMetadata(repository, image.imageId);
-    if (current?.repositoryRelativePath !== image.repositoryRelativePath) {
-      throw new Error('Generated image record is no longer valid');
-    }
-    const bytes = await repository.readBytes(current.repositoryRelativePath);
-    if (!imageBytesMatch(bytes, current.output.sha256, current.output.byteLength)) {
-      throw new Error('Generated image integrity verification failed');
-    }
-    return bytes;
+  async readImage(image: GeneratedImageRecord): Promise<Uint8Array> {
+    const repository = image.repository;
+    return repository.withMutation(async () => {
+      const current = await this.getImageMetadata(repository, image.imageId);
+      if (current?.repositoryRelativePath !== image.repositoryRelativePath) {
+        throw new Error('Generated image record is no longer valid');
+      }
+      const bytes = await repository.readBytes(current.repositoryRelativePath);
+      if (!imageBytesMatch(bytes, current.output.sha256, current.output.byteLength)) {
+        throw new Error('Generated image integrity verification failed');
+      }
+      return bytes;
+    });
   }
 
   async listImages(): Promise<GalleryImage[]> {
@@ -100,6 +101,6 @@ export class GeneratedImageStore {
         await walkDirectory(`${directory}/${child}`);
       }
     };
-    await walkDirectory('images');
+    await repository.withMutation(() => walkDirectory('images'));
   }
 }
